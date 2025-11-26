@@ -62,7 +62,7 @@ Orca is built on a modern web-based architecture designed for secure, on-premise
 ## Technology Stack
 
 ### Frontend
-- **Framework**: Next.js 14+ (React 18+)
+- **Framework**: Next.js 15+ (React 19+)
 - **Language**: TypeScript
 - **Styling**: TailwindCSS / CSS Modules
 - **State Management**: React Context API / Zustand
@@ -100,6 +100,76 @@ Orca is built on a modern web-based architecture designed for secure, on-premise
 - **Environment Management**: .env files per environment
 - **Monitoring**: Local logging and monitoring
 - **Backup**: Automated backup scripts
+
+## Application Modules
+
+Orca is organized into functional modules that cover all aspects of orthodontic practice management:
+
+### Core Clinical Modules
+| Module | Description | Key Features |
+|--------|-------------|--------------|
+| **Treatment Management** | Patient treatment lifecycle | Treatment plans, procedures, progress tracking, clinical notes |
+| **Imaging Management** | Diagnostic imaging | Image capture, storage, viewing, DICOM support, progress photos |
+| **Lab Work Management** | External lab coordination | Lab orders, vendor management, order tracking, quality control |
+
+### Operations Modules
+| Module | Description | Key Features |
+|--------|-------------|--------------|
+| **Booking & Scheduling** | Appointment management | Calendar, scheduling, waitlist, appointment types |
+| **Practice Orchestration** | Real-time operations | Daily dashboard, patient flow, status tracking, alerts |
+| **Staff Management** | Team coordination | Schedules, roles, assignments, performance tracking |
+| **Resources Management** | Physical resources | Chairs, rooms, equipment, availability tracking |
+
+### Administrative Modules
+| Module | Description | Key Features |
+|--------|-------------|--------------|
+| **CRM & Patient Onboarding** | Patient acquisition | Lead management, intake forms, referral tracking |
+| **Patient Communications** | Patient engagement | Messaging hub, patient portal, campaigns, education |
+| **Vendors Management** | Supplier relationships | Vendor directory, contracts, orders, payments |
+
+### Financial Modules
+| Module | Description | Key Features |
+|--------|-------------|--------------|
+| **Financial Management** | Practice finances | Revenue tracking, expenses, reporting, analytics |
+| **Billing & Insurance** | Revenue cycle | Claims processing, invoicing, payment plans, EOBs |
+
+### Compliance Module
+| Module | Description | Key Features |
+|--------|-------------|--------------|
+| **Compliance & Documentation** | Regulatory compliance | HIPAA/PIPEDA, consent forms, protocols, training, audits |
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Orca Application Modules                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                    Practice Orchestration                        │    │
+│  │              (Real-time Operations Dashboard)                    │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                    │                                     │
+│  ┌──────────────┬──────────────┬───┴───┬──────────────┬────────────┐    │
+│  │              │              │       │              │            │    │
+│  ▼              ▼              ▼       ▼              ▼            ▼    │
+│ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐      │
+│ │Booking │ │Treatment│ │Imaging │ │ Staff  │ │Resource│ │Lab Work│      │
+│ │Schedule│ │  Mgmt   │ │  Mgmt  │ │  Mgmt  │ │  Mgmt  │ │  Mgmt  │      │
+│ └────────┘ └────────┘ └────────┘ └────────┘ └────────┘ └────────┘      │
+│                                                                          │
+│  ┌──────────────┬──────────────┬──────────────┬──────────────┐          │
+│  │              │              │              │              │          │
+│  ▼              ▼              ▼              ▼              ▼          │
+│ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────────┐              │
+│ │  CRM   │ │Patient │ │Financial│ │Billing │ │ Compliance │              │
+│ │Onboard │ │ Comms  │ │  Mgmt   │ │Insuranc│ │   & Docs   │              │
+│ └────────┘ └────────┘ └────────┘ └────────┘ └────────────┘              │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                      Vendors Management                          │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Data Architecture
 
@@ -152,6 +222,36 @@ Financial
 ├── Insurance Claims
 ├── Payment Plans
 └── Transactions
+
+Lab Work
+├── Lab Orders
+├── Vendor Reference
+├── Patient/Treatment Reference
+├── Order Status & Tracking
+├── Quality Control Records
+└── Delivery Schedule
+
+Communications
+├── Message Threads
+├── Templates
+├── Campaigns
+├── Patient Portal Access
+└── Communication Preferences
+
+Compliance & Documentation
+├── Consent Forms
+├── Clinical Protocols
+├── Staff Certifications
+├── Incident Reports
+├── Audit Records
+└── Safety Data Sheets
+
+CRM & Onboarding
+├── Leads
+├── Referral Sources
+├── Intake Forms
+├── Referral Network
+└── Records Requests
 ```
 
 ### Database Design Principles
@@ -353,4 +453,4 @@ Clinic A (Location 1)         Clinic B (Location 2)
 ---
 
 **Status**: Draft
-**Last Updated**: 2025-11-25
+**Last Updated**: 2025-11-26

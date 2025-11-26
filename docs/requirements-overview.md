@@ -55,6 +55,34 @@ Orca is designed to be a comprehensive, secure, and intelligent practice managem
 - Dashboard views for key performance indicators
 - Export capabilities for external analysis
 
+### Module Requirements
+
+#### Clinical Operations
+- **Treatment Management**: Complete treatment lifecycle from consultation to retention, treatment planning, procedure tracking, and clinical notes
+- **Imaging Management**: Diagnostic image capture, storage, viewing with DICOM support, and progress photo tracking
+- **Lab Work Management**: Lab order creation, vendor coordination, order tracking, quality control, and delivery scheduling
+
+#### Practice Operations
+- **Booking & Scheduling**: Appointment calendar, scheduling optimization, waitlist management, and appointment type configuration
+- **Practice Orchestration**: Real-time daily operations dashboard, patient flow management, status tracking, and intelligent alerts
+- **Staff Management**: Staff scheduling, role assignments, performance tracking, and workload distribution
+- **Resources Management**: Chair/room/equipment tracking, availability management, and utilization analytics
+
+#### Patient Management
+- **CRM & Patient Onboarding**: Lead management, digital intake forms, referral tracking, and patient profile management
+- **Patient Communications**: Two-way messaging hub, patient portal, automated campaigns, and educational content delivery
+
+#### Financial Operations
+- **Financial Management**: Revenue tracking, expense management, financial reporting, and practice analytics
+- **Billing & Insurance**: Claims processing, invoicing, payment plans, EOB handling, and insurance verification
+- **Vendors Management**: Vendor directory, contract management, order tracking, and payment coordination
+
+#### Compliance & Documentation
+- **Regulatory Compliance**: HIPAA and PIPEDA compliance management, consent forms, clinical protocols
+- **Staff Training & Certification**: License tracking, continuing education, certification management
+- **Incident Reporting**: Clinical incident documentation, investigation workflow, corrective actions
+- **Audit Preparation**: Self-audit tools, compliance evidence gathering, audit trail reports
+
 ### Non-Functional Requirements
 
 #### Performance
@@ -124,5 +152,5 @@ Orca is designed to be a comprehensive, secure, and intelligent practice managem
 ---
 
 **Document Status**: Draft
-**Last Updated**: 2025-11-25
+**Last Updated**: 2025-11-26
 **Owner**: Development Team
