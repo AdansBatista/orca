@@ -117,6 +117,29 @@ The Booking & Scheduling module manages appointment scheduling, calendar managem
 - [ ] Waitlist management
 - [ ] Last-minute opening notifications
 
+### Emergency & On-Call Management
+- [ ] **Emergency appointment** request handling
+- [ ] **After-hours contact** protocol and routing
+- [ ] **On-call schedule** management for multi-provider practices
+- [ ] **Emergency triage** guidelines and workflows
+- [ ] **After-hours patient communication** system
+- [ ] **Emergency visit documentation**
+- [ ] **Common emergency protocols** (broken bracket, poking wire, lost retainer, trauma)
+- [ ] **Emergency slot reservations** in schedule templates
+- [ ] **Priority scheduling** for emergencies
+- [ ] **Emergency contact escalation** workflow
+
+### Failed Appointment Recovery
+- [ ] **Automatic outreach** after missed appointments
+- [ ] **Reason capture** for no-shows and cancellations
+- [ ] **Re-booking workflow** and suggestions
+- [ ] **At-risk patient identification** (multiple missed appointments)
+- [ ] **Cancellation pattern analysis**
+- [ ] **Late cancellation policies** and enforcement
+- [ ] **No-show fees** tracking and billing
+- [ ] **Re-engagement campaigns** for inactive patients
+- [ ] **Slot optimization** to minimize impact of cancellations
+
 ## Features
 See [features.md](./features.md) for detailed feature specifications.
 

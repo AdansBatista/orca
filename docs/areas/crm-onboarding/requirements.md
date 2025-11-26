@@ -39,6 +39,41 @@ The CRM & Patient Onboarding module manages the entire new patient intake proces
 - [ ] Identify at-risk patients
 - [ ] Referral tracking and management
 
+### Prescription Management
+- [ ] **Electronic prescription creation**
+- [ ] **Prescription templates** for common medications (antibiotics, pain management, anti-inflammatories)
+- [ ] **Drug allergy checking** and alerts
+- [ ] **Prescription history** per patient
+- [ ] **Controlled substance** logging (if applicable)
+- [ ] **Pharmacy directory** and information management
+- [ ] **Refill request** handling
+- [ ] **E-prescribe integration** (future)
+- [ ] **Dosage calculators** for common prescriptions
+- [ ] **Prescription notes** integration with treatment records
+
+### Referral Network Management
+- [ ] **Referring provider directory** (general dentists, specialists)
+- [ ] **Referral source tracking** (who sent the patient)
+- [ ] **Referral acknowledgment** letters (auto-generated)
+- [ ] **Case progress reports** to referring dentists
+- [ ] **Thank you communications** for referrals
+- [ ] **Referral analytics** (who sends most patients, conversion rates)
+- [ ] **Specialist network** (oral surgeons, periodontists, TMJ specialists)
+- [ ] **Referral out tracking** (when we refer to specialists)
+- [ ] **Continuing education** opportunities for referring dentists
+- [ ] **Referral relationship strength** scoring
+
+### Records Request Management
+- [ ] **Records request intake** from other providers
+- [ ] **Request tracking** and status management
+- [ ] **Document compilation** and preparation
+- [ ] **Patient authorization** verification
+- [ ] **Secure transfer methods** (encrypted email, portal, mail)
+- [ ] **Fee tracking** for records release
+- [ ] **Compliance** with state timing regulations
+- [ ] **Request history** per patient
+- [ ] **Incomplete request** follow-up
+
 ## Features
 See [features.md](./features.md) for detailed feature specifications.
 

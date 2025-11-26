@@ -12,16 +12,19 @@ This folder contains comprehensive requirements, definitions, and feature specif
 
 Each area contains detailed requirements and feature specifications:
 
-1. **[CRM & Patient Onboarding](./areas/crm-onboarding/)** - New patient intake and relationship management
-2. **[Booking & Scheduling](./areas/booking/)** - Appointment scheduling and calendar management
+1. **[CRM & Patient Onboarding](./areas/crm-onboarding/)** - New patient intake, relationship management, prescriptions, and referral network
+2. **[Booking & Scheduling](./areas/booking/)** - Appointment scheduling, templates, emergency management, and recovery
 3. **[Treatment Management](./areas/treatment-management/)** - Patient treatment lifecycle tracking
 4. **[Practice Orchestration](./areas/practice-orchestration/)** - Real-time daily operations and workflow management
-5. **[Staff Management](./areas/staff-management/)** - Team coordination and HR functions
-6. **[Resources Management](./areas/resources-management/)** - Equipment, rooms, and inventory
-7. **[Vendors Management](./areas/vendors-management/)** - Supplier relationships and procurement
-8. **[Imaging Management](./areas/imaging-management/)** - Patient imaging storage and viewing
-9. **[Financial Management](./areas/financial-management/)** - Financial oversight and analytics
-10. **[Billing & Insurance](./areas/billing-insurance/)** - Billing and insurance claims processing
+5. **[Patient Communications](./areas/patient-communications/)** - Two-way messaging, patient portal, and automated campaigns
+6. **[Lab Work Management](./areas/lab-work-management/)** - Lab orders, vendor management, and tracking
+7. **[Staff Management](./areas/staff-management/)** - Team coordination and HR functions
+8. **[Resources Management](./areas/resources-management/)** - Equipment, rooms, and inventory
+9. **[Vendors Management](./areas/vendors-management/)** - Supplier relationships and procurement
+10. **[Imaging Management](./areas/imaging-management/)** - Patient imaging storage and viewing
+11. **[Financial Management](./areas/financial-management/)** - Financial oversight and analytics
+12. **[Billing & Insurance](./areas/billing-insurance/)** - Billing and insurance claims processing
+13. **[Compliance & Documentation](./areas/compliance-documentation/)** - Regulatory compliance, training, and safety
 
 ### AI Integration
 - [AI Features & Capabilities](./ai-integration.md) - AI support across all modules

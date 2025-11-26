@@ -26,6 +26,18 @@ Track inquiries and convert leads to patients.
 Automated insurance verification and eligibility checking.
 - [Details](./features/insurance-verification.md)
 
+### 7. Prescription Writer
+Electronic prescription management system.
+- [Details](./features/prescription-writer.md)
+
+### 8. Referral Network Manager
+Manage relationships with referring dentists and specialists.
+- [Details](./features/referral-network-manager.md)
+
+### 9. Records Request Handler
+Manage incoming records requests from other providers.
+- [Details](./features/records-request-handler.md)
+
 ---
 
 **Note**: Click on individual feature links for detailed specifications.
