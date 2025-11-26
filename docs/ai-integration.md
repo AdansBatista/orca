@@ -78,6 +78,14 @@ Artificial Intelligence is integrated throughout the Orca platform to enhance ef
 - **Progress assessment**: Compare images over time to assess treatment progress
 - **Measurement automation**: Automatically measure orthodontic parameters
 
+#### Smart Report Generation
+- **Auto-select best images**: AI picks optimal photos/X-rays based on quality and relevance
+- **Before/after matching**: Automatically pair comparable images across treatment timeline
+- **Layout recommendations**: Suggest optimal collage layout based on available content
+- **Auto-captioning**: Generate descriptive labels from image metadata and visual analysis
+- **Treatment summary drafting**: Create clinical narrative summarizing visible progress
+- **Template learning**: Convert AI-generated reports into reusable templates
+
 ### 6. Natural Language Processing
 
 #### Search & Retrieval

@@ -65,11 +65,12 @@ Orca is built on a modern web-based architecture designed for secure, on-premise
 - **Framework**: Next.js 15+ (React 19+)
 - **Language**: TypeScript
 - **Styling**: TailwindCSS / CSS Modules
-- **State Management**: React Context API / Zustand
+- **State Management**: React Context API
 - **Forms**: React Hook Form + Zod validation
-- **UI Components**: Custom component library (or shadcn/ui)
+- **UI Components**: shadcn/ui (themed via CSS variables)
 - **Charts**: Recharts / Chart.js
-- **Image Viewing**: Custom image viewer for DICOM and medical images
+- **Image Viewing**: Cornerstone.js (DICOM/X-rays) + lightbox for photos
+- **PDF Generation**: Puppeteer (server-side rendering)
 
 ### Backend
 - **Framework**: Next.js API Routes
