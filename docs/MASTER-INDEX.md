@@ -97,7 +97,7 @@ Before implementing any feature, consult these guides:
 |------|--------|-----------|-----------|---------------|
 | [Booking & Scheduling](./areas/booking/) | 📋 Planned | 4 | 24 | [View](./areas/booking/) |
 | [Treatment Management](./areas/treatment-management/) | 📋 Planned | TBD | TBD | [View](./areas/treatment-management/) |
-| [Imaging Management](./areas/imaging-management/) | 📋 Planned | TBD | TBD | [View](./areas/imaging-management/) |
+| [Imaging Management](./areas/imaging-management/) | 📋 Planned | 4 | 24 | [View](./areas/imaging-management/) |
 | [Lab Work Management](./areas/lab-work-management/) | 📋 Planned | TBD | TBD | [View](./areas/lab-work-management/) |
 | [Practice Orchestration](./areas/practice-orchestration/) | 📋 Planned | TBD | TBD | [View](./areas/practice-orchestration/) |
 | [Staff Management](./areas/staff-management/) | 📋 Planned | TBD | TBD | [View](./areas/staff-management/) |
@@ -169,15 +169,59 @@ Before implementing any feature, consult these guides:
 ---
 
 ### 3. Imaging Management
-*Diagnostic images, X-rays, and progress photos*
+*Capture, view, organize, and report on patient diagnostic imaging including photos, X-rays, 3D scans, and CBCT*
+
+**Documentation**: [Full Area Documentation](./areas/imaging-management/)
 
 **Sub-Areas:**
-- 3.1 Image Capture & Upload - `📋 Planned`
-- 3.2 Image Viewing & Tools - `📋 Planned`
-- 3.3 Image Organization - `📋 Planned`
-- 3.4 Reports & Collages - `📋 Planned`
+- 3.3.1 [Image Capture & Upload](./areas/imaging-management/sub-areas/image-capture-upload/) - `📋 Planned`
+  - Intraoral Camera Integration, DSLR/Camera Import, X-ray Integration (DICOM)
+  - 3D Scanner Integration (iTero/3Shape), Photo Protocol Management, Batch Upload
+- 3.3.2 [Image Viewing & Tools](./areas/imaging-management/sub-areas/image-viewing-tools/) - `📋 Planned`
+  - Advanced Image Viewer, Measurement & Calibration Tools, Annotation System
+  - Comparison Views, Cephalometric Analysis, 3D Model Viewer
+- 3.3.3 [Image Organization](./areas/imaging-management/sub-areas/image-organization/) - `📋 Planned`
+  - Patient Image Gallery, Image Categorization, Tagging & Metadata
+  - Search & Filtering, Treatment Phase Linking, Retention & Archival
+- 3.3.4 [Reports & Collages](./areas/imaging-management/sub-areas/reports-collages/) - `📋 Planned`
+  - Collage Template Builder, Progress Collage Generation, Before/After Presentations
+  - Case Presentation Builder, Referral Documentation, Treatment Simulation Exports
 
-**Key Functions:** TBD after sub-area planning
+**Key Functions (24 total):**
+| Sub-Area | Functions |
+|----------|-----------|
+| Image Capture & Upload | 6 functions |
+| Image Viewing & Tools | 6 functions |
+| Image Organization | 6 functions |
+| Reports & Collages | 6 functions |
+
+**Orthodontic-Specific Features:**
+- Standard photo series (8-12 photos: extraoral, intraoral, occlusal)
+- Cephalometric analysis with landmark tracing and measurements
+- Panoramic and cephalometric X-ray support (DICOM)
+- CBCT 3D imaging and cross-sectional views
+- iTero/3Shape scanner integration for digital impressions
+- Progress comparison (start vs. current vs. projected)
+- Treatment simulation visualization
+- Photo consistency guides (lighting, positioning, backgrounds)
+
+**External Integrations:**
+- DSLR Cameras (USB tethered, memory card import)
+- Intraoral Cameras (device SDK integration)
+- X-ray Systems (DICOM import/export)
+- CBCT Systems (DICOM volumes)
+- iTero (cloud API sync)
+- 3Shape (file import)
+- Cloud Storage (S3-compatible)
+
+**AI Features:**
+- Image quality scoring (focus, lighting, positioning)
+- Automatic image categorization
+- Smart image selection for collages
+- AI-assisted cephalometric landmark detection
+- Before/after image matching
+- Auto-captioning for reports
+- Photo positioning guidance during capture
 
 ---
 
@@ -489,6 +533,7 @@ Before implementing any feature, consult these guides:
 | 2024-11-26 | Added detailed Compliance & Documentation area documentation (4 sub-areas, 24 functions) | Claude |
 | 2024-11-26 | Added detailed CRM & Onboarding area documentation (4 sub-areas, 24 functions) | Claude |
 | 2024-11-26 | Added detailed Financial Management area documentation (4 sub-areas, 24 functions) | Claude |
+| 2024-11-26 | Added detailed Imaging Management area documentation (4 sub-areas, 24 functions) | Claude |
 
 ---
 
