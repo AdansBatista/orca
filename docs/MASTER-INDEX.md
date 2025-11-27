@@ -105,7 +105,7 @@ Before implementing any feature, consult these guides:
 | [CRM & Onboarding](./areas/crm-onboarding/) | 📋 Planned | TBD | TBD | [View](./areas/crm-onboarding/) |
 | [Patient Communications](./areas/patient-communications/) | 📋 Planned | TBD | TBD | [View](./areas/patient-communications/) |
 | [Financial Management](./areas/financial-management/) | 📋 Planned | TBD | TBD | [View](./areas/financial-management/) |
-| [Billing & Insurance](./areas/billing-insurance/) | 📋 Planned | TBD | TBD | [View](./areas/billing-insurance/) |
+| [Billing & Insurance](./areas/billing-insurance/) | 📋 Planned | 4 | 31 | [View](./areas/billing-insurance/) |
 | [Compliance & Documentation](./areas/compliance-documentation/) | 📋 Planned | TBD | TBD | [View](./areas/compliance-documentation/) |
 | [Vendors Management](./areas/vendors-management/) | 📋 Planned | TBD | TBD | [View](./areas/vendors-management/) |
 
@@ -244,15 +244,43 @@ Before implementing any feature, consult these guides:
 ---
 
 ### 11. Billing & Insurance
-*Revenue cycle and claims processing*
+*Revenue cycle, claims processing, and payment collection*
+
+**Documentation**: [Full Area Documentation](./areas/billing-insurance/)
 
 **Sub-Areas:**
-- 11.1 Invoicing - `📋 Planned`
-- 11.2 Insurance Claims - `📋 Planned`
-- 11.3 Payment Processing - `📋 Planned`
-- 11.4 Payment Plans - `📋 Planned`
+- 11.1 [Patient Billing](./areas/billing-insurance/sub-areas/patient-billing/) - `📋 Planned`
+  - Patient Account Management, Statement Generation, Treatment Cost Estimator
+  - Payment Plan Builder, Family Accounts, Credit Balance Management
+- 11.2 [Insurance Claims](./areas/billing-insurance/sub-areas/insurance-claims/) - `📋 Planned`
+  - Insurance Company Database, Patient Insurance, Eligibility Verification
+  - Claims Submission, Claims Tracking, Denial Management, EOB Processing
+- 11.3 [Payment Processing](./areas/billing-insurance/sub-areas/payment-processing/) - `📋 Planned`
+  - Payment Gateway (Stripe/Square), Card-Present & Card-Not-Present Transactions
+  - Recurring Billing Engine, Refund Processing, Payment Reconciliation
+- 11.4 [Collections Management](./areas/billing-insurance/sub-areas/collections/) - `📋 Planned`
+  - Aging Reports, Collection Workflows, Payment Reminders
+  - Collection Agency Integration, Bad Debt Management
 
-**Key Functions:** TBD after sub-area planning
+**Key Functions (31 total):**
+| Sub-Area | Functions |
+|----------|-----------|
+| Patient Billing | 6 functions |
+| Insurance Claims | 10 functions |
+| Payment Processing | 8 functions |
+| Collections | 7 functions |
+
+**External Integrations:**
+- Stripe / Square (Payment Gateway)
+- Stripe Terminal / Square Reader (Card Readers)
+- Clearinghouse (EDI 837/835 for claims)
+- Collection Agencies
+
+**AI Features:**
+- EOB data extraction from scanned documents
+- Insurance fax/letter parsing
+- Payment prediction and collection prioritization
+- Claims optimization suggestions
 
 ---
 
@@ -322,6 +350,7 @@ Before implementing any feature, consult these guides:
 | Date | Change | Author |
 |------|--------|--------|
 | 2024-11-26 | Initial creation | Claude |
+| 2024-11-26 | Added detailed Billing & Insurance area documentation (4 sub-areas, 31 functions) | Claude |
 
 ---
 
