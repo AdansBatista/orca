@@ -102,7 +102,7 @@ Before implementing any feature, consult these guides:
 | [Practice Orchestration](./areas/practice-orchestration/) | 📋 Planned | TBD | TBD | [View](./areas/practice-orchestration/) |
 | [Staff Management](./areas/staff-management/) | 📋 Planned | TBD | TBD | [View](./areas/staff-management/) |
 | [Resources Management](./areas/resources-management/) | 📋 Planned | TBD | TBD | [View](./areas/resources-management/) |
-| [CRM & Onboarding](./areas/crm-onboarding/) | 📋 Planned | TBD | TBD | [View](./areas/crm-onboarding/) |
+| [CRM & Onboarding](./areas/crm-onboarding/) | 📋 Planned | 4 | 24 | [View](./areas/crm-onboarding/) |
 | [Patient Communications](./areas/patient-communications/) | 📋 Planned | TBD | TBD | [View](./areas/patient-communications/) |
 | [Financial Management](./areas/financial-management/) | 📋 Planned | TBD | TBD | [View](./areas/financial-management/) |
 | [Billing & Insurance](./areas/billing-insurance/) | 📋 Planned | 4 | 31 | [View](./areas/billing-insurance/) |
@@ -234,15 +234,46 @@ Before implementing any feature, consult these guides:
 ---
 
 ### 8. CRM & Onboarding
-*Patient acquisition and intake process*
+*Patient acquisition, intake process, and referral management for orthodontic practices*
+
+**Documentation**: [Full Area Documentation](./areas/crm-onboarding/)
 
 **Sub-Areas:**
-- 8.1 Lead Management - `📋 Planned`
-- 8.2 Intake Forms - `📋 Planned`
-- 8.3 Referral Tracking - `📋 Planned`
-- 8.4 Records Requests - `📋 Planned`
+- 8.1 [Lead Management](./areas/crm-onboarding/sub-areas/lead-management/) - `📋 Planned`
+  - Lead Capture & Entry, Lead Source Tracking, Conversion Pipeline
+  - Coordinator Assignment, Follow-up Management, Lead Analytics
+- 8.2 [Intake Forms](./areas/crm-onboarding/sub-areas/intake-forms/) - `📋 Planned`
+  - Form Template Builder, Patient Form Portal, Medical History Collection
+  - Insurance Information Capture, Consent Form Management, Completion Tracking
+- 8.3 [Referral Tracking](./areas/crm-onboarding/sub-areas/referral-tracking/) - `📋 Planned`
+  - Referring Provider Directory, Referral Source Attribution, Acknowledgment Letters
+  - Progress Reports, Referral Analytics, Specialist Network
+- 8.4 [Records Requests](./areas/crm-onboarding/sub-areas/records-requests/) - `📋 Planned`
+  - Incoming Records Management, Outgoing Records Preparation, Authorization Verification
+  - Transfer Status Tracking, Fee Management, Compliance Monitoring
 
-**Key Functions:** TBD after sub-area planning
+**Key Functions (24 total):**
+| Sub-Area | Functions |
+|----------|-----------|
+| Lead Management | 6 functions |
+| Intake Forms | 6 functions |
+| Referral Tracking | 6 functions |
+| Records Requests | 6 functions |
+
+**External Integrations:**
+- Twilio (SMS communications for leads and forms)
+- SendGrid/SES (Email delivery)
+- DocuSign/HelloSign (E-signatures for intake forms)
+- Web Forms/Landing Pages (Lead capture)
+- Fax Services (Referral letters and records transfer)
+
+**AI Features:**
+- Lead scoring and conversion prediction
+- Optimal contact time suggestions
+- Form completion prediction
+- Insurance card OCR data extraction
+- Referral relationship insights
+- Records completeness verification
 
 ---
 
@@ -418,6 +449,7 @@ Before implementing any feature, consult these guides:
 | 2024-11-26 | Added detailed Billing & Insurance area documentation (4 sub-areas, 31 functions) | Claude |
 | 2024-11-26 | Added detailed Booking & Scheduling area documentation (4 sub-areas, 24 functions) | Claude |
 | 2024-11-26 | Added detailed Compliance & Documentation area documentation (4 sub-areas, 24 functions) | Claude |
+| 2024-11-26 | Added detailed CRM & Onboarding area documentation (4 sub-areas, 24 functions) | Claude |
 
 ---
 
