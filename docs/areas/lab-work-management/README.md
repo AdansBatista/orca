@@ -4,7 +4,7 @@
 >
 > **Phase**: 3 - Clinical
 >
-> **Purpose**: Manage lab orders, specimen collection, result ingestion, review, and reporting with strong traceability and integrations to external labs and LIS.
+> **Purpose**: Manage orthodontic lab orders, vendor relationships, order tracking, and quality control for appliances, retainers, aligners, and other lab-fabricated items
 
 ---
 
@@ -13,30 +13,34 @@
 | Attribute | Value |
 |-----------|-------|
 | **Status** | 📋 Planned |
-| **Priority** | High |
+| **Priority** | Medium |
 | **Phase** | 3 - Clinical |
-| **Dependencies** | Phase 1 (Auth, Staff, Resources), Phase 2 (Booking), Treatment Management, Billing & Insurance |
-| **Last Updated** | 2025-11-27 |
-| **Owner** | Clinical Systems Team (owner: `lab-sme@orca.example`) |
+| **Dependencies** | Phase 1 (Auth, Staff), Treatment Management, Imaging Management |
+| **Last Updated** | 2024-11-27 |
 
 ---
 
 ## Overview
 
-Lab Work Management covers the lifecycle of laboratory testing within the practice: order creation, specimen labeling and chain-of-custody, sample tracking, ingestion of results from external labs or local LIS, clinician review and sign-off, patient notifications, and reporting for clinical and operational analytics.
+Lab Work Management handles the complete lifecycle of orthodontic lab orders—from initial case submission to delivery and quality verification. This includes ordering retainers, appliances, aligners, indirect bonding trays, and custom archwires from external dental laboratories.
 
-This area ensures lab processes are traceable, auditable, and integrated with treatment workflows and billing. It reduces turnaround times, ensures accurate clinical decisions, and maintains compliance with PHI handling and lab regulations.
+Orthodontic practices work with multiple specialized labs for different products. This area streamlines case submission with digital workflows (STL files, photos, prescriptions), tracks orders through fabrication and shipping, manages vendor relationships and pricing, and handles remakes and warranty claims.
 
 ### Key Capabilities
 
-- Order creation and routing to appropriate lab providers
-- Barcode/QR-based specimen labeling and tracking
-- Chain-of-custody logging for specimens
-- Robust ingestion and normalization of lab results (HL7 v2 / FHIR)
-- Clinician review, sign-off and versioned results
-- Patient and provider notifications for critical results
-- Analytics for turnaround times, volumes, and quality
-- Retention, archival, and compliance features
+- **Lab Orders**: Create and submit digital case orders with STL files, photos, and prescriptions
+- **Lab Vendor Management**: Maintain lab directory, pricing, contracts, and performance metrics
+- **Order Tracking**: Monitor order status, shipping, due dates, and delivery coordination
+- **Quality & Remakes**: Inspection workflows, remake requests, and warranty tracking
+
+### Business Value
+
+- Streamlined digital case submission eliminates paper Rx forms
+- Real-time order tracking reduces phone calls to labs
+- Vendor performance metrics inform lab selection decisions
+- Integrated remake tracking improves quality accountability
+- Automatic reorder reminders for retainer programs
+- Cost tracking enables accurate case profitability analysis
 
 ---
 
@@ -44,174 +48,333 @@ This area ensures lab processes are traceable, auditable, and integrated with tr
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 4.4.1 | [Order Management](./sub-areas/order-management/) | Create and manage lab orders, routing and priorities | 📋 Planned | Critical |
-| 4.4.2 | [Sample Collection & Tracking](./sub-areas/sample-collection-tracking/) | Specimen labeling, collection workflows, chain-of-custody | 📋 Planned | Critical |
-| 4.4.3 | [Lab Integration & Result Ingestion](./sub-areas/lab-integration-ingestion/) | Connectors for HL7/FHIR/LIS and result parsing | 📋 Planned | Critical |
-| 4.4.4 | [Result Review & Reporting](./sub-areas/result-review-reporting/) | Clinician sign-off, notifications and report generation | 📋 Planned | High |
-| 4.4.5 | [Quality & Compliance](./sub-areas/quality-compliance/) | Audit logging, retention, consent and QA processes | 📋 Planned | High |
+| 3.4.1 | [Lab Orders](./sub-areas/lab-orders/) | Create and submit lab case orders | 📋 Planned | Critical |
+| 3.4.2 | [Lab Vendor Management](./sub-areas/lab-vendor-management/) | Lab directory, pricing, and contracts | 📋 Planned | High |
+| 3.4.3 | [Order Tracking](./sub-areas/order-tracking/) | Status monitoring and delivery coordination | 📋 Planned | High |
+| 3.4.4 | [Quality & Remakes](./sub-areas/quality-remakes/) | Inspection, remakes, and warranty | 📋 Planned | Medium |
 
 ---
 
 ## Sub-Area Details
 
-### 4.4.1 Order Management
+### 3.4.1 Lab Orders
 
-Create, edit and route lab orders. This sub-area is the primary entry point for lab workflows and ties into specimen creation and billing.
+Create and submit orthodontic lab orders with digital case files and prescriptions.
 
 **Functions:**
-- `create-lab-order` — Create an order containing one or more `LabOrderItem`s, validate test codes, and select routing.
-- `order-status-tracking` — Persist lifecycle statuses and emit events (created, collected, shipped, received, resulted, signed-off, canceled).
-- `order-editing-cancellation` — Edit order items or cancel with audit trail and business rules.
-- `order-priority-and-routing` — Assign priority and decide routing (internal/external) based on ruleset.
+- Lab Order Creation
+- Case Prescription Builder
+- Digital File Attachment (STL, Photos)
+- Order Templates
+- Rush Order Management
+- Batch Order Submission
 
 **Key Features:**
-- Bulk order creation for batch referrals.
-- Manual and rules-based routing with override and audit.
-- Order templating for common test panels.
-- Idempotent APIs for safe retries from external systems.
+- Digital Rx forms for each appliance type
+- STL file upload from iTero/3Shape scans
+- Photo attachment for shade matching and references
+- Order templates for common appliances
+- Rush/expedite flagging with upcharge tracking
+- Integration with treatment plans for automatic orders
 
 ---
 
-### 4.4.2 Sample Collection & Tracking
+### 3.4.2 Lab Vendor Management
 
-Specimen handling, labeling, chain-of-custody and physical tracking.
+Maintain relationships with orthodontic labs including pricing, contracts, and performance.
 
 **Functions:**
-- `specimen-labeling-barcode-generation` — Generate printable labels (ZPL/PDF) with 2D barcode and human readable fields.
-- `collection-checklist` — Mobile checklist for collectors with required fields, consent capture and photo attachments.
-- `chain-of-custody-log` — Append-only custody events with actor, timestamp and location.
-- `sample-location-tracking` — Track specimen location and movement history (fridge, courier, lab, archive).
+- Lab Directory Management
+- Pricing & Fee Schedules
+- Contract Management
+- Lab Preference Rules
+- Performance Metrics
+- Communication Hub
 
 **Key Features:**
-- Label formats for thermal printers (ZPL) and printable PDFs.
-- Mobile-first collection UI with offline support.
-- Temperature / storage condition recording for sensitive specimens.
-- Barcode/QR scanning to reduce manual entry errors.
+- Multi-lab support with preferred lab by product type
+- Fee schedule management with effective dates
+- Contract terms and discount tracking
+- Performance scorecards (turnaround, quality, remakes)
+- Direct messaging with lab technicians
+- Lab capability matrix (what each lab produces)
 
 ---
 
-### 4.4.3 Lab Integration & Result Ingestion
+### 3.4.3 Order Tracking
 
-Connectors and normalization pipeline for results ingestion from external labs and LIS.
+Monitor order status from submission through delivery with proactive alerts.
 
 **Functions:**
-- `hl7-fhir-lab-result-ingest` — Ingest HL7 v2 ORU and FHIR DiagnosticReport messages, persist raw payloads and attachments.
-- `lis-api-connector` — Vendor connector templates (OAuth2 polling, webhook, SFTP) with retry and backoff.
-- `result-parsing-validation` — Parse attachments (PDF/Image) to structured observations, validate units and ranges.
-- `result-versioning` — Maintain versions of results with sign-off and immutable history.
+- Order Status Dashboard
+- Shipment Tracking
+- Due Date Management
+- Delivery Coordination
+- Patient Pickup Tracking
+- Reorder Reminders
 
 **Key Features:**
-- Idempotency via external control IDs and deduplication strategy.
-- Raw payload retention with reference to normalized records.
-- Support for attachments up to large sizes via object storage.
-- Dead-letter queue and web UI for manual reconciliation of failed ingests.
+- Real-time status updates from lab portals
+- Shipping integration (FedEx, UPS tracking)
+- Due date alerts for upcoming appointments
+- Patient notification when items arrive
+- Inventory of items awaiting patient pickup
+- Automatic reorder for retainer programs
 
 ---
 
-### 4.4.4 Result Review & Reporting
+### 3.4.4 Quality & Remakes
 
-Clinician review, final sign-off, notification delivery and consolidated reporting.
+Manage quality inspection, remake requests, and warranty claims.
 
 **Functions:**
-- `clinician-review-and-signoff` — UI and workflow to review normalized observations and sign final report; creates signed `ResultVersion`.
-- `automated-abnormal-flagging` — Rules + ML to flag critical/abnormal results for expedited review.
-- `patient-notification-delivery` — Configurable channels (portal, email, SMS) and release policies for result delivery.
-- `lab-report-generation` — Consolidated PDF report generation with clinic branding and attachments.
+- Receiving Inspection
+- Remake Request Management
+- Warranty Tracking
+- Quality Issue Logging
+- Lab Feedback System
+- Quality Analytics
 
 **Key Features:**
-- Configurable release policies (auto-release after X hours, delayed patient release until clinician sign-off).
-- Signed reports with clinician metadata and audit trail.
-- Notification templates and opt-in/opt-out handling.
+- Inspection checklist by product type
+- Photo documentation of quality issues
+- Remake request workflow with lab communication
+- Warranty period tracking by product
+- Quality metrics by lab and product type
+- Corrective action tracking
 
 ---
 
-### 4.4.5 Quality & Compliance
+## Orthodontic Lab Products
 
-Audit, retention, consent, QA and regulatory compliance for lab workflows.
+### Retainers
 
-**Functions:**
-- `qa-audit-logging` — Centralized, exportable audit logs for all lab events.
-- `retention-policy-enforcement` — Configurable policies for retention and archival by test type.
-- `consent-and-privacy-controls` — Consent capture and expiry for specimen and data uses.
-- `proficiency-test-tracking` — QA cycles and corrective action tracking for lab processes.
+| Product | Description | Typical Turnaround |
+|---------|-------------|-------------------|
+| **Hawley Retainer** | Acrylic with wire clasps | 5-7 days |
+| **Essix/Clear Retainer** | Vacuum-formed clear plastic | 3-5 days |
+| **Bonded/Fixed Retainer** | Wire bonded to lingual | 3-5 days |
+| **Vivera Retainers** | Invisalign clear retainers (set of 4) | 2-3 weeks |
+| **Spring Retainer** | Active retainer with springs | 7-10 days |
 
-**Key Features:**
-- Role-based access control and fine-grained permission mapping.
-- Exportable audit bundles for regulatory requests.
-- Chain-of-custody reports for legal and compliance review.
+### Appliances
+
+| Product | Description | Typical Turnaround |
+|---------|-------------|-------------------|
+| **Rapid Palatal Expander (RPE)** | Hyrax, Haas, bonded | 7-10 days |
+| **Herbst Appliance** | Class II corrector | 10-14 days |
+| **Pendulum/Pendex** | Molar distalization | 10-14 days |
+| **Quad Helix** | Arch expansion | 5-7 days |
+| **Nance Holding Arch** | Space maintainer | 5-7 days |
+| **Lower Lingual Holding Arch** | Space maintainer | 5-7 days |
+| **Bite Plate** | Anterior or posterior | 5-7 days |
+| **Habit Appliance** | Tongue crib, thumb guard | 7-10 days |
+| **Space Maintainer** | Band and loop, distal shoe | 5-7 days |
+| **Headgear** | Facebow with attachments | 3-5 days |
+
+### Aligners
+
+| Product | Description | Typical Turnaround |
+|---------|-------------|-------------------|
+| **Invisalign** | Full, Lite, Express, First | 2-3 weeks |
+| **In-House Aligners** | 3D printed in office | Same day - 3 days |
+| **Third-Party Aligners** | SureSmile, Spark, uLab | 2-3 weeks |
+
+### Other Lab Items
+
+| Product | Description | Typical Turnaround |
+|---------|-------------|-------------------|
+| **Indirect Bonding Trays** | Custom bracket placement trays | 5-7 days |
+| **Custom Archwires** | Robot-bent or custom-formed | 3-5 days |
+| **Study Models** | Stone or digital prints | 3-5 days |
+| **Surgical Splints** | Orthognathic surgery guides | 7-14 days |
+| **TMJ Splints** | Occlusal splints | 7-10 days |
+| **Mouth Guards** | Sports protection | 3-5 days |
 
 ---
 
-## Integration Points (expanded)
+## Integration Points
 
 ### Internal Integrations
 
 | Area | Integration | Purpose |
 |------|-------------|---------|
-| Treatment Management | Order triggers, test requirements | Automatically create orders for treatment milestones (e.g., pre-prosthetic or appliance delivery) |
-| Imaging Management | Attach images/scans to orders | Send STL/scan references for appliance fabrication |
-| Patient Communications | Notification templates, release policies | Deliver results to patients and providers consistent with clinic policies |
-| Billing & Insurance | Charge capture, claim-level linking | Create lab charges and attach to claims/EOB processing |
-| Practice Orchestration | Appointment triggers | Schedule collection tasks on appointment types |
+| Treatment Management | Treatment plans, milestones | Auto-generate orders at treatment phases |
+| Imaging Management | STL files, photos | Attach digital files to lab orders |
+| Booking & Scheduling | Appointments | Coordinate delivery with patient appointments |
+| Billing & Insurance | Lab fees | Track lab costs for case profitability |
+| Financial Management | Expense tracking | Lab expense reporting |
+| Patient Communications | Notifications | Alert patients when items are ready |
+| Practice Orchestration | Daily workflow | Show pending lab items on dashboard |
 
-### External Integrations (expanded)
+### External Integrations
 
 | System | Integration Type | Purpose |
 |--------|------------------|---------|
-| External Labs / LIS | HL7 v2 (ORU), FHIR DiagnosticReport, SFTP | Ingest results, attachments and billing references |
-| Reference Labs | Shipping/Tracking APIs | Track specimen courier progress and status |
-| Label Printers | ZPL/PDF | Print specimen labels and manifests |
-| OCR/ML Services | REST API | Extract structured observations from PDFs and images |
+| iTero | Cloud API | Pull scans for case submission |
+| 3Shape | File Export | Import STL files |
+| Invisalign Doctor Site | Web/API | Submit and track Invisalign cases |
+| Lab Portals | Web/API | Submit orders, check status |
+| Shipping Carriers | API (FedEx, UPS) | Track shipments |
+| In-House 3D Printers | Local/Network | Print aligners, models |
 
 ---
 
-## Data Models (expanded)
+## User Roles & Permissions
 
-### ER Diagram (overview)
+| Role | Create Orders | Track | Manage Vendors | Remakes | Admin |
+|------|---------------|-------|----------------|---------|-------|
+| Super Admin | Full | Full | Full | Full | Full |
+| Clinic Admin | Full | Full | Full | Full | Full |
+| Doctor | Full | Full | View | Full | None |
+| Clinical Staff | Create | Full | View | Create | None |
+| Front Desk | None | View | None | None | None |
+| Billing | View | View | View Pricing | None | None |
+| Read Only | None | View | None | None | None |
+
+### Special Permissions
+
+| Permission | Description | Default Roles |
+|------------|-------------|---------------|
+| `lab:create_order` | Create lab orders | doctor, clinical_staff |
+| `lab:submit_order` | Submit orders to lab | doctor, clinical_staff |
+| `lab:track` | View order status | all clinical roles |
+| `lab:manage_vendors` | Edit lab directory | clinic_admin |
+| `lab:view_pricing` | View lab pricing | clinic_admin, billing |
+| `lab:request_remake` | Request remakes | doctor, clinical_staff |
+| `lab:approve_remake` | Approve remake costs | clinic_admin, doctor |
+| `lab:admin` | Full lab administration | clinic_admin |
+
+---
+
+## Data Models
+
+### Core Entities
 
 ```
-┌───────────┐     ┌─────────────┐     ┌───────────┐
-│  Patient  │────▶│  LabOrder   │────▶│ LabOrderItem│
-└───────────┘     └─────────────┘     └───────────┘
-                       │                     │
-                       ▼                     ▼
-                 ┌──────────┐         ┌─────────────┐
-                 │ Specimen │────────▶│ SpecimenEvent│
-                 └──────────┘         └─────────────┘
-                       │
-                       ▼
-                 ┌──────────┐
-                 │ LabResult│────▶ ResultObservation
-                 └──────────┘
-                       │
-                       ▼
-                ┌──────────────┐
-                │ ResultAttachment │
-                └──────────────┘
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│     Patient     │────▶│    LabOrder     │────▶│  LabOrderItem   │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │                        │
+                               │                        ▼
+                               │                ┌─────────────────┐
+                               ▼                │   LabProduct    │
+                        ┌─────────────────┐     └─────────────────┘
+                        │    LabVendor    │
+                        └─────────────────┘
+                               │
+                               ▼
+                        ┌─────────────────┐     ┌─────────────────┐
+                        │  LabFeeSchedule │     │  RemakeRequest  │
+                        └─────────────────┘     └─────────────────┘
 ```
 
-### Key Models (summary)
+### Key Models
 
-| Model | Core Fields |
+| Model | Description |
 |-------|-------------|
-| `LabOrder` | `id`, `patientId`, `orderedBy`, `orderDate`, `status`, `externalOrderId`, `priority` |
-| `LabOrderItem` | `id`, `labOrderId`, `testCode`, `name`, `collectionRequirement` |
-| `Specimen` | `id`, `labOrderItemId`, `specimenType`, `labelId`, `location`, `collectedAt` |
-| `SpecimenEvent` | `id`, `specimenId`, `eventType`, `actorId`, `timestamp`, `notes` |
-| `LabResult` | `id`, `labOrderItemId`, `status`, `reportedAt`, `source`, `rawPayloadRef` |
-| `ResultObservation` | `id`, `labResultId`, `loincCode`, `value`, `unit`, `referenceRange`, `flags` |
-
-Fields like `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` should exist on all models. Ingestion records should include `sourceMessageId`/`externalControlId` for idempotency.
+| `LabOrder` | Order header with patient, vendor, dates, status |
+| `LabOrderItem` | Individual item on order (appliance, retainer) |
+| `LabProduct` | Product catalog (retainer types, appliances) |
+| `LabVendor` | Lab company with contact, capabilities |
+| `LabFeeSchedule` | Pricing by product and vendor |
+| `LabPrescription` | Rx details for appliance (expansion amount, wire type) |
+| `LabOrderAttachment` | STL files, photos, documents |
+| `LabShipment` | Shipping/tracking information |
+| `RemakeRequest` | Remake/adjustment request with reason |
+| `LabOrderStatus` | Status history log |
 
 ---
 
-## Implementation Notes (expanded)
+## Workflow: Lab Order Lifecycle
 
-1. MVP scope: `create-lab-order`, `specimen-labeling-barcode-generation`, `hl7-fhir-lab-result-ingest`, and `clinician-review-and-signoff`.
-2. Use object storage (S3-compatible) for raw payloads and large attachments; store normalized observations in DB.
-3. Idempotency keys and deduplication on ingestion are required to avoid duplicate results.
-4. Provide DLQ and manual reconciliation UI for ingestion failures.
-5. For label printing support ZPL and PDF exports; include thermal label templates.
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   CREATED    │────▶│  SUBMITTED   │────▶│ IN_PROGRESS  │
+└──────────────┘     └──────────────┘     └──────────────┘
+                                                 │
+                                                 ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  DELIVERED   │◀────│   SHIPPED    │◀────│  COMPLETED   │
+└──────────────┘     └──────────────┘     └──────────────┘
+       │
+       ▼
+┌──────────────┐     ┌──────────────┐
+│   RECEIVED   │────▶│   PATIENT    │
+│  (Inspected) │     │   PICKUP     │
+└──────────────┘     └──────────────┘
+```
+
+### Status Definitions
+
+| Status | Description |
+|--------|-------------|
+| `DRAFT` | Order started but not submitted |
+| `SUBMITTED` | Sent to lab |
+| `ACKNOWLEDGED` | Lab confirmed receipt |
+| `IN_PROGRESS` | Lab is fabricating |
+| `COMPLETED` | Fabrication complete |
+| `SHIPPED` | In transit to clinic |
+| `DELIVERED` | Arrived at clinic |
+| `RECEIVED` | Inspected and accepted |
+| `PATIENT_PICKUP` | Ready for patient |
+| `PICKED_UP` | Patient received item |
+| `CANCELLED` | Order cancelled |
+| `REMAKE_REQUESTED` | Quality issue, remake needed |
+
+---
+
+## AI Features
+
+| Feature | Sub-Area | Description |
+|---------|----------|-------------|
+| Auto-Order Generation | Lab Orders | Suggest orders based on treatment milestones |
+| Vendor Recommendation | Vendor Management | Recommend lab based on product, turnaround, quality |
+| Due Date Prediction | Order Tracking | Predict actual delivery based on historical data |
+| Quality Prediction | Quality & Remakes | Flag orders at risk of quality issues |
+| Reorder Reminder | Order Tracking | Smart reminders for retainer replacement |
+| Cost Optimization | Vendor Management | Suggest cost-saving vendor alternatives |
+
+---
+
+## Compliance Requirements
+
+### HIPAA Compliance
+- Lab orders contain PHI and require access controls
+- Audit logging for all order access and modifications
+- Secure transmission to external labs
+- Vendor BAAs required for lab partners
+
+### Data Retention
+- Lab orders retained per state dental board requirements
+- STL files and photos stored securely
+- Prescription records maintained with patient record
+
+### Quality Documentation
+- Inspection records maintained for liability
+- Remake history documented for warranty claims
+- Lab performance data for vendor evaluation
+
+---
+
+## Implementation Notes
+
+### Phase 3 Dependencies
+- **Treatment Management**: For linking orders to treatment plans
+- **Imaging Management**: For STL files and photos
+- **Billing & Insurance**: For lab fee tracking
+
+### Implementation Order
+1. Lab Vendor Management (set up labs and products first)
+2. Lab Orders (create and submit orders)
+3. Order Tracking (monitor status and delivery)
+4. Quality & Remakes (handle quality issues)
+
+### Key Technical Decisions
+- Store STL files in cloud storage with signed URLs
+- Use webhooks or polling for lab portal integration
+- Implement order templates as JSON schemas
+- Track shipping via carrier APIs (FedEx, UPS)
 
 ---
 
@@ -219,59 +382,76 @@ Fields like `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` should exist 
 
 ```
 docs/areas/lab-work-management/
-├── README.md
-├── requirements.md
-├── features.md
-├── integrations.md
-├── data-models.md
+├── README.md                      # This file
+├── requirements.md                # Detailed requirements
+├── features.md                    # Feature overview
 └── sub-areas/
-    ├── order-management/
+    ├── lab-orders/
     │   ├── README.md
     │   └── functions/
-    │       ├── create-lab-order.md
-    │       ├── order-status-tracking.md
-    │       ├── order-editing-cancellation.md
-    │       └── order-priority-and-routing.md
-    ├── sample-collection-tracking/
+    │       ├── lab-order-creation.md
+    │       ├── case-prescription-builder.md
+    │       ├── digital-file-attachment.md
+    │       ├── order-templates.md
+    │       ├── rush-order-management.md
+    │       └── batch-order-submission.md
+    │
+    ├── lab-vendor-management/
     │   ├── README.md
     │   └── functions/
-    │       ├── specimen-labeling-barcode-generation.md
-    │       ├── collection-checklist.md
-    │       ├── chain-of-custody-log.md
-    │       └── sample-location-tracking.md
-    ├── lab-integration-ingestion/
+    │       ├── lab-directory-management.md
+    │       ├── pricing-fee-schedules.md
+    │       ├── contract-management.md
+    │       ├── lab-preference-rules.md
+    │       ├── performance-metrics.md
+    │       └── communication-hub.md
+    │
+    ├── order-tracking/
     │   ├── README.md
     │   └── functions/
-    │       ├── hl7-fhir-lab-result-ingest.md
-    │       ├── lis-api-connector.md
-    │       ├── result-parsing-validation.md
-    │       └── result-versioning.md
-    ├── result-review-reporting/
-    │   ├── README.md
-    │   └── functions/
-    │       ├── clinician-review-and-signoff.md
-    │       ├── automated-abnormal-flagging.md
-    │       ├── patient-notification-delivery.md
-    │       └── lab-report-generation.md
-    └── quality-compliance/
+    │       ├── order-status-dashboard.md
+    │       ├── shipment-tracking.md
+    │       ├── due-date-management.md
+    │       ├── delivery-coordination.md
+    │       ├── patient-pickup-tracking.md
+    │       └── reorder-reminders.md
+    │
+    └── quality-remakes/
         ├── README.md
         └── functions/
-            ├── qa-audit-logging.md
-            ├── retention-policy-enforcement.md
-            ├── consent-and-privacy-controls.md
-            └── proficiency-test-tracking.md
+            ├── receiving-inspection.md
+            ├── remake-request-management.md
+            ├── warranty-tracking.md
+            ├── quality-issue-logging.md
+            ├── lab-feedback-system.md
+            └── quality-analytics.md
 ```
 
 ---
 
 ## Related Documentation
 
-- `docs\templates\area-template.md`
-- `docs\AI-INTEGRATION.md`
-- `docs\areas\imaging-management\README.md` (example style)
+- [Requirements](./requirements.md) - Detailed requirements list
+- [Features](./features.md) - Feature specifications
+- [Treatment Management](../treatment-management/) - Treatment plan integration
+- [Imaging Management](../imaging-management/) - Digital files source
+- [Financial Management](../financial-management/) - Lab expense tracking
+
+---
+
+## Status Legend
+
+| Status | Icon | Description |
+|--------|------|-------------|
+| Planned | 📋 | Documented, not started |
+| In Progress | 🔄 | Currently being implemented |
+| Review | 👀 | Under review |
+| Testing | 🧪 | In testing |
+| Completed | ✅ | Fully implemented |
+| Blocked | 🚫 | Blocked by dependency |
 
 ---
 
 **Status**: 📋 Planned
-**Last Updated**: 2025-11-27
-**Owner**: Product/Development Team
+**Last Updated**: 2024-11-27
+**Owner**: Development Team

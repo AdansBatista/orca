@@ -98,7 +98,7 @@ Before implementing any feature, consult these guides:
 | [Booking & Scheduling](./areas/booking/) | 📋 Planned | 4 | 24 | [View](./areas/booking/) |
 | [Treatment Management](./areas/treatment-management/) | 📋 Planned | TBD | TBD | [View](./areas/treatment-management/) |
 | [Imaging Management](./areas/imaging-management/) | 📋 Planned | 4 | 24 | [View](./areas/imaging-management/) |
-| [Lab Work Management](./areas/lab-work-management/) | 📋 Planned | 5 | 20 | [View](./areas/lab-work-management/) |
+| [Lab Work Management](./areas/lab-work-management/) | 📋 Planned | 4 | 24 | [View](./areas/lab-work-management/) |
 | [Practice Orchestration](./areas/practice-orchestration/) | 📋 Planned | TBD | TBD | [View](./areas/practice-orchestration/) |
 | [Staff Management](./areas/staff-management/) | 📋 Planned | TBD | TBD | [View](./areas/staff-management/) |
 | [Resources Management](./areas/resources-management/) | 📋 Planned | TBD | TBD | [View](./areas/resources-management/) |
@@ -226,15 +226,54 @@ Before implementing any feature, consult these guides:
 ---
 
 ### 4. Lab Work Management
-*External lab coordination and order tracking*
+*Manage orthodontic lab orders, vendor relationships, order tracking, and quality control for appliances, retainers, aligners, and other lab-fabricated items*
+
+**Documentation**: [Full Area Documentation](./areas/lab-work-management/)
 
 **Sub-Areas:**
-- 4.1 Lab Orders - `📋 Planned`
-- 4.2 Vendor Management - `📋 Planned`
-- 4.3 Order Tracking - `📋 Planned`
-- 4.4 Quality Control - `📋 Planned`
+- 3.4.1 [Lab Orders](./areas/lab-work-management/sub-areas/lab-orders/) - `📋 Planned`
+  - Lab Order Creation, Case Prescription Builder, Digital File Attachment
+  - Order Templates, Rush Order Management, Batch Order Submission
+- 3.4.2 [Lab Vendor Management](./areas/lab-work-management/sub-areas/lab-vendor-management/) - `📋 Planned`
+  - Lab Directory Management, Pricing & Fee Schedules, Contract Management
+  - Lab Preference Rules, Performance Metrics, Communication Hub
+- 3.4.3 [Order Tracking](./areas/lab-work-management/sub-areas/order-tracking/) - `📋 Planned`
+  - Order Status Dashboard, Shipment Tracking, Due Date Management
+  - Delivery Coordination, Patient Pickup Tracking, Reorder Reminders
+- 3.4.4 [Quality & Remakes](./areas/lab-work-management/sub-areas/quality-remakes/) - `📋 Planned`
+  - Receiving Inspection, Remake Request Management, Warranty Tracking
+  - Quality Issue Logging, Lab Feedback System, Quality Analytics
 
-**Key Functions:** TBD after sub-area planning
+**Key Functions (24 total):**
+| Sub-Area | Functions |
+|----------|-----------|
+| Lab Orders | 6 functions |
+| Lab Vendor Management | 6 functions |
+| Order Tracking | 6 functions |
+| Quality & Remakes | 6 functions |
+
+**Orthodontic Lab Products:**
+- Retainers (Hawley, Essix, bonded, Vivera)
+- Appliances (RPE, Herbst, quad helix, space maintainers)
+- Aligners (Invisalign, in-house, third-party)
+- Indirect bonding trays
+- Custom archwires
+- Study models and surgical splints
+
+**External Integrations:**
+- iTero (cloud API for scans)
+- 3Shape (file import)
+- Invisalign Doctor Site (case submission)
+- Lab Portals (order submission, status)
+- Shipping Carriers (FedEx, UPS tracking)
+- In-House 3D Printers
+
+**AI Features:**
+- Auto-order generation from treatment milestones
+- Vendor recommendation based on product/quality/turnaround
+- Due date prediction from historical data
+- Quality prediction for at-risk orders
+- Smart reorder reminders for retainer programs
 
 ---
 
@@ -534,9 +573,10 @@ Before implementing any feature, consult these guides:
 | 2024-11-26 | Added detailed CRM & Onboarding area documentation (4 sub-areas, 24 functions) | Claude |
 | 2024-11-26 | Added detailed Financial Management area documentation (4 sub-areas, 24 functions) | Claude |
 | 2024-11-26 | Added detailed Imaging Management area documentation (4 sub-areas, 24 functions) | Claude |
+| 2024-11-27 | Rewrote Lab Work Management for orthodontic dental labs (4 sub-areas, 24 functions) | Claude |
 
 ---
 
 **Status**: Active
-**Last Updated**: 2024-11-26
+**Last Updated**: 2024-11-27
 **Owner**: Development Team
