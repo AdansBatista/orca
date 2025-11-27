@@ -1,5 +1,7 @@
 # Orca
 
+> **O**rthodontic **R**ecords & **C**linical **A**dministration
+
 **Modern Practice Management System for Orthodontics Clinics**
 
 Orca is a comprehensive, web-based practice management system designed to handle all facets of orthodontics practicesfrom patient care and treatment management to administrative operations and financial oversight. Built for small to medium-sized orthodontics clinics, Orca empowers orthodontist-owners with modern tools to efficiently manage both the clinical and business aspects of their practice.
@@ -9,6 +11,7 @@ Orca is a comprehensive, web-based practice management system designed to handle
 ## Overview
 
 Orca solves the challenge of managing complex orthodontic practices by providing an integrated platform that handles:
+
 - **Clinical Operations**: Patient lifecycle, treatment management, and imaging
 - **Administrative Tasks**: Staff management, resource allocation, and vendor relationships
 - **Financial Management**: Billing, insurance parties, and comprehensive financial oversight
@@ -27,35 +30,46 @@ Orca solves the challenge of managing complex orthodontic practices by providing
 ## Core Features
 
 ### 1. **CRM & Patient Onboarding**
+
 Streamlined new patient intake and relationship management to ensure smooth onboarding experiences.
 
 ### 2. **Booking & Scheduling**
+
 Intelligent appointment scheduling system to optimize clinic resources and patient flow.
 
 ### 3. **Patient Treatment Cycle Management**
+
 Complete lifecycle tracking from initial consultation through treatment completion and retention.
 
 ### 4. **Staff Management**
+
 Team coordination, scheduling, roles, and performance tracking.
 
 ### 5. **Resources Management**
+
 Equipment, rooms, and material inventory management.
 
 ### 6. **Vendors Management**
+
 Supplier relationships, ordering, and vendor performance tracking.
 
 ### 7. **Patient Imaging Management**
+
 Secure storage and management of x-rays, photos, scans, and other diagnostic imaging.
 
 ### 8. **Financial Management**
+
 Comprehensive financial oversight including budgeting, reporting, and analytics.
 
 ### 9. **Billing & Insurance Parties Management**
+
 Patient billing, insurance claims processing, and multi-party payment coordination.
 
 ### AI Support
+
 Artificial intelligence capabilities integrated throughout all features to provide:
-- Strucutured data analisys and extraction. E.g. Faxes and letters from Insurance and reconciliation with patient info.
+
+- Structured data analysis and extraction. E.g. Faxes and letters from Insurance and reconciliation with patient info.
 - Automated data entry and validation
 - Predictive analytics
 
@@ -115,6 +129,7 @@ The project is in its initial development phase. Core infrastructure and foundat
 ## Security & Compliance
 
 Given the sensitive nature of patient health information, Orca is built with security as a foundational requirement:
+
 - On-premises data storage
 - Whitelist-based access control
 - Minimal to non internet exposure
