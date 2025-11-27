@@ -95,7 +95,7 @@ Before implementing any feature, consult these guides:
 
 | Area | Status | Sub-Areas | Functions | Documentation |
 |------|--------|-----------|-----------|---------------|
-| [Booking & Scheduling](./areas/booking/) | 📋 Planned | TBD | TBD | [View](./areas/booking/) |
+| [Booking & Scheduling](./areas/booking/) | 📋 Planned | 4 | 24 | [View](./areas/booking/) |
 | [Treatment Management](./areas/treatment-management/) | 📋 Planned | TBD | TBD | [View](./areas/treatment-management/) |
 | [Imaging Management](./areas/imaging-management/) | 📋 Planned | TBD | TBD | [View](./areas/imaging-management/) |
 | [Lab Work Management](./areas/lab-work-management/) | 📋 Planned | TBD | TBD | [View](./areas/lab-work-management/) |
@@ -116,13 +116,42 @@ Before implementing any feature, consult these guides:
 ### 1. Booking & Scheduling
 *Core appointment management and calendar operations*
 
-**Sub-Areas:**
-- 1.1 Calendar Management - `📋 Planned`
-- 1.2 Appointment Management - `📋 Planned`
-- 1.3 Waitlist Management - `📋 Planned`
-- 1.4 Appointment Reminders - `📋 Planned`
+**Documentation**: [Full Area Documentation](./areas/booking/)
 
-**Key Functions:** TBD after sub-area planning
+**Sub-Areas:**
+- 2.1.1 [Calendar Management](./areas/booking/sub-areas/calendar-management/) - `📋 Planned`
+  - Multi-Provider Calendar, Schedule Template Builder, Template Application
+  - Calendar Views (Day/Week/Month), Resource Calendar, Template Analytics
+- 2.1.2 [Appointment Management](./areas/booking/sub-areas/appointment-management/) - `📋 Planned`
+  - Appointment Booking, Appointment Type Configuration, Recurring Appointments
+  - Appointment Status Management, Resource Scheduling, Scheduling Intelligence
+- 2.1.3 [Waitlist & Recovery](./areas/booking/sub-areas/waitlist-recovery/) - `📋 Planned`
+  - Waitlist Management, Opening Notifications, Failed Appointment Recovery
+  - Cancellation Tracking, At-Risk Patient Identification, Re-engagement Campaigns
+- 2.1.4 [Emergency & Reminders](./areas/booking/sub-areas/emergency-reminders/) - `📋 Planned`
+  - Emergency Appointments, On-Call Management, Appointment Reminders
+  - Confirmation System, After-Hours Handling, Emergency Protocols
+
+**Key Functions (24 total):**
+| Sub-Area | Functions |
+|----------|-----------|
+| Calendar Management | 6 functions |
+| Appointment Management | 6 functions |
+| Waitlist & Recovery | 6 functions |
+| Emergency & Reminders | 6 functions |
+
+**External Integrations:**
+- Twilio (SMS reminders and confirmations)
+- SendGrid/SES (Email reminders)
+- Google Calendar / Apple Calendar (Patient calendar sync)
+- Answering Service (After-hours handling)
+
+**AI Features:**
+- Template optimization suggestions based on usage patterns
+- Smart slot recommendations for scheduling
+- No-show prediction and prevention
+- Waitlist prioritization
+- Reminder timing optimization
 
 ---
 
@@ -351,6 +380,7 @@ Before implementing any feature, consult these guides:
 |------|--------|--------|
 | 2024-11-26 | Initial creation | Claude |
 | 2024-11-26 | Added detailed Billing & Insurance area documentation (4 sub-areas, 31 functions) | Claude |
+| 2024-11-26 | Added detailed Booking & Scheduling area documentation (4 sub-areas, 24 functions) | Claude |
 
 ---
 
