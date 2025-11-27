@@ -106,7 +106,7 @@ Before implementing any feature, consult these guides:
 | [Patient Communications](./areas/patient-communications/) | 📋 Planned | TBD | TBD | [View](./areas/patient-communications/) |
 | [Financial Management](./areas/financial-management/) | 📋 Planned | TBD | TBD | [View](./areas/financial-management/) |
 | [Billing & Insurance](./areas/billing-insurance/) | 📋 Planned | 4 | 31 | [View](./areas/billing-insurance/) |
-| [Compliance & Documentation](./areas/compliance-documentation/) | 📋 Planned | TBD | TBD | [View](./areas/compliance-documentation/) |
+| [Compliance & Documentation](./areas/compliance-documentation/) | 📋 Planned | 4 | 24 | [View](./areas/compliance-documentation/) |
 | [Vendors Management](./areas/vendors-management/) | 📋 Planned | TBD | TBD | [View](./areas/vendors-management/) |
 
 ---
@@ -314,15 +314,51 @@ Before implementing any feature, consult these guides:
 ---
 
 ### 12. Compliance & Documentation
-*Regulatory compliance and safety*
+*Regulatory compliance, consent management, and audit trails*
+
+**Documentation**: [Full Area Documentation](./areas/compliance-documentation/)
 
 **Sub-Areas:**
-- 12.1 Consent Forms - `📋 Planned`
-- 12.2 Clinical Protocols - `📋 Planned`
-- 12.3 Staff Training - `📋 Planned`
-- 12.4 Audit Management - `📋 Planned`
+- 12.1 [Consent Forms](./areas/compliance-documentation/sub-areas/consent-forms/) - `📋 Planned`
+  - Consent Form Builder, Digital Signature Capture, Form Version Management
+  - Consent Expiration Tracking, Minor/Guardian Consent, Consent Analytics
+- 12.2 [Clinical Protocols](./areas/compliance-documentation/sub-areas/clinical-protocols/) - `📋 Planned`
+  - Protocol Library Management, Daily Operational Checklists, Sterilization Logs
+  - Equipment Safety Monitoring, Radiation Safety Compliance, Emergency Preparedness
+- 12.3 [Staff Training](./areas/compliance-documentation/sub-areas/staff-training/) - `📋 Planned`
+  - Certification Management, Training Program Administration, Expiration Alerts
+  - Continuing Education Tracking, Onboarding Checklists, Training Compliance Reporting
+- 12.4 [Audit Management](./areas/compliance-documentation/sub-areas/audit-management/) - `📋 Planned`
+  - System Audit Trail, Compliance Self-Audit Tools, Incident Reporting System
+  - Document Retention Management, Regulatory Reporting, Audit Preparation Workflows
 
-**Key Functions:** TBD after sub-area planning
+**Key Functions (24 total):**
+| Sub-Area | Functions |
+|----------|-----------|
+| Consent Forms | 6 functions |
+| Clinical Protocols | 6 functions |
+| Staff Training | 6 functions |
+| Audit Management | 6 functions |
+
+**Regulatory Coverage:**
+- HIPAA (Privacy Rule, Security Rule, Breach Notification)
+- PIPEDA (Canadian privacy compliance)
+- OSHA (Bloodborne pathogens, Hazard communication)
+- State Dental Board requirements
+- CDC Infection Control guidelines
+
+**External Integrations:**
+- E-Signature Provider (DocuSign/HelloSign)
+- Document Storage (secure cloud storage)
+- LMS Integration (CE tracking)
+- License Verification APIs
+
+**AI Features:**
+- Consent completeness verification
+- Expiration prediction and alerts
+- Compliance risk scoring
+- Anomaly detection in audit logs
+- Training recommendations based on role
 
 ---
 
@@ -381,6 +417,7 @@ Before implementing any feature, consult these guides:
 | 2024-11-26 | Initial creation | Claude |
 | 2024-11-26 | Added detailed Billing & Insurance area documentation (4 sub-areas, 31 functions) | Claude |
 | 2024-11-26 | Added detailed Booking & Scheduling area documentation (4 sub-areas, 24 functions) | Claude |
+| 2024-11-26 | Added detailed Compliance & Documentation area documentation (4 sub-areas, 24 functions) | Claude |
 
 ---
 
