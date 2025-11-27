@@ -1,0 +1,11 @@
+{
+  "eventType": "provider.status.update.v1",
+  "eventId": "evt-po-0003",
+  "occurredAt": "2025-11-27T09:09:00Z",
+  "payload": {
+    "providerId": "prov-45",
+    "status": "in_session",
+    "locationId": "room-3",
+    "currentAppointmentId": "appt-456"
+  }
+}

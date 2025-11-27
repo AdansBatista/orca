@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orca.example/schemas/patient-checkin.schema.json",
+  "title": "Patient Check-in Event Data",
+  "type": "object",
+  "required": ["patientId", "appointmentId", "checkinAt"],
+  "properties": {
+    "patientId": { "type": "string", "description": "Patient identifier" },
+    "appointmentId": { "type": "string", "description": "Associated appointment id" },
+    "locationId": { "type": "string", "description": "Clinic/location id" },
+    "checkinAt": { "type": "string", "format": "date-time", "description": "Timestamp of check-in" },
+    "method": { "type": "string", "enum": ["kiosk", "self", "desk", "phone"], "description": "Check-in method" },
+    "screeningAnswers": { "type": "object", "additionalProperties": true, "description": "Optional screening or intake answers" },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orca.example/schemas/orchestration-alert.schema.json",
+  "title": "Orchestration Alert Event Data",
+  "type": "object",
+  "required": ["alertId", "level", "message", "emittedAt"],
+  "properties": {
+    "alertId": { "type": "string" },
+    "level": { "type": "string", "enum": ["info", "warning", "critical"] },
+    "category": { "type": "string" },
+    "message": { "type": "string" },
+    "relatedAppointments": { "type": "array", "items": { "type": "string" } },
+    "meta": { "type": "object", "additionalProperties": true },
+    "emittedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

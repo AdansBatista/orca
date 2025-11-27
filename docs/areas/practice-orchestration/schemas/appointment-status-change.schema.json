@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orca.example/schemas/appointment-status-change.schema.json",
+  "title": "Appointment Status Change Event Data",
+  "type": "object",
+  "required": ["appointmentId", "previousStatus", "newStatus", "updatedAt"],
+  "properties": {
+    "appointmentId": { "type": "string" },
+    "previousStatus": { "type": "string", "description": "e.g. scheduled, checked-in, in-room, completed, cancelled" },
+    "newStatus": { "type": "string" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "actorId": { "type": "string", "description": "User or system actor who changed status" },
+    "actorRole": { "type": "string" },
+    "reason": { "type": "string" },
+    "metadata": { "type": "object", "additionalProperties": true }
+  },
+  "additionalProperties": false
+}

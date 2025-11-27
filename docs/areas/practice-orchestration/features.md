@@ -1,5 +1,7 @@
 # Practice Orchestration - Features
 
+This page summarizes key product features and links to detailed function-level specs.
+
 ## Feature List
 
 ### 1. Daily Operations Dashboard
@@ -138,28 +140,19 @@ Manage unexpected events and schedule disruptions.
 
 ## Integration Map
 
-```
-Practice Orchestration integrates with:
+Practice Orchestration integrates with the following systems:
 
-┌─────────────────────────────────────────────────┐
-│         Practice Orchestration Module            │
-│                                                  │
-│  ┌────────────────────────────────────────────┐ │
-│  │     Daily Operations Dashboard             │ │
-│  └────────────────────────────────────────────┘ │
-└───┬────────┬────────┬────────┬────────┬────────┘
-    │        │        │        │        │
-    ▼        ▼        ▼        ▼        ▼
-┌────────┐ ┌────┐ ┌──────┐ ┌──────┐ ┌──────────┐
-│Booking │ │Staff│ │Resour│ │Treat │ │Financial │
-│Schedul-│ │Mgmt │ │ces   │ │ment  │ │Mgmt      │
-│ing     │ │     │ │Mgmt  │ │Mgmt  │ │          │
-└────────┘ └────┘ └──────┘ └──────┘ └──────────┘
+- Booking / Scheduling
+- Staff Management
+- Resources Management
+- Treatment Management
+- Financial Management
 
 Data Flow:
-→ Reads: Appointments, Staff schedules, Resources, Procedures, Costs
-← Writes: Status updates, Resource assignments, Time tracking
-```
+- Reads: Appointments, Staff schedules, Resources, Procedures, Costs
+- Writes: Status updates, Resource assignments, Time tracking
+
+Contracts: See `./integrations.md` and the `./schemas/` directory for canonical event contracts and examples.
 
 ## User Roles & Access
 
@@ -216,4 +209,4 @@ Data Flow:
 
 ---
 
-**Note**: Click on individual feature links for detailed specifications.
+**Note**: Click on individual feature links for detailed specifications. See the functions index at `./functions-index.md` for a single list of all function-level specs.

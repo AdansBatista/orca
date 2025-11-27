@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orca.example/schemas/orchestration.event-envelope.schema.json",
+  "title": "Orchestration Event Envelope",
+  "type": "object",
+  "required": ["eventId", "eventType", "eventVersion", "occurredAt", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Globally unique event identifier"
+    },
+    "eventType": {
+      "type": "string",
+      "description": "Logical event name (e.g. orchestration.patient-checked-in)"
+    },
+    "eventVersion": {
+      "type": "string",
+      "description": "Semantic version or schema version for the event payload"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when the event occurred"
+    },
+    "producer": {
+      "type": "string",
+      "description": "Logical producer service (e.g. booking-service)"
+    },
+    "tenantId": {
+      "type": "string",
+      "description": "Tenant/clinic identifier for multi-tenant deployments"
+    },
+    "correlationId": {
+      "type": "string",
+      "description": "Optional correlation id for tracing across requests"
+    },
+    "data": {
+      "type": "object",
+      "description": "Event-specific payload; validate against event-specific schema",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

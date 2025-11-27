@@ -1,0 +1,15 @@
+{
+  "eventType": "appointment.status.changed.v1",
+  "eventId": "evt-po-0002",
+  "eventVersion": "1",
+  "occurredAt": "2025-11-27T09:10:00Z",
+  "payload": {
+    "appointmentId": "appt-456",
+    "previousStatus": "scheduled",
+    "newStatus": "in_progress",
+    "changedBy": "user-32",
+    "reason": "patient arrived",
+    "startedAt": "2025-11-27T09:10:00Z",
+    "durationEstimatedMinutes": 30
+  }
+}

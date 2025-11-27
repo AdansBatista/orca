@@ -1,0 +1,13 @@
+{
+  "eventType": "patient.checkin.v1",
+  "eventId": "evt-po-0001",
+  "eventVersion": "1",
+  "occurredAt": "2025-11-27T09:05:00Z",
+  "payload": {
+    "patientId": "patient-123",
+    "appointmentId": "appt-456",
+    "checkedInBy": "user-32",
+    "checkinMethod": "front-desk",
+    "metadata": { "arrivalNotes": "running 5 minutes late" }
+  }
+}

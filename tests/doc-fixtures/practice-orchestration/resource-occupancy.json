@@ -1,0 +1,12 @@
+{
+  "eventType": "resource.occupancy.update.v1",
+  "eventId": "evt-po-0004",
+  "occurredAt": "2025-11-27T09:08:30Z",
+  "payload": {
+    "resourceId": "room-3",
+    "resourceType": "chair",
+    "occupancyStatus": "occupied",
+    "currentAppointmentId": "appt-456",
+    "expectedFreeAt": "2025-11-27T09:40:00Z"
+  }
+}

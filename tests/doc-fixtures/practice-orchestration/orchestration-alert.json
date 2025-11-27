@@ -1,0 +1,13 @@
+{
+  "eventType": "orchestration.alert.v1",
+  "eventId": "evt-po-0005",
+  "occurredAt": "2025-11-27T09:15:00Z",
+  "payload": {
+    "alertId": "alert-9001",
+    "severity": "warning",
+    "message": "Appointment running over time - cascading delay expected",
+    "relatedAppointmentId": "appt-456",
+    "relatedResourceId": "room-3",
+    "actions": [{ "type": "reschedule", "params": { "suggestedSlots": ["2025-11-27T10:30:00Z"] } }]
+  }
+}

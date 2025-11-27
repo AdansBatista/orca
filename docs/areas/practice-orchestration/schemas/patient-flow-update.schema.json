@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orca.example/schemas/patient-flow-update.schema.json",
+  "title": "Patient Flow Update Event Data",
+  "type": "object",
+  "required": ["patientId", "appointmentId", "stage", "stageEnteredAt"],
+  "properties": {
+    "patientId": { "type": "string" },
+    "appointmentId": { "type": "string" },
+    "stage": { "type": "string", "description": "waiting|called|in_chair|xray|finished" },
+    "stageEnteredAt": { "type": "string", "format": "date-time" },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": false
+}
