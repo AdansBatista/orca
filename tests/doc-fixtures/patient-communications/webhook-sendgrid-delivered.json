@@ -1,0 +1,8 @@
+[
+  {
+    "email": "alex@example.com",
+    "event": "delivered",
+    "sg_message_id": "<abc123==>",
+    "timestamp": 1735688100
+  }
+]

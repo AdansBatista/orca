@@ -1,0 +1,11 @@
+{
+  "request": {
+    "email": "alex@example.com",
+    "password": "[redacted]"
+  },
+  "response": {
+    "token": "eyJhbGci...",
+    "expiresIn": 3600,
+    "patientId": "patient-123"
+  }
+}

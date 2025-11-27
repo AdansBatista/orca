@@ -1,0 +1,11 @@
+{
+  "eventType": "lab.result.notification",
+  "patientId": "patient-123",
+  "resultId": "result-789",
+  "templateId": "tmpl-results-email",
+  "variables": {
+    "firstName": "Alex",
+    "test": { "name": "Complete Blood Count" },
+    "portal": { "link": "https://portal.example/p/results/result-789" }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "eventType": "appointment.reminder",
+  "patientId": "patient-123",
+  "appointmentId": "appt-456",
+  "templateId": "tmpl-appt-reminder",
+  "variables": {
+    "firstName": "Alex",
+    "appointment": { "date": "2025-12-01", "time": "09:30" },
+    "clinic": { "name": "Orca Clinic", "phone": "555-0100" }
+  }
+}

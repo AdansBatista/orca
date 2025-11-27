@@ -1,3 +1,34 @@
+# Patient Communications — Requirements
+
+This document lists functional, non-functional, and compliance requirements for the Patient Communications area (Phase 2, High Priority).
+
+Functional Requirements
+- FR-PC-001: Send appointment reminders via SMS, Email, and In-App channels.
+- FR-PC-002: Provide a Messaging Hub API to enqueue and route messages.
+- FR-PC-003: Patient portal for authentication, profile, appointment self-service, results access, and billing payments.
+- FR-PC-004: Campaign engine to create, schedule, and trigger multi-step workflows.
+- FR-PC-005: Template management with versioning and variable substitution.
+- FR-PC-006: Notification preferences per patient and channel (opt-in/opt-out, frequency).
+- FR-PC-007: Delivery receipts and persistent message history with audit logging.
+- FR-PC-008: Educational content library with personalization and scheduled delivery.
+
+Non-Functional Requirements
+- NFR-PC-001: Delivery SLA: 95th percentile under 2s for API enqueue operations.
+- NFR-PC-002: Message throughput: support up to 500 req/s in peak for large practices.
+- NFR-PC-003: Retry/backoff with at-least-once semantics and idempotency keys for dedup.
+- NFR-PC-004: Providers must be pluggable (Twilio, Nexmo, SendGrid, SES, SMTP).
+- NFR-PC-005: Data encryption at rest (AES-256) and in transit (TLS 1.2+).
+- NFR-PC-006: Audit and retention policies configurable per deployment.
+
+Compliance Requirements
+- COMP-PC-001: HIPAA compliance for PHI in messages and persistence.
+- COMP-PC-002: Consent tracking and per-channel opt-out processing.
+- COMP-PC-003: Logging and audit trail retention aligned to policy (configurable).
+- COMP-PC-004: Support for manual and automatic data purge workflows.
+
+Acceptance & Notes
+- Each critical channel (SMS/Email/In-App) must have tests and sample payloads in CI fixtures.
+- Provide clear integration hooks for Booking, Treatment, Billing, CRM, and Lab areas.
 # Patient Communications - Requirements
 
 ## Overview

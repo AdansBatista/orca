@@ -1,0 +1,316 @@
+openapi: 3.0.3
+info:
+  title: Orca Patient Communications - Patient Portal API
+  version: 1.0.0
+  description: |
+    Patient Portal public API: authentication, profile, appointments, results, and billing endpoints.
+servers:
+  - url: https://api.example/orca
+paths:
+  /api/v1/portal/login:
+    post:
+      summary: Patient login with email and password
+      operationId: portalLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /api/v1/portal/magic-link:
+    post:
+      summary: Request a magic login link
+      operationId: portalMagicLink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+      responses:
+        '202':
+          description: Link sent
+
+  /api/v1/portal/logout:
+    post:
+      summary: Logout and revoke session token
+      operationId: portalLogout
+      responses:
+        '204':
+          description: Logged out
+
+  /api/v1/portal/profile:
+    get:
+      summary: Get authenticated patient profile
+      operationId: getProfile
+      responses:
+        '200':
+          description: Patient profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientProfile'
+    patch:
+      summary: Update patient profile
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientProfileUpdate'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientProfile'
+
+  /api/v1/portal/appointments:
+    get:
+      summary: List patient appointments
+      operationId: listAppointments
+      responses:
+        '200':
+          description: Appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+    post:
+      summary: Book an appointment (portal)
+      operationId: bookAppointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentCreate'
+      responses:
+        '201':
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+
+  /api/v1/portal/appointments/{id}:
+    patch:
+      summary: Reschedule or cancel appointment
+      operationId: modifyAppointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [reschedule, cancel]
+                slotId:
+                  type: string
+      responses:
+        '200':
+          description: Appointment updated
+
+  /api/v1/portal/results:
+    get:
+      summary: List available results for patient
+      operationId: listResults
+      responses:
+        '200':
+          description: Result list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResultRecord'
+  /api/v1/portal/results/{id}:
+    get:
+      summary: Get result details and attachments
+      operationId: getResult
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Result details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultRecord'
+
+  /api/v1/portal/invoices:
+    get:
+      summary: List invoices for authenticated patient
+      operationId: listInvoices
+      responses:
+        '200':
+          description: Invoice list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+
+  /api/v1/portal/payments:
+    post:
+      summary: Create a payment intent / process a payment
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresIn:
+          type: integer
+        patientId:
+          type: string
+
+    PatientProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dob:
+          type: string
+          format: date
+        contact:
+          type: object
+          additionalProperties: true
+
+    PatientProfileUpdate:
+      type: object
+      properties:
+        contact:
+          type: object
+          additionalProperties: true
+        preferences:
+          type: object
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+        patientId:
+          type: string
+        providerId:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+
+    AppointmentCreate:
+      type: object
+      required: [slotId]
+      properties:
+        slotId:
+          type: string
+        appointmentType:
+          type: string
+
+    ResultRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        testName:
+          type: string
+        releasedAt:
+          type: string
+          format: date-time
+        attachments:
+          type: array
+          items:
+            type: object
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        status:
+          type: string
+        dueDate:
+          type: string
+          format: date
+
+    PaymentRequest:
+      type: object
+      required: [invoiceId, paymentMethodId]
+      properties:
+        invoiceId:
+          type: string
+        paymentMethodId:
+          type: string
+
+    PaymentResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+        status:
+          type: string

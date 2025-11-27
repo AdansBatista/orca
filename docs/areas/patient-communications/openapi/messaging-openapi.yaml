@@ -1,0 +1,239 @@
+openapi: 3.0.3
+info:
+  title: Orca Patient Communications - Messaging API
+  version: 1.0.0
+  description: |
+    Public API surface for messaging: SMS, Email, In-App, Templates, and History.
+servers:
+  - url: https://api.example/orca
+paths:
+  /api/v1/messaging/sms:
+    post:
+      summary: Enqueue an SMS message
+      operationId: enqueueSms
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnqueueResponse'
+
+  /api/v1/messaging/email:
+    post:
+      summary: Enqueue an Email message
+      operationId: enqueueEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnqueueResponse'
+
+  /api/v1/messaging/in-app:
+    post:
+      summary: Create an in-app notification
+      operationId: createInApp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InAppRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InAppResponse'
+
+  /api/v1/messaging/templates:
+    post:
+      summary: Create a template
+      operationId: createTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /api/v1/messaging/templates/{id}/preview:
+    get:
+      summary: Render a template preview with variables
+      operationId: previewTemplate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: variables
+          in: query
+          required: false
+          schema:
+            type: string
+            description: JSON-encoded variables object
+      responses:
+        '200':
+          description: Rendered preview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rendered:
+                    type: string
+
+  /api/v1/messaging/history:
+    get:
+      summary: Query message history
+      operationId: getMessageHistory
+      parameters:
+        - name: patientId
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageHistoryItem'
+
+components:
+  schemas:
+    EnqueueResponse:
+      type: object
+      properties:
+        messageId:
+          type: string
+        status:
+          type: string
+          example: queued
+
+    SmsRequest:
+      type: object
+      required: [patientId, templateId]
+      properties:
+        patientId:
+          type: string
+        templateId:
+          type: string
+        variables:
+          type: object
+          additionalProperties: true
+        idempotencyKey:
+          type: string
+          description: Client-generated idempotency key
+
+    EmailRequest:
+      type: object
+      required: [patientId, templateId]
+      properties:
+        patientId:
+          type: string
+        templateId:
+          type: string
+        variables:
+          type: object
+          additionalProperties: true
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              url:
+                type: string
+
+    InAppRequest:
+      type: object
+      required: [userId, title, body]
+      properties:
+        userId:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        link:
+          type: string
+
+    InAppResponse:
+      type: object
+      properties:
+        notificationId:
+          type: string
+
+    TemplateCreate:
+      type: object
+      required: [channel, name, content]
+      properties:
+        channel:
+          type: string
+          enum: [sms, email, in-app]
+        name:
+          type: string
+        content:
+          type: string
+        variablesSchema:
+          type: object
+          additionalProperties: true
+
+    Template:
+      allOf:
+        - $ref: '#/components/schemas/TemplateCreate'
+        - type: object
+          properties:
+            id:
+              type: string
+            version:
+              type: integer
+
+    MessageHistoryItem:
+      type: object
+      properties:
+        messageId:
+          type: string
+        patientId:
+          type: string
+        channel:
+          type: string
+        status:
+          type: string
+        content:
+          type: string
+        sentAt:
+          type: string
+          format: date-time

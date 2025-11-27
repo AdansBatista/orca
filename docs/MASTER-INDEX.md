@@ -103,7 +103,7 @@ Before implementing any feature, consult these guides:
 | [Staff Management](./areas/staff-management/) | 📋 Planned | TBD | TBD | [View](./areas/staff-management/) |
 | [Resources Management](./areas/resources-management/) | 📋 Planned | TBD | TBD | [View](./areas/resources-management/) |
 | [CRM & Onboarding](./areas/crm-onboarding/) | 📋 Planned | 4 | 24 | [View](./areas/crm-onboarding/) |
-| [Patient Communications](./areas/patient-communications/) | 📋 Planned | TBD | TBD | [View](./areas/patient-communications/) |
+| [Patient Communications](./areas/patient-communications/) | 📋 Planned | 4 | 20 | [View](./areas/patient-communications/) |
 | [Financial Management](./areas/financial-management/) | 📋 Planned | 4 | 24 | [View](./areas/financial-management/) |
 | [Billing & Insurance](./areas/billing-insurance/) | 📋 Planned | 4 | 31 | [View](./areas/billing-insurance/) |
 | [Compliance & Documentation](./areas/compliance-documentation/) | 📋 Planned | 4 | 24 | [View](./areas/compliance-documentation/) |

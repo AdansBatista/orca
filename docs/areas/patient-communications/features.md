@@ -1,3 +1,16 @@
+# Patient Communications — Features
+
+Summary
+This file outlines the major features of the Patient Communications area at Booking-level detail.
+
+- Messaging Hub: unified API to send SMS, Email, and In-App messages with routing, templates, and provider adapters.
+- Patient Portal: secure patient authentication, profile management, appointment booking, results access, and billing payments.
+- Automated Campaigns: campaign builder, triggers, schedules, A/B testing, and analytics.
+- Educational Content Library: curated patient resources, personalization, scheduling, and delivery.
+- Notification Preferences: per-patient channel preferences and frequency controls.
+- Template Management: versioned templates with variable schemas and preview.
+- Delivery & Logging: message history, delivery receipts, failure handling, and retry policies.
+- Analytics & AI: send-time optimization, personalization, and sentiment analysis on feedback.
 # Patient Communications - Features
 
 ## Feature List

@@ -1,0 +1,11 @@
+{
+  "campaign": {
+    "id": "camp-001",
+    "name": "Post-visit Follow Up",
+    "steps": [
+      { "delayMinutes": 1440, "templateId": "tmpl-followup-1", "channel": "sms" },
+      { "delayMinutes": 10080, "templateId": "tmpl-followup-2", "channel": "email" }
+    ],
+    "audienceQuery": { "recentAppointmentDays": 1 }
+  }
+}

@@ -382,6 +382,25 @@ These areas only have basic `features.md` and `requirements.md` files:
 
 ---
 
+### Patient Communications — Audit Entry (2025-11-27)
+
+**Path**: `docs\\areas\\patient-communications/README.md`
+
+**Summary Findings**:
+
+- Area README and supporting docs (`requirements.md`, `features.md`, `integrations.md`, `data-models.md`) have been created and expanded to a Booking-level detail.
+- Sub-areas created: Messaging Hub, Patient Portal, Automated Campaigns, Educational Content Library.
+- ~20 function-level specs and CI fixtures (SMS, Email, Campaigns, Portal login) were added to accelerate engineering handoff.
+
+**Recommendations**:
+
+1. Review and assign SME ownership for each sub-area (e.g., clinical for results delivery, compliance for PHI handling).
+2. Add OpenAPI specs for public endpoints to reduce ambiguity during implementation.
+3. Run integration tests with provider sandbox accounts (Twilio, SendGrid) and include webhook replay fixtures.
+
+**Status**: Yellow — Documentation added and actionable, pending SME review and API specs.
+
+
 ### Vendors Management (Supporting)
 
 **Current State**: Only features.md and requirements.md exist

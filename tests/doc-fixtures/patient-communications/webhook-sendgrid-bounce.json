@@ -1,0 +1,9 @@
+[
+  {
+    "email": "alex@example.com",
+    "event": "bounce",
+    "reason": "blocked",
+    "sg_message_id": "<def456==>",
+    "timestamp": 1735688200
+  }
+]
