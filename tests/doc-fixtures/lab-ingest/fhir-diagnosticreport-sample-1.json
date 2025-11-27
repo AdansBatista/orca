@@ -1,0 +1,9 @@
+{
+  "resourceType": "DiagnosticReport",
+  "id": "report-1",
+  "status": "final",
+  "subject": { "reference": "Patient/pat_123" },
+  "issued": "2025-11-27T14:00:00Z",
+  "result": [ { "reference": "Observation/obs-1" } ],
+  "presentedForm": [ { "contentType": "application/pdf", "url": "https://fixtures.example/reports/report-1.pdf" } ]
+}

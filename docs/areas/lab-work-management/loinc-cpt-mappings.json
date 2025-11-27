@@ -1,0 +1,809 @@
+{
+  "version": "1.0",
+  "description": "Canonical LOINC/CPT mappings for common laboratory tests. Used by ingestion pipeline for result normalization and billing.",
+  "lastUpdated": "2025-11-27",
+  "mappings": [
+    {
+      "internalTestCode": "CBC",
+      "displayName": "Complete Blood Count",
+      "loincCode": "57021-8",
+      "cptCode": "85025",
+      "specimenType": "Blood (whole)",
+      "unit": "cells/uL, g/dL",
+      "alternateNames": ["CBC w/ diff", "Complete Blood Count with Differential"]
+    },
+    {
+      "internalTestCode": "BMP",
+      "displayName": "Basic Metabolic Panel",
+      "loincCode": "24323-8",
+      "cptCode": "80048",
+      "specimenType": "Blood (serum/plasma)",
+      "unit": "mmol/L, mg/dL",
+      "alternateNames": ["BMP"]
+    },
+    {
+      "internalTestCode": "CMP",
+      "displayName": "Comprehensive Metabolic Panel",
+      "loincCode": "24320-7",
+      "cptCode": "80053",
+      "specimenType": "Blood (serum/plasma)",
+      "unit": "mmol/L, mg/dL",
+      "alternateNames": ["Chem 20", "Metabolic Panel"]
+    },
+    {
+      "internalTestCode": "LIPID",
+      "displayName": "Lipid Panel",
+      "loincCode": "2093-3",
+      "cptCode": "80061",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Lipid Profile", "Cholesterol Panel"]
+    },
+    {
+      "internalTestCode": "TSH",
+      "displayName": "Thyroid Stimulating Hormone",
+      "loincCode": "3016-3",
+      "cptCode": "84443",
+      "specimenType": "Blood (serum)",
+      "unit": "uIU/mL",
+      "alternateNames": ["TSH"]
+    },
+    {
+      "internalTestCode": "HBA1C",
+      "displayName": "Hemoglobin A1c",
+      "loincCode": "4548-4",
+      "cptCode": "83036",
+      "specimenType": "Blood (whole)",
+      "unit": "%",
+      "alternateNames": ["Glycated Hemoglobin", "HbA1c"]
+    },
+    {
+      "internalTestCode": "URINALYSIS",
+      "displayName": "Urinalysis (complete)",
+      "loincCode": "58060-1",
+      "cptCode": "81003",
+      "specimenType": "Urine",
+      "unit": "various",
+      "alternateNames": ["UA", "Urinalysis"]
+    },
+    {
+      "internalTestCode": "CULTURE_BLOOD",
+      "displayName": "Blood Culture",
+      "loincCode": "600-7",
+      "cptCode": "87040",
+      "specimenType": "Blood (culture bottles)",
+      "unit": "qualitative",
+      "alternateNames": ["BC", "Blood Culture"]
+    },
+    {
+      "internalTestCode": "GLUCOSE",
+      "displayName": "Glucose, Fasting",
+      "loincCode": "2345-7",
+      "cptCode": "82947",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Fasting Glucose", "Fasting Blood Sugar"]
+    },
+    {
+      "internalTestCode": "CREATININE",
+      "displayName": "Creatinine, Serum",
+      "loincCode": "2160-0",
+      "cptCode": "82565",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Serum Creatinine", "SCr"]
+    },
+    {
+      "internalTestCode": "BUN",
+      "displayName": "Urea Nitrogen, Blood",
+      "loincCode": "3094-0",
+      "cptCode": "84520",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Blood Urea Nitrogen", "BUN"]
+    },
+    {
+      "internalTestCode": "SODIUM",
+      "displayName": "Sodium, Serum",
+      "loincCode": "2951-2",
+      "cptCode": "84295",
+      "specimenType": "Blood (serum)",
+      "unit": "mmol/L",
+      "alternateNames": ["Na", "Serum Sodium"]
+    },
+    {
+      "internalTestCode": "POTASSIUM",
+      "displayName": "Potassium, Serum",
+      "loincCode": "2823-3",
+      "cptCode": "84132",
+      "specimenType": "Blood (serum)",
+      "unit": "mmol/L",
+      "alternateNames": ["K", "Serum Potassium"]
+    },
+    {
+      "internalTestCode": "CHLORIDE",
+      "displayName": "Chloride, Serum",
+      "loincCode": "2075-0",
+      "cptCode": "82106",
+      "specimenType": "Blood (serum)",
+      "unit": "mmol/L",
+      "alternateNames": ["Cl", "Serum Chloride"]
+    },
+    {
+      "internalTestCode": "CO2",
+      "displayName": "Carbon Dioxide, Total",
+      "loincCode": "2028-9",
+      "cptCode": "82374",
+      "specimenType": "Blood (serum)",
+      "unit": "mmol/L",
+      "alternateNames": ["Total CO2", "TCO2"]
+    },
+    {
+      "internalTestCode": "CALCIUM",
+      "displayName": "Calcium, Total, Serum",
+      "loincCode": "2000-8",
+      "cptCode": "82310",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Total Calcium", "Serum Ca"]
+    },
+    {
+      "internalTestCode": "MAGNESIUM",
+      "displayName": "Magnesium, Serum",
+      "loincCode": "2635-2",
+      "cptCode": "83735",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Mg", "Serum Magnesium"]
+    },
+    {
+      "internalTestCode": "PHOSPHORUS",
+      "displayName": "Phosphate, Serum",
+      "loincCode": "2777-7",
+      "cptCode": "84100",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Phosphorus", "PO4"]
+    },
+    {
+      "internalTestCode": "ALBUMIN",
+      "displayName": "Albumin, Serum",
+      "loincCode": "1863-0",
+      "cptCode": "82040",
+      "specimenType": "Blood (serum)",
+      "unit": "g/dL",
+      "alternateNames": ["Serum Albumin"]
+    },
+    {
+      "internalTestCode": "PROTEIN_TOTAL",
+      "displayName": "Protein, Total, Serum",
+      "loincCode": "2885-2",
+      "cptCode": "84155",
+      "specimenType": "Blood (serum)",
+      "unit": "g/dL",
+      "alternateNames": ["Total Protein", "TP"]
+    },
+    {
+      "internalTestCode": "ALT",
+      "displayName": "Alanine Aminotransferase (ALT)",
+      "loincCode": "1742-6",
+      "cptCode": "84460",
+      "specimenType": "Blood (serum)",
+      "unit": "U/L",
+      "alternateNames": ["SGPT", "ALT"]
+    },
+    {
+      "internalTestCode": "AST",
+      "displayName": "Aspartate Aminotransferase (AST)",
+      "loincCode": "1920-8",
+      "cptCode": "84450",
+      "specimenType": "Blood (serum)",
+      "unit": "U/L",
+      "alternateNames": ["SGOT", "AST"]
+    },
+    {
+      "internalTestCode": "ALP",
+      "displayName": "Alkaline Phosphatase",
+      "loincCode": "1743-4",
+      "cptCode": "84075",
+      "specimenType": "Blood (serum)",
+      "unit": "U/L",
+      "alternateNames": ["Alk Phos", "ALP"]
+    },
+    {
+      "internalTestCode": "BILIRUBIN_TOTAL",
+      "displayName": "Bilirubin, Total",
+      "loincCode": "1975-2",
+      "cptCode": "82247",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Total Bilirubin", "TBIL"]
+    },
+    {
+      "internalTestCode": "BILIRUBIN_DIRECT",
+      "displayName": "Bilirubin, Direct",
+      "loincCode": "1968-7",
+      "cptCode": "82248",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Direct Bilirubin", "DBIL"]
+    },
+    {
+      "internalTestCode": "WBC",
+      "displayName": "Leukocyte (WBC) Count",
+      "loincCode": "6690-2",
+      "cptCode": "85007",
+      "specimenType": "Blood (whole)",
+      "unit": "K/uL",
+      "alternateNames": ["White Blood Cell Count", "WBC"]
+    },
+    {
+      "internalTestCode": "RBC",
+      "displayName": "Erythrocyte (RBC) Count",
+      "loincCode": "789-8",
+      "cptCode": "85032",
+      "specimenType": "Blood (whole)",
+      "unit": "M/uL",
+      "alternateNames": ["Red Blood Cell Count", "RBC"]
+    },
+    {
+      "internalTestCode": "HEMOGLOBIN",
+      "displayName": "Hemoglobin",
+      "loincCode": "718-7",
+      "cptCode": "83026",
+      "specimenType": "Blood (whole)",
+      "unit": "g/dL",
+      "alternateNames": ["Hgb", "Hb"]
+    },
+    {
+      "internalTestCode": "HEMATOCRIT",
+      "displayName": "Hematocrit",
+      "loincCode": "4544-0",
+      "cptCode": "85014",
+      "specimenType": "Blood (whole)",
+      "unit": "%",
+      "alternateNames": ["Hct"]
+    },
+    {
+      "internalTestCode": "PLATELETS",
+      "displayName": "Platelets [Plural] in Blood",
+      "loincCode": "777-3",
+      "cptCode": "85049",
+      "specimenType": "Blood (whole)",
+      "unit": "K/uL",
+      "alternateNames": ["Platelet Count", "PLT"]
+    },
+    {
+      "internalTestCode": "PT",
+      "displayName": "Prothrombin Time (PT)",
+      "loincCode": "5902-2",
+      "cptCode": "85610",
+      "specimenType": "Blood (citrate)",
+      "unit": "sec",
+      "alternateNames": ["PT", "Pro Time"]
+    },
+    {
+      "internalTestCode": "PTT",
+      "displayName": "Activated Partial Thromboplastin Time",
+      "loincCode": "1977-3",
+      "cptCode": "85730",
+      "specimenType": "Blood (citrate)",
+      "unit": "sec",
+      "alternateNames": ["aPTT", "PTT"]
+    },
+    {
+      "internalTestCode": "INR",
+      "displayName": "International Normalized Ratio",
+      "loincCode": "34714-6",
+      "cptCode": "85611",
+      "specimenType": "Blood (citrate)",
+      "unit": "ratio",
+      "alternateNames": ["INR"]
+    },
+    {
+      "internalTestCode": "TROPONIN_I",
+      "displayName": "Troponin I, Cardiac",
+      "loincCode": "10839-9",
+      "cptCode": "84484",
+      "specimenType": "Blood (serum)",
+      "unit": "ng/mL",
+      "alternateNames": ["cTnI", "Cardiac Troponin I"]
+    },
+    {
+      "internalTestCode": "BNP",
+      "displayName": "Natriuretic Peptide B (BNP)",
+      "loincCode": "33891-5",
+      "cptCode": "83880",
+      "specimenType": "Blood (plasma, EDTA)",
+      "unit": "pg/mL",
+      "alternateNames": ["B-type Natriuretic Peptide", "BNP"]
+    },
+    {
+      "internalTestCode": "LACTATE",
+      "displayName": "Lactate [Moles/Volume] in Blood",
+      "loincCode": "2519-7",
+      "cptCode": "83605",
+      "specimenType": "Blood (arterial or venous)",
+      "unit": "mmol/L",
+      "alternateNames": ["Blood Lactate"]
+    },
+    {
+      "internalTestCode": "CK_TOTAL",
+      "displayName": "Creatine Kinase (CK) Total",
+      "loincCode": "2157-6",
+      "cptCode": "82550",
+      "specimenType": "Blood (serum)",
+      "unit": "U/L",
+      "alternateNames": ["Total CK", "CPK"]
+    },
+    {
+      "internalTestCode": "CK_MB",
+      "displayName": "Creatine Kinase (CK-MB)",
+      "loincCode": "2157-6",
+      "cptCode": "82552",
+      "specimenType": "Blood (serum)",
+      "unit": "U/L, ng/mL",
+      "alternateNames": ["CK-MB", "CK-Heart"]
+    },
+    {
+      "internalTestCode": "LD",
+      "displayName": "Lactate Dehydrogenase (LD)",
+      "loincCode": "2532-9",
+      "cptCode": "83615",
+      "specimenType": "Blood (serum)",
+      "unit": "U/L",
+      "alternateNames": ["LDH", "Lactic Dehydrogenase"]
+    },
+    {
+      "internalTestCode": "IRON",
+      "displayName": "Iron, Serum",
+      "loincCode": "2498-4",
+      "cptCode": "83540",
+      "specimenType": "Blood (serum)",
+      "unit": "ug/dL",
+      "alternateNames": ["Serum Iron"]
+    },
+    {
+      "internalTestCode": "FERRITIN",
+      "displayName": "Ferritin [Mass/Volume] in Serum",
+      "loincCode": "2276-4",
+      "cptCode": "82728",
+      "specimenType": "Blood (serum)",
+      "unit": "ng/mL",
+      "alternateNames": ["Serum Ferritin"]
+    },
+    {
+      "internalTestCode": "TIBC",
+      "displayName": "Iron Binding Capacity, Total",
+      "loincCode": "2500-7",
+      "cptCode": "83550",
+      "specimenType": "Blood (serum)",
+      "unit": "ug/dL",
+      "alternateNames": ["Total Iron Binding Capacity", "TIBC"]
+    },
+    {
+      "internalTestCode": "URIC_ACID",
+      "displayName": "Uric Acid, Serum",
+      "loincCode": "3084-1",
+      "cptCode": "84560",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Serum Uric Acid"]
+    },
+    {
+      "internalTestCode": "CHOLESTEROL",
+      "displayName": "Cholesterol [Mass/Volume] in Serum",
+      "loincCode": "2093-3",
+      "cptCode": "80053",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Total Cholesterol", "Chol"]
+    },
+    {
+      "internalTestCode": "LDL",
+      "displayName": "Cholesterol, LDL",
+      "loincCode": "2089-1",
+      "cptCode": "83721",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Low-Density Lipoprotein", "LDL"]
+    },
+    {
+      "internalTestCode": "HDL",
+      "displayName": "Cholesterol, HDL",
+      "loincCode": "2085-9",
+      "cptCode": "83718",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["High-Density Lipoprotein", "HDL"]
+    },
+    {
+      "internalTestCode": "TRIGLYCERIDES",
+      "displayName": "Triglyceride [Mass/Volume] in Serum",
+      "loincCode": "2571-8",
+      "cptCode": "84478",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Serum Triglycerides", "Trig"]
+    },
+    {
+      "internalTestCode": "VLDL",
+      "displayName": "Cholesterol, VLDL",
+      "loincCode": "2100-6",
+      "cptCode": "83722",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Very-Low-Density Lipoprotein", "VLDL"]
+    },
+    {
+      "internalTestCode": "RHEUMATOID_FACTOR",
+      "displayName": "Rheumatoid Factor (RF)",
+      "loincCode": "3719-3",
+      "cptCode": "86431",
+      "specimenType": "Blood (serum)",
+      "unit": "IU/mL",
+      "alternateNames": ["RF", "RA Factor"]
+    },
+    {
+      "internalTestCode": "CRP",
+      "displayName": "C-Reactive Protein (CRP)",
+      "loincCode": "1988-5",
+      "cptCode": "86140",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/L",
+      "alternateNames": ["hs-CRP", "High-sensitivity CRP"]
+    },
+    {
+      "internalTestCode": "ESR",
+      "displayName": "Erythrocyte Sedimentation Rate (ESR)",
+      "loincCode": "4537-7",
+      "cptCode": "85652",
+      "specimenType": "Blood (whole with EDTA)",
+      "unit": "mm/hr",
+      "alternateNames": ["Sed Rate", "ESR"]
+    },
+    {
+      "internalTestCode": "ANA",
+      "displayName": "Antinuclear Antibody (ANA)",
+      "loincCode": "5295-9",
+      "cptCode": "86038",
+      "specimenType": "Blood (serum)",
+      "unit": "qualitative/titer",
+      "alternateNames": ["Antinuclear Antibodies"]
+    },
+    {
+      "internalTestCode": "THYROID_PANEL",
+      "displayName": "Thyroid Panel (TSH, Free T3, Free T4)",
+      "loincCode": "6677-3",
+      "cptCode": "84443",
+      "specimenType": "Blood (serum)",
+      "unit": "various",
+      "alternateNames": ["Thyroid Function Tests"]
+    },
+    {
+      "internalTestCode": "FREE_T4",
+      "displayName": "Free T4",
+      "loincCode": "3024-7",
+      "cptCode": "84439",
+      "specimenType": "Blood (serum)",
+      "unit": "ng/dL",
+      "alternateNames": ["Free Thyroxine"]
+    },
+    {
+      "internalTestCode": "FREE_T3",
+      "displayName": "Free T3",
+      "loincCode": "3635-3",
+      "cptCode": "84481",
+      "specimenType": "Blood (serum)",
+      "unit": "pg/mL",
+      "alternateNames": ["Free Triiodothyronine"]
+    },
+    {
+      "internalTestCode": "TOTAL_T4",
+      "displayName": "Thyroxine (T4) Total",
+      "loincCode": "3026-2",
+      "cptCode": "84436",
+      "specimenType": "Blood (serum)",
+      "unit": "ug/dL",
+      "alternateNames": ["Total T4"]
+    },
+    {
+      "internalTestCode": "PSA",
+      "displayName": "Prostate Specific Antigen (PSA)",
+      "loincCode": "2857-1",
+      "cptCode": "84153",
+      "specimenType": "Blood (serum)",
+      "unit": "ng/mL",
+      "alternateNames": ["PSA"]
+    },
+    {
+      "internalTestCode": "TESTOSTERONE",
+      "displayName": "Testosterone [Mass/Volume] in Serum",
+      "loincCode": "2986-9",
+      "cptCode": "84403",
+      "specimenType": "Blood (serum)",
+      "unit": "ng/dL",
+      "alternateNames": ["Total Testosterone"]
+    },
+    {
+      "internalTestCode": "ESTRADIOL",
+      "displayName": "Estradiol [Mass/Volume] in Serum",
+      "loincCode": "2243-4",
+      "cptCode": "82670",
+      "specimenType": "Blood (serum)",
+      "unit": "pg/mL",
+      "alternateNames": ["E2", "Estradiol"]
+    },
+    {
+      "internalTestCode": "PROGESTERONE",
+      "displayName": "Progesterone [Mass/Volume] in Serum",
+      "loincCode": "2839-9",
+      "cptCode": "84144",
+      "specimenType": "Blood (serum)",
+      "unit": "ng/mL",
+      "alternateNames": ["Prog", "Progesterone"]
+    },
+    {
+      "internalTestCode": "CORTISOL",
+      "displayName": "Cortisol [Mass/Volume] in Serum",
+      "loincCode": "2151-1",
+      "cptCode": "82533",
+      "specimenType": "Blood (serum)",
+      "unit": "ug/dL",
+      "alternateNames": ["Serum Cortisol"]
+    },
+    {
+      "internalTestCode": "INSULIN",
+      "displayName": "Insulin [Mass/Volume] in Serum",
+      "loincCode": "2881-1",
+      "cptCode": "83525",
+      "specimenType": "Blood (serum)",
+      "unit": "uIU/mL",
+      "alternateNames": ["Serum Insulin"]
+    },
+    {
+      "internalTestCode": "GLUCOSE_TOLERANCE",
+      "displayName": "Glucose, Oral Tolerance Test",
+      "loincCode": "2345-7",
+      "cptCode": "82951",
+      "specimenType": "Blood (serum) at intervals",
+      "unit": "mg/dL",
+      "alternateNames": ["OGTT", "Oral Glucose Tolerance Test"]
+    },
+    {
+      "internalTestCode": "HIV",
+      "displayName": "Human Immunodeficiency Virus (HIV) Screening",
+      "loincCode": "5221-8",
+      "cptCode": "86703",
+      "specimenType": "Blood (serum) or oral fluid",
+      "unit": "qualitative",
+      "alternateNames": ["HIV Antibody", "HIV Screening"]
+    },
+    {
+      "internalTestCode": "HEPATITIS_B_SURFACE_AG",
+      "displayName": "Hepatitis B Surface Antigen",
+      "loincCode": "5195-4",
+      "cptCode": "87340",
+      "specimenType": "Blood (serum)",
+      "unit": "qualitative",
+      "alternateNames": ["HBsAg", "Hep B Surface Ag"]
+    },
+    {
+      "internalTestCode": "HEPATITIS_C_ANTIBODY",
+      "displayName": "Hepatitis C Antibody",
+      "loincCode": "13458-2",
+      "cptCode": "86803",
+      "specimenType": "Blood (serum)",
+      "unit": "qualitative",
+      "alternateNames": ["HCV Ab", "Hep C Antibody"]
+    },
+    {
+      "internalTestCode": "SYPHILIS_RPR",
+      "displayName": "Syphilis Screening (RPR)",
+      "loincCode": "5290-0",
+      "cptCode": "86592",
+      "specimenType": "Blood (serum)",
+      "unit": "qualitative/titer",
+      "alternateNames": ["RPR", "Rapid Plasma Reagin"]
+    },
+    {
+      "internalTestCode": "STREP_THROAT",
+      "displayName": "Streptococcus pyogenes (Group A Strep) Antigen",
+      "loincCode": "13955-0",
+      "cptCode": "87880",
+      "specimenType": "Throat swab",
+      "unit": "qualitative",
+      "alternateNames": ["Group A Strep", "GAS"]
+    },
+    {
+      "internalTestCode": "FLU",
+      "displayName": "Influenza A and B Antigen or Antibody",
+      "loincCode": "21299-7",
+      "cptCode": "87804",
+      "specimenType": "Nasopharyngeal swab",
+      "unit": "qualitative",
+      "alternateNames": ["Flu Test", "Influenza"]
+    },
+    {
+      "internalTestCode": "COVID_19",
+      "displayName": "SARS-CoV-2 RNA (COVID-19) PCR",
+      "loincCode": "94531-1",
+      "cptCode": "87635",
+      "specimenType": "Nasopharyngeal swab or sputum",
+      "unit": "qualitative",
+      "alternateNames": ["COVID PCR", "SARS-CoV-2"]
+    },
+    {
+      "internalTestCode": "MONONUCLEOSIS",
+      "displayName": "Heterophile (Monospot) / Epstein-Barr Antibody",
+      "loincCode": "5224-2",
+      "cptCode": "86308",
+      "specimenType": "Blood (serum)",
+      "unit": "qualitative",
+      "alternateNames": ["Monospot", "EBV Antibody"]
+    },
+    {
+      "internalTestCode": "AMMONIA",
+      "displayName": "Ammonia [Mass/Volume] in Plasma",
+      "loincCode": "1819-0",
+      "cptCode": "82140",
+      "specimenType": "Blood (plasma with EDTA, iced)",
+      "unit": "ug/dL",
+      "alternateNames": ["NH3", "Serum Ammonia"]
+    },
+    {
+      "internalTestCode": "GLUCOSE_CSF",
+      "displayName": "Glucose [Mass/Volume] in Cerebrospinal Fluid",
+      "loincCode": "2345-7",
+      "cptCode": "82945",
+      "specimenType": "Cerebrospinal fluid (CSF)",
+      "unit": "mg/dL",
+      "alternateNames": ["CSF Glucose"]
+    },
+    {
+      "internalTestCode": "PROTEIN_CSF",
+      "displayName": "Protein, Total [Mass/Volume] in Cerebrospinal Fluid",
+      "loincCode": "2885-2",
+      "cptCode": "84157",
+      "specimenType": "Cerebrospinal fluid (CSF)",
+      "unit": "mg/dL",
+      "alternateNames": ["CSF Protein"]
+    },
+    {
+      "internalTestCode": "CULTURE_URINE",
+      "displayName": "Urine Culture",
+      "loincCode": "625-4",
+      "cptCode": "87086",
+      "specimenType": "Urine (clean-catch midstream)",
+      "unit": "qualitative/quantitative",
+      "alternateNames": ["UC", "Urine Culture"]
+    },
+    {
+      "internalTestCode": "PREGNANCY_HCG",
+      "displayName": "Human Chorionic Gonadotropin (hCG) Beta",
+      "loincCode": "2000-8",
+      "cptCode": "84702",
+      "specimenType": "Blood (serum) or urine",
+      "unit": "mIU/mL",
+      "alternateNames": ["Beta hCG", "Pregnancy Test"]
+    },
+    {
+      "internalTestCode": "D_DIMER",
+      "displayName": "D-Dimer (Fibrin Degradation Products)",
+      "loincCode": "3262-0",
+      "cptCode": "85379",
+      "specimenType": "Blood (citrate)",
+      "unit": "ng/mL, ug/mL",
+      "alternateNames": ["D-dimer"]
+    },
+    {
+      "internalTestCode": "FIBRINOGEN",
+      "displayName": "Fibrinogen [Mass/Volume] in Platelet Poor Plasma",
+      "loincCode": "2324-2",
+      "cptCode": "85384",
+      "specimenType": "Blood (citrate)",
+      "unit": "mg/dL",
+      "alternateNames": ["Fibrinogen"]
+    },
+    {
+      "internalTestCode": "VITAMIN_B12",
+      "displayName": "Cobalamin (Vitamin B12) [Mass/Volume] in Serum",
+      "loincCode": "2132-9",
+      "cptCode": "82607",
+      "specimenType": "Blood (serum)",
+      "unit": "pg/mL",
+      "alternateNames": ["B12", "Cyanocobalamin"]
+    },
+    {
+      "internalTestCode": "FOLATE",
+      "displayName": "Folate [Moles/Volume] in Serum",
+      "loincCode": "2284-8",
+      "cptCode": "82746",
+      "specimenType": "Blood (serum)",
+      "unit": "ng/mL",
+      "alternateNames": ["Serum Folate"]
+    },
+    {
+      "internalTestCode": "VITAMIN_D_25OH",
+      "displayName": "25-Hydroxyvitamin D [Moles/Volume]",
+      "loincCode": "14979-9",
+      "cptCode": "82652",
+      "specimenType": "Blood (serum)",
+      "unit": "ng/mL",
+      "alternateNames": ["Vitamin D, 25-OH", "25-OH Vitamin D"]
+    },
+    {
+      "internalTestCode": "PORPHYRINS",
+      "displayName": "Porphyrins, Urine 24-Hour",
+      "loincCode": "2756-8",
+      "cptCode": "84120",
+      "specimenType": "Urine (24-hour)",
+      "unit": "ug/24hr",
+      "alternateNames": ["Urine Porphyrins"]
+    },
+    {
+      "internalTestCode": "GLYCOGEN_STORAGE",
+      "displayName": "Enzyme Assay (various glycogen storage disorders)",
+      "loincCode": null,
+      "cptCode": "82657",
+      "specimenType": "Blood or tissue",
+      "unit": "U/L or activity",
+      "alternateNames": ["Enzyme Panel"]
+    },
+    {
+      "internalTestCode": "METHANOL",
+      "displayName": "Methanol [Mass/Volume] in Serum",
+      "loincCode": "2643-6",
+      "cptCode": "82665",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Serum Methanol"]
+    },
+    {
+      "internalTestCode": "ETHANOL",
+      "displayName": "Ethanol [Mass/Volume] in Blood",
+      "loincCode": "2571-8",
+      "cptCode": "80053",
+      "specimenType": "Blood (serum or whole)",
+      "unit": "mg/dL",
+      "alternateNames": ["Blood Alcohol"]
+    },
+    {
+      "internalTestCode": "LEAD",
+      "displayName": "Lead [Mass/Volume] in Blood",
+      "loincCode": "2626-1",
+      "cptCode": "83655",
+      "specimenType": "Blood (whole, lead-free tube)",
+      "unit": "ug/dL",
+      "alternateNames": ["Serum Lead"]
+    },
+    {
+      "internalTestCode": "ZINC",
+      "displayName": "Zinc [Mass/Volume] in Serum",
+      "loincCode": "2883-7",
+      "cptCode": "84630",
+      "specimenType": "Blood (serum)",
+      "unit": "ug/dL",
+      "alternateNames": ["Serum Zinc"]
+    },
+    {
+      "internalTestCode": "COPPER",
+      "displayName": "Copper [Mass/Volume] in Serum",
+      "loincCode": "2144-8",
+      "cptCode": "82525",
+      "specimenType": "Blood (serum)",
+      "unit": "ug/dL",
+      "alternateNames": ["Serum Copper"]
+    },
+    {
+      "internalTestCode": "CERULOPLASMIN",
+      "displayName": "Ceruloplasmin [Mass/Volume] in Serum",
+      "loincCode": "2069-3",
+      "cptCode": "82390",
+      "specimenType": "Blood (serum)",
+      "unit": "mg/dL",
+      "alternateNames": ["Serum Ceruloplasmin"]
+    }
+  ],
+  "notes": "This mapping is a living document. Add vendor-specific variations, regional preferences, and custom internal codes as needed. For missing LOINC codes, prefer CPT codes for billing and note the gap in documentation."
+}

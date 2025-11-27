@@ -1,3 +1,41 @@
+# Lab Work Management — Requirements
+
+## Overview
+
+This document captures the functional and non-functional requirements for the Lab Work Management area. It is a working list intended to guide implementation and testing.
+
+## Functional Requirements
+
+- FR-001: Create a lab order with one or more tests and patient/context metadata.
+- FR-002: Generate a unique specimen identifier and printable label (barcode/QR).
+- FR-003: Record specimen collection events with user, timestamp, location, and chain-of-custody entries.
+- FR-004: Ingest results from external labs via HL7 v2 and FHIR, including attachments (PDFs/images).
+- FR-005: Normalize results to `ResultObservation` records mapped to LOINC where available.
+- FR-006: Provide clinician review and sign-off with versioning and audit trail.
+- FR-007: Notify patient/portal when results are finalized according to clinic policy.
+- FR-008: Record billing charges associated with lab orders and integrate with billing system.
+- FR-009: Provide APIs for querying orders, specimens, and results with RBAC enforcement.
+
+## Non-Functional Requirements
+
+- NFR-001: PHI must be encrypted at rest and in transit.
+- NFR-002: Access logs must record every view of a lab result (user, timestamp, IP).
+- NFR-003: System should process and normalize 95% of ingestion messages without manual intervention.
+- NFR-004: Label generation and printing must support thermal label printers (ZPL) and PDF printing.
+- NFR-005: System should support large result attachments (up to 200MB) via object storage.
+
+## Compliance Requirements
+
+- HIPAA: Protected health information handling, access logging, retention policies.
+- LOINC/CPT: Map observations to standard codes where possible.
+- HL7/FHIR compatibility: Support HL7 v2 ORU and FHIR DiagnosticReport/Observation resources.
+- Chain-of-custody: Immutable logs for specimen handling and custody changes.
+
+## Acceptance Criteria
+
+- All core API endpoints present and documented.
+- Ingestion pipeline can accept HL7 v2 ORU messages and FHIR DiagnosticReport resources in sample tests.
+- End-to-end test for order→collection→result ingestion→signoff passes with audit logs.
 # Lab Work Management - Requirements
 
 ## Overview

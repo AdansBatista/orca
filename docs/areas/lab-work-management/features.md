@@ -1,3 +1,40 @@
+# Lab Work Management — Features
+
+## Feature Overview
+
+This document lists prominent features and capabilities for the Lab Work Management area.
+
+### Core Features
+
+- Order Management: create, edit, cancel, and route orders to external labs
+- Specimen Labeling: generate barcodes/QR and printable labels
+- Collection Workflow: mobile checklist-driven specimen collection
+- Result Ingestion: HL7 v2 and FHIR ingestion pipeline with attachments
+- Result Normalization: map observations to LOINC and standardized types
+- Clinician Review: review, comment, and sign-off on results with versioning
+- Notifications: configurable patient/provider notifications for results
+- Reporting & Analytics: turnaround times, volumes, abnormal rates
+
+### Operational Features
+
+- Retry and dead-letter for failed ingestion messages
+- Manual result reconciliation UI for ambiguous or multi-part reports
+- Export (PDF/CSV) of results and lab report bundles
+
+### AI Features
+
+- Result Triage / Flagging: score results for potential critical findings
+- Result Parsing: OCR and ML to extract observations from PDFs
+- Predictive Turnaround Estimation: TAT predictions per lab/test
+- Smart Sample Routing: recommend labs based on TAT, cost and capability
+
+---
+
+## Prioritization
+
+- MVP: Order creation, label generation, basic ingestion (HL7/FHIR), result view
+- M2: Clinician sign-off, notifications, basic analytics
+- M3: AI triage, advanced normalization, full QA/compliance automation
 # Lab Work Management - Features
 
 ## Feature List

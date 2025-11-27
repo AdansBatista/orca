@@ -98,7 +98,7 @@ Before implementing any feature, consult these guides:
 | [Booking & Scheduling](./areas/booking/) | 📋 Planned | 4 | 24 | [View](./areas/booking/) |
 | [Treatment Management](./areas/treatment-management/) | 📋 Planned | TBD | TBD | [View](./areas/treatment-management/) |
 | [Imaging Management](./areas/imaging-management/) | 📋 Planned | 4 | 24 | [View](./areas/imaging-management/) |
-| [Lab Work Management](./areas/lab-work-management/) | 📋 Planned | TBD | TBD | [View](./areas/lab-work-management/) |
+| [Lab Work Management](./areas/lab-work-management/) | 📋 Planned | 5 | 20 | [View](./areas/lab-work-management/) |
 | [Practice Orchestration](./areas/practice-orchestration/) | 📋 Planned | TBD | TBD | [View](./areas/practice-orchestration/) |
 | [Staff Management](./areas/staff-management/) | 📋 Planned | TBD | TBD | [View](./areas/staff-management/) |
 | [Resources Management](./areas/resources-management/) | 📋 Planned | TBD | TBD | [View](./areas/resources-management/) |

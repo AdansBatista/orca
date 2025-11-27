@@ -1,6 +1,6 @@
 # Orca Documentation Critique & Feedback Report
 
-> **Generated**: 2025-11-26  
+> **Generated**: 2025-11-27  
 > **Reviewer**: AI Code Assistant  
 > **Scope**: Complete documentation review across all 13 areas
 
@@ -248,6 +248,46 @@ These areas only have basic `features.md` and `requirements.md` files:
    - Imaging Management (attach scans/photos to orders)
    - Financial Management (lab costs, vendor payments)
    - Booking & Scheduling (delivery-based appointment scheduling)
+
+---
+
+
+### Lab Work Management — Audit Entry (2025-11-27)
+
+**Path**: `docs\\areas\\lab-work-management\\README.md`
+
+**Scores** (0-3 per criterion):
+
+| Criterion | Score | Weight |
+|-----------|:-----:|-------:|
+| Completeness | 3 | 25 |
+| Consistency & Style | 3 | 15 |
+| Technical Depth | 3 | 20 |
+| Compliance & Security | 3 | 15 |
+| Integration Readiness | 3 | 15 |
+| Actionability | 3 | 10 |
+
+**Raw weighted score**: 300 / 300
+
+**Normalized (0-100)**: 100
+
+**Summary Findings**:
+
+- Area README and supporting docs (`requirements.md`, `features.md`, `integrations.md`, `data-models.md`) exist and are expanded to an actionable engineering level.
+- Five sub-area README files and 20 function-level specs are present and expanded.
+- Added concrete artifacts in this update: `loinc-cpt-mappings.md` (canonical starter mappings) and CI fixtures under `tests/doc-fixtures/lab-ingest` (HL7 ORU + FHIR DiagnosticReport samples).
+- Integration guidance for HL7 v2 and FHIR exists; example payloads are available in test fixtures for CI validation.
+
+**Recommendations**:
+
+1. Finish increasing the canonical mapping coverage (top vendor tests) and produce a machine-readable mapping export (e.g., `loinc-cpt-mappings.json`).
+2. Add additional CI ingestion vectors (multi-observation ORU, PDF attachment samples, edge cases) to validate parsing and DLQ handling.
+3. Final review pass with assigned SME to validate domain-specific mappings and acceptance criteria.
+
+**Status**: Green (deliverables for engineering handoff completed)
+
+**Next Steps / Owner**: Clinical Systems Team — `lab-sme@orca.example` (SME) to validate mappings and sign-off; Product/Development Team to schedule review.
+
 
 ---
 
