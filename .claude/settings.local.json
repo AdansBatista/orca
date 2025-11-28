@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git add:*)",
       "Bash(mkdir:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: add function-level specs for Booking & Scheduling area (24 functions)\n\nAdded comprehensive function documentation for all 4 sub-areas:\n\nCalendar Management (6 functions):\n- multi-provider-calendar.md\n- schedule-template-builder.md\n- template-application.md\n- calendar-views.md\n- resource-calendar.md\n- template-analytics.md\n\nAppointment Management (6 functions):\n- appointment-booking.md\n- appointment-types.md\n- recurring-appointments.md\n- appointment-status.md\n- resource-scheduling.md\n- scheduling-intelligence.md\n\nWaitlist & Recovery (6 functions):\n- waitlist-management.md\n- opening-notifications.md\n- failed-appointment-recovery.md\n- cancellation-tracking.md\n- at-risk-patients.md\n- re-engagement-campaigns.md\n\nEmergency & Reminders (6 functions):\n- emergency-appointments.md\n- on-call-management.md\n- appointment-reminders.md\n- confirmation-system.md\n- after-hours-handling.md\n- emergency-protocols.md\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

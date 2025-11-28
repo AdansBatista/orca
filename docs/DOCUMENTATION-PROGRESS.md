@@ -2,7 +2,7 @@
 
 > **Purpose**: Track function-level documentation progress across LLM sessions
 >
-> **Last Updated**: 2024-11-28 (Practice Orchestration completed)
+> **Last Updated**: 2024-11-28 (CRM & Onboarding completed)
 >
 > **Current Task**: Complete function-level docs for all 14 areas
 
@@ -34,8 +34,8 @@
 | **2** | Booking & Scheduling | 24 | ✅ **DONE** | All 4 sub-areas complete |
 | **2** | Practice Orchestration | 20 | ✅ **DONE** | All 4 sub-areas complete |
 | **2** | Patient Communications | ~20 | ✅ DONE | Already had docs |
-| **3** | CRM & Onboarding | ~24 | 📋 TODO | **Next priority** |
-| **3** | Treatment Management | ~24 | 📋 TODO | Has stubs |
+| **3** | CRM & Onboarding | 24 | ✅ **DONE** | All 4 sub-areas complete |
+| **3** | Treatment Management | ~24 | 📋 TODO | **Next priority** |
 | **3** | Imaging Management | ~24 | 📋 TODO | Needs docs |
 | **3** | Lab Work Management | ~24 | 📋 TODO | Needs docs |
 | **4** | Billing & Insurance | ~31 | 📋 TODO | Has stubs |
@@ -116,16 +116,29 @@
 
 ---
 
-## Next Area: CRM & Onboarding
+### ✅ CRM & Onboarding (24 functions)
 
-**Path**: `docs/areas/crm-onboarding/`
+**Completed**: 2024-11-28
+
+| Sub-Area | Functions | Files Created |
+|----------|-----------|---------------|
+| Lead Management | 6 | lead-capture.md, lead-source-tracking.md, conversion-pipeline.md, coordinator-assignment.md, follow-up-management.md, lead-analytics.md |
+| Intake Forms | 6 | form-template-builder.md, patient-form-portal.md, medical-history.md, insurance-capture.md, consent-collection.md, completion-tracking.md |
+| Referral Tracking | 6 | provider-directory.md, referral-attribution.md, acknowledgment-letters.md, progress-reports.md, referral-analytics.md, specialist-network.md |
+| Records Requests | 6 | incoming-requests.md, outgoing-preparation.md, authorization-verification.md, transfer-tracking.md, fee-management.md, compliance-monitoring.md |
+
+---
+
+## Next Area: Treatment Management
+
+**Path**: `docs/areas/treatment-management/`
 
 **Sub-Areas to Document**:
 1. Review sub-area READMEs for function lists
 2. Create function docs following established pattern
 
 **Instructions**:
-1. Read `docs/areas/crm-onboarding/README.md`
+1. Read `docs/areas/treatment-management/README.md`
 2. Read each sub-area README
 3. Identify functions from each sub-area
 4. Create function docs in `sub-areas/{sub-area}/functions/`
@@ -261,11 +274,11 @@ documentation completion status.
 |------|----------------|--------|
 | AI-INTEGRATION.md | 1 file | After Phase 1 complete |
 | Phase 2 areas | 0 | ✅ Complete (Booking, Practice Orchestration) |
-| Phase 3 areas | ~96 | **Next** (CRM & Onboarding first) |
+| Phase 3 areas | ~72 | **Next** (Treatment Management first) |
 | Phase 4 areas | ~79 | After Phase 3 |
 | Phase 5 areas | ~20 | Last |
 
-**Total Remaining**: ~195 function docs + 1 guide enhancement
+**Total Remaining**: ~171 function docs + 1 guide enhancement
 
 ---
 
@@ -314,7 +327,13 @@ docs/
     │       ├── patient-flow/functions/*.md
     │       ├── resource-coordination/functions/*.md
     │       └── ai-manager/functions/*.md
-    ├── crm-onboarding/  ← 📋 NEXT
+    ├── crm-onboarding/  ← ✅ COMPLETE
+    │   └── sub-areas/
+    │       ├── lead-management/functions/*.md
+    │       ├── intake-forms/functions/*.md
+    │       ├── referral-tracking/functions/*.md
+    │       └── records-requests/functions/*.md
+    ├── treatment-management/  ← 📋 NEXT
     │   └── sub-areas/
     │       └── (to be documented)
     └── ... (other areas)
@@ -333,10 +352,10 @@ docs/
 ---
 
 **Last Session Summary** (2024-11-28):
-- Completed Practice Orchestration (20 functions, 4 sub-areas):
-  - Operations Dashboard: 6 functions (day-view-dashboard.md, week-view-dashboard.md, month-view-dashboard.md, timeline-view.md, board-view.md, floor-plan-view.md)
-  - Patient Flow: 6 functions (patient-check-in.md, queue-management.md, call-to-chair.md, patient-journey-tracking.md, wait-time-monitoring.md, check-out-processing.md)
-  - Resource Coordination: 4 functions (chair-room-assignment.md, equipment-status.md, staff-assignment.md, utilization-tracking.md)
-  - AI Manager: 4 functions (natural-language-queries.md, anomaly-detection.md, schedule-optimization.md, task-generation.md)
-- **Phase 1 & Phase 2 complete!** (Auth, Staff, Resources, Booking, Practice Orchestration - 115 total functions)
-- Next: Phase 3 - CRM & Onboarding
+- Completed CRM & Onboarding (24 functions, 4 sub-areas):
+  - Lead Management: 6 functions (lead-capture.md, lead-source-tracking.md, conversion-pipeline.md, coordinator-assignment.md, follow-up-management.md, lead-analytics.md)
+  - Intake Forms: 6 functions (form-template-builder.md, patient-form-portal.md, medical-history.md, insurance-capture.md, consent-collection.md, completion-tracking.md)
+  - Referral Tracking: 6 functions (provider-directory.md, referral-attribution.md, acknowledgment-letters.md, progress-reports.md, referral-analytics.md, specialist-network.md)
+  - Records Requests: 6 functions (incoming-requests.md, outgoing-preparation.md, authorization-verification.md, transfer-tracking.md, fee-management.md, compliance-monitoring.md)
+- **Phase 1, Phase 2, and first Phase 3 area complete!** (Auth, Staff, Resources, Booking, Practice Orchestration, CRM & Onboarding - 139 total functions)
+- Next: Phase 3 - Treatment Management
