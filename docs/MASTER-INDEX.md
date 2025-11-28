@@ -29,7 +29,8 @@
 | Quick patterns | [QUICK-REFERENCE.md](QUICK-REFERENCE.md) |
 | Coding standards | [guides/TECH-STACK.md](guides/TECH-STACK.md) |
 | UI standards | [guides/STYLING-GUIDE.md](guides/STYLING-GUIDE.md) |
-| Auth & permissions | [guides/AUTH-GUIDE.md](guides/AUTH-GUIDE.md) |
+| Auth architecture | [areas/auth/](areas/auth/) |
+| Auth code patterns | [guides/AUTH-PATTERNS.md](guides/AUTH-PATTERNS.md) |
 | Specific area | `areas/{area-name}/README.md` |
 
 ---
@@ -38,7 +39,7 @@
 
 | Metric | Count |
 |--------|-------|
-| **Total Areas** | 13 |
+| **Total Areas** | 14 |
 | **Implementation Phases** | 5 |
 | **Status** | Planning |
 
@@ -64,7 +65,7 @@ Before implementing any feature, consult these guides:
 |-------|---------|----------|
 | **Tech Stack** | Technology choices, coding patterns, conventions | [TECH-STACK.md](./guides/TECH-STACK.md) |
 | **Styling Guide** | Design system, UI components, accessibility | [STYLING-GUIDE.md](./guides/STYLING-GUIDE.md) |
-| **Auth Guide** | Authentication, authorization, permissions | [AUTH-GUIDE.md](./guides/AUTH-GUIDE.md) |
+| **Auth Patterns** | Auth code patterns (withAuth, PermissionGate) | [AUTH-PATTERNS.md](./guides/AUTH-PATTERNS.md) |
 | **AI Integration** | AI capabilities and implementation | [AI-INTEGRATION.md](./guides/AI-INTEGRATION.md) |
 
 ---
@@ -76,9 +77,9 @@ Before implementing any feature, consult these guides:
 
 | # | Area | Status | Priority | Dependencies |
 |---|------|--------|----------|--------------|
-| 1.1 | Auth & User Management | 📋 Planned | Critical | None |
-| 1.2 | Staff Management | 📋 Planned | Critical | Auth |
-| 1.3 | Resources Management | 📋 Planned | High | Auth, Staff |
+| 1.1 | [Auth & Authorization](./areas/auth/) | 📋 Planned | Critical | None |
+| 1.2 | [Staff Management](./areas/staff-management/) | 📋 Planned | Critical | Auth |
+| 1.3 | [Resources Management](./areas/resources-management/) | 📋 Planned | High | Auth, Staff |
 
 ### Phase 2: Core Operations
 *Core daily operations*
@@ -123,6 +124,7 @@ Before implementing any feature, consult these guides:
 
 | Area | Status | Sub-Areas | Functions | Documentation |
 |------|--------|-----------|-----------|---------------|
+| [Auth & Authorization](./areas/auth/) | 📋 Planned | 5 | 24 | [View](./areas/auth/) |
 | [Booking & Scheduling](./areas/booking/) | 📋 Planned | 4 | 24 | [View](./areas/booking/) |
 | [Treatment Management](./areas/treatment-management/) | 📋 Planned | TBD | TBD | [View](./areas/treatment-management/) |
 | [Imaging Management](./areas/imaging-management/) | 📋 Planned | 4 | 24 | [View](./areas/imaging-management/) |
@@ -140,6 +142,36 @@ Before implementing any feature, consult these guides:
 ---
 
 ## Detailed Area Breakdown
+
+### 0. Auth & Authorization
+*System-level authentication, authorization, and security infrastructure*
+
+**Documentation**: [Full Area Documentation](./areas/auth/)
+
+**Sub-Areas:**
+- 1 [Authentication](./areas/auth/sub-areas/authentication/) - `📋 Planned`
+  - User Login, Session Management, Password Policy, Token Handling, MFA (future)
+- 2 [Role System](./areas/auth/sub-areas/role-system/) - `📋 Planned`
+  - 7 User Roles, Role Hierarchy, Scope Definitions, Default Behaviors
+- 3 [Permissions](./areas/auth/sub-areas/permissions/) - `📋 Planned`
+  - Permission Codes, Permission Groups, Role-to-Permission Matrix
+- 4 [Data Isolation](./areas/auth/sub-areas/data-isolation/) - `📋 Planned`
+  - Multi-Clinic Security, clinicId Enforcement, Query Patterns
+- 5 [Audit & Compliance](./areas/auth/sub-areas/audit-compliance/) - `📋 Planned`
+  - Audit Logging, PHI Access Tracking, HIPAA/PIPEDA Compliance
+
+**Key Functions (24 total):**
+| Sub-Area | Functions |
+|----------|-----------|
+| Authentication | 6 functions |
+| Role System | 4 functions |
+| Permissions | 5 functions |
+| Data Isolation | 4 functions |
+| Audit & Compliance | 5 functions |
+
+**Code Patterns**: See [AUTH-PATTERNS.md](./guides/AUTH-PATTERNS.md) for withAuth wrapper, PermissionGate, usePermissions hook.
+
+---
 
 ### 1. Booking & Scheduling
 *Core appointment management and calendar operations*

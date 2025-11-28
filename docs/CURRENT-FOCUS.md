@@ -21,10 +21,10 @@
 These areas have no dependencies and can be started immediately:
 
 ### 1. Authentication & Authorization
-- **Documentation**: [docs/areas/auth/](areas/auth/) *(to be created)*
+- **Documentation**: [docs/areas/auth/](areas/auth/)
 - **Why First**: Foundation for all other areas - every feature needs auth
 - **Key Deliverables**: User login, session management, role-based permissions
-- **Guide**: [AUTH-GUIDE.md](guides/AUTH-GUIDE.md)
+- **Code Patterns**: [AUTH-PATTERNS.md](guides/AUTH-PATTERNS.md)
 
 ### 2. Staff Management
 - **Documentation**: [docs/areas/staff-management/](areas/staff-management/)
@@ -92,7 +92,7 @@ If asked to "implement the next feature" or "start development" without specific
 
 ```
 Is Auth implemented?
-├── No  → Start Auth (see AUTH-GUIDE.md)
+├── No  → Start Auth (see areas/auth/ and guides/AUTH-PATTERNS.md)
 └── Yes → Is Staff Management implemented?
           ├── No  → Start Staff Management
           └── Yes → Is Resources Management implemented?
@@ -134,4 +134,5 @@ When completing work:
 **Related Documentation**:
 - [MASTER-INDEX.md](MASTER-INDEX.md) - Full project overview
 - [CLAUDE.md](../CLAUDE.md) - LLM instructions
-- [AUTH-GUIDE.md](guides/AUTH-GUIDE.md) - Start here for Phase 1
+- [Auth Area](areas/auth/) - Full auth documentation
+- [AUTH-PATTERNS.md](guides/AUTH-PATTERNS.md) - Auth code patterns

@@ -283,7 +283,8 @@ const patients = await db.patient.findMany({
 |------|----------|
 | Full coding standards | [TECH-STACK.md](guides/TECH-STACK.md) |
 | UI components & styles | [STYLING-GUIDE.md](guides/STYLING-GUIDE.md) |
-| Auth & permissions | [AUTH-GUIDE.md](guides/AUTH-GUIDE.md) |
+| Auth architecture | [Auth Area](areas/auth/) |
+| Auth code patterns | [AUTH-PATTERNS.md](guides/AUTH-PATTERNS.md) |
 | AI features | [AI-INTEGRATION.md](guides/AI-INTEGRATION.md) |
 | Project status | [MASTER-INDEX.md](MASTER-INDEX.md) |
 | What to work on | [CURRENT-FOCUS.md](CURRENT-FOCUS.md) |
