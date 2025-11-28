@@ -14,11 +14,12 @@
 
 | Task Type | Read First | Then Check |
 |-----------|------------|------------|
-| **Implement Feature** | Area README → Sub-Area README | TECH-STACK.md, AUTH-GUIDE.md |
+| **Implement Feature** | Area README → Sub-Area README | TECH-STACK.md, AUTH-PATTERNS.md |
 | **Add UI Component** | STYLING-GUIDE.md | Area's UI Components section |
-| **Add API Endpoint** | AUTH-GUIDE.md Section 4 | TECH-STACK.md Section 3.3 |
-| **Database Changes** | TECH-STACK.md Section 3.4 | Area's Data Models section |
+| **Add API Endpoint** | AUTH-PATTERNS.md | TECH-STACK.md |
+| **Database Changes** | TECH-STACK.md | Area's Data Models section |
 | **Understand System** | MASTER-INDEX.md | Specific area README |
+| **Auth/Permissions** | [Auth Area](docs/areas/auth/) | AUTH-PATTERNS.md |
 
 ### If You're Stuck
 
@@ -26,7 +27,8 @@
 |---------|----------|
 | Don't know where to start | Read [docs/CURRENT-FOCUS.md](docs/CURRENT-FOCUS.md) |
 | Can't find patterns | Check [docs/QUICK-REFERENCE.md](docs/QUICK-REFERENCE.md) |
-| Confused about permissions | Read [docs/guides/AUTH-GUIDE.md](docs/guides/AUTH-GUIDE.md) |
+| Confused about permissions | Read [docs/areas/auth/](docs/areas/auth/) |
+| Need auth code patterns | Read [docs/guides/AUTH-PATTERNS.md](docs/guides/AUTH-PATTERNS.md) |
 | Need domain context | Check area README's orthodontic-specific sections |
 | Understanding documentation structure | Read [docs/DOCUMENTATION-STANDARDS.md](docs/DOCUMENTATION-STANDARDS.md) |
 
@@ -38,10 +40,10 @@ CLAUDE.md (You are here - entry point)
 docs/MASTER-INDEX.md (Project status & area index)
     ↓
 docs/guides/ (Technical standards - ALWAYS consult)
-├── TECH-STACK.md      → All code patterns
-├── STYLING-GUIDE.md   → All UI work
-├── AUTH-GUIDE.md      → Auth & permissions
-└── AI-INTEGRATION.md  → AI features
+├── TECH-STACK.md       → All code patterns
+├── STYLING-GUIDE.md    → All UI work
+├── AUTH-PATTERNS.md    → Auth code patterns
+└── AI-INTEGRATION.md   → AI features
     ↓
 docs/areas/{area}/README.md (Feature specifications)
     ↓
@@ -75,7 +77,8 @@ Before writing ANY code, review the relevant guide:
 |-------|-----------------|
 | [TECH-STACK.md](docs/guides/TECH-STACK.md) | All code - patterns, conventions, structure |
 | [STYLING-GUIDE.md](docs/guides/STYLING-GUIDE.md) | All UI - components, colors, spacing |
-| [AUTH-GUIDE.md](docs/guides/AUTH-GUIDE.md) | Auth, permissions, data access |
+| [Auth Area](docs/areas/auth/) | Auth architecture, roles, permissions |
+| [AUTH-PATTERNS.md](docs/guides/AUTH-PATTERNS.md) | Auth code patterns (withAuth, PermissionGate) |
 | [AI-INTEGRATION.md](docs/guides/AI-INTEGRATION.md) | AI features |
 
 ### 3. Check Existing Patterns
@@ -160,7 +163,7 @@ const patients = await db.patient.findMany({});
 ### 4. Follow the Guides
 - Code patterns: [TECH-STACK.md](docs/guides/TECH-STACK.md)
 - UI/UX standards: [STYLING-GUIDE.md](docs/guides/STYLING-GUIDE.md)
-- Auth patterns: [AUTH-GUIDE.md](docs/guides/AUTH-GUIDE.md)
+- Auth patterns: [AUTH-PATTERNS.md](docs/guides/AUTH-PATTERNS.md)
 
 ### 5. Update Documentation
 After completing features, update:
@@ -180,7 +183,7 @@ docs/
 ├── guides/                  # Technical foundation documents
 │   ├── TECH-STACK.md       # Technology & coding standards
 │   ├── STYLING-GUIDE.md    # Design system & UI patterns
-│   ├── AUTH-GUIDE.md       # Authentication & authorization
+│   ├── AUTH-PATTERNS.md    # Auth code patterns
 │   └── AI-INTEGRATION.md   # AI capabilities
 ├── templates/               # Document templates
 └── areas/                   # Feature documentation by area
@@ -206,7 +209,7 @@ docs/
 | `billing` | Financial operations |
 | `read_only` | View-only access |
 
-See [AUTH-GUIDE.md](docs/guides/AUTH-GUIDE.md) for full permission matrix.
+See [Auth Area](docs/areas/auth/) for full permission matrix.
 
 ---
 
