@@ -31,6 +31,7 @@
 | Need auth code patterns | Read [docs/guides/AUTH-PATTERNS.md](docs/guides/AUTH-PATTERNS.md) |
 | Need domain context | Check area README's orthodontic-specific sections |
 | Understanding documentation structure | Read [docs/DOCUMENTATION-STANDARDS.md](docs/DOCUMENTATION-STANDARDS.md) |
+| **Continue documentation work** | Read [docs/DOCUMENTATION-PROGRESS.md](docs/DOCUMENTATION-PROGRESS.md) |
 
 ### Documentation Pyramid
 
