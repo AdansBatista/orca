@@ -29,8 +29,8 @@
 | Phase | Area | Functions | Status | Notes |
 |-------|------|-----------|--------|-------|
 | **1** | Auth & Authorization | 24 | ✅ **DONE** | All 5 sub-areas complete |
-| **1** | Staff Management | ~20 | 📋 TODO | Next priority |
-| **1** | Resources Management | ~20 | 📋 TODO | After Staff |
+| **1** | Staff Management | 24 | ✅ **DONE** | All 4 sub-areas complete |
+| **1** | Resources Management | ~20 | 📋 TODO | **Next priority** |
 | **2** | Booking & Scheduling | ~24 | 📋 TODO | Has stubs |
 | **2** | Practice Orchestration | ~13 | 📋 TODO | Mostly complete |
 | **2** | Patient Communications | ~20 | ✅ DONE | Already had docs |
@@ -64,18 +64,31 @@
 
 ---
 
-## Next Area: Staff Management
+### ✅ Staff Management (24 functions)
 
-**Path**: `docs/areas/staff-management/`
+**Completed**: 2024-11-28
+
+| Sub-Area | Functions | Files Created |
+|----------|-----------|---------------|
+| Staff Profiles & HR | 6 | employee-profiles.md, employment-records.md, credential-management.md, certification-tracking.md, emergency-contacts.md, document-management.md |
+| Scheduling & Time Management | 6 | shift-scheduling.md, time-off-management.md, coverage-management.md, overtime-tracking.md, schedule-templates.md, availability-management.md |
+| Roles & Permissions | 6 | role-management.md, permission-assignment.md, custom-roles.md, multi-location-access.md, role-templates.md, access-audit.md |
+| Performance & Training | 6 | performance-metrics.md, goal-tracking.md, review-cycles.md, training-records.md, ce-credit-management.md, recognition-feedback.md |
+
+---
+
+## Next Area: Resources Management
+
+**Path**: `docs/areas/resources-management/`
 
 **Sub-Areas to Document**:
-1. `staff-profiles-hr/` - Staff profiles and HR data
-2. `scheduling-time-management/` - Staff schedules and time tracking
-3. `roles-permissions/` - Role assignment workflows
-4. `performance-training/` - Performance reviews and training
+1. `facility-management/` - Rooms, chairs, facility resources
+2. `equipment-inventory/` - Equipment tracking and maintenance
+3. `supplies-consumables/` - Supplies inventory and ordering
+4. `vendor-management/` - Vendor relationships and contracts
 
 **Instructions**:
-1. Read `docs/areas/staff-management/README.md`
+1. Read `docs/areas/resources-management/README.md`
 2. Read each sub-area README
 3. Identify functions from each sub-area
 4. Create function docs in `sub-areas/{sub-area}/functions/`
@@ -201,7 +214,7 @@ documentation completion status.
 4. Operational Patterns (confidence, fallbacks)
 5. Testing AI Features (mocks, evaluation)
 
-**When**: After Phase 1 areas complete (Auth, Staff, Resources)
+**When**: After Phase 1 areas complete (Auth ✅, Staff ✅, Resources)
 
 ---
 
@@ -209,15 +222,14 @@ documentation completion status.
 
 | Task | Est. Functions | Status |
 |------|----------------|--------|
-| Staff Management | ~20 | Next |
-| Resources Management | ~20 | After Staff |
+| Resources Management | ~20 | Next |
 | AI-INTEGRATION.md | 1 file | After Resources |
 | Phase 2 areas | ~57 | After Phase 1 |
 | Phase 3 areas | ~96 | After Phase 2 |
 | Phase 4 areas | ~79 | After Phase 3 |
 | Phase 5 areas | ~20 | Last |
 
-**Total Remaining**: ~290 function docs + 1 guide enhancement
+**Total Remaining**: ~270 function docs + 1 guide enhancement
 
 ---
 
@@ -242,13 +254,18 @@ docs/
     │       ├── permissions/functions/*.md
     │       ├── data-isolation/functions/*.md
     │       └── audit-compliance/functions/*.md
-    ├── staff-management/  ← 📋 NEXT
+    ├── staff-management/  ← ✅ COMPLETE
     │   └── sub-areas/
-    │       ├── staff-profiles-hr/functions/
-    │       ├── scheduling-time-management/functions/
-    │       ├── roles-permissions/functions/
-    │       └── performance-training/functions/
-    ├── resources-management/  ← 📋 TODO
+    │       ├── staff-profiles-hr/functions/*.md
+    │       ├── scheduling-time-management/functions/*.md
+    │       ├── roles-permissions/functions/*.md
+    │       └── performance-training/functions/*.md
+    ├── resources-management/  ← 📋 NEXT
+    │   └── sub-areas/
+    │       ├── facility-management/functions/
+    │       ├── equipment-inventory/functions/
+    │       ├── supplies-consumables/functions/
+    │       └── vendor-management/functions/
     └── ... (other areas)
 ```
 
@@ -258,7 +275,7 @@ docs/
 
 - Each function doc takes ~5-10 minutes to write
 - An area with 20 functions takes ~2-3 hours
-- Prioritize Phase 1 areas (Auth ✅, Staff, Resources)
+- Prioritize Phase 1 areas (Auth ✅, Staff ✅, Resources)
 - Update this file after completing each area
 - Commit after each area completion
 
@@ -267,4 +284,5 @@ docs/
 **Last Session Summary** (2024-11-28):
 - Created enhanced stub template
 - Completed Auth & Authorization (24 functions, 5 sub-areas)
-- Next: Staff Management
+- Completed Staff Management (24 functions, 4 sub-areas)
+- Next: Resources Management
