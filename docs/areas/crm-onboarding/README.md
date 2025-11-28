@@ -54,16 +54,16 @@ This area provides tools for treatment coordinators, front desk staff, and pract
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 8.1 | [Lead Management](./sub-areas/lead-management/) | Prospect tracking, pipeline management, conversion workflows | 📋 Planned | High |
-| 8.2 | [Intake Forms](./sub-areas/intake-forms/) | Digital forms, medical history, consent collection | 📋 Planned | Critical |
-| 8.3 | [Referral Tracking](./sub-areas/referral-tracking/) | Referral sources, dentist relationships, acknowledgments | 📋 Planned | High |
-| 8.4 | [Records Requests](./sub-areas/records-requests/) | Incoming/outgoing records, transfer management | 📋 Planned | Medium |
+| 1 | [Lead Management](./sub-areas/lead-management/) | Prospect tracking, pipeline management, conversion workflows | 📋 Planned | High |
+| 2 | [Intake Forms](./sub-areas/intake-forms/) | Digital forms, medical history, consent collection | 📋 Planned | Critical |
+| 3 | [Referral Tracking](./sub-areas/referral-tracking/) | Referral sources, dentist relationships, acknowledgments | 📋 Planned | High |
+| 4 | [Records Requests](./sub-areas/records-requests/) | Incoming/outgoing records, transfer management | 📋 Planned | Medium |
 
 ---
 
 ## Sub-Area Details
 
-### 8.1 Lead Management
+### 1. Lead Management
 
 Track and nurture prospects from initial contact through treatment acceptance.
 
@@ -84,7 +84,7 @@ Track and nurture prospects from initial contact through treatment acceptance.
 
 ---
 
-### 8.2 Intake Forms
+### 2. Intake Forms
 
 Digital patient intake replacing paper forms with smart data collection.
 
@@ -105,7 +105,7 @@ Digital patient intake replacing paper forms with smart data collection.
 
 ---
 
-### 8.3 Referral Tracking
+### 3. Referral Tracking
 
 Manage referral relationships and track patient sources.
 
@@ -126,7 +126,7 @@ Manage referral relationships and track patient sources.
 
 ---
 
-### 8.4 Records Requests
+### 4. Records Requests
 
 Handle incoming and outgoing patient records transfers.
 
@@ -349,9 +349,7 @@ Follow-up       Insurance Verified     Doctor Consult      Contract Signing
 
 ```
 docs/areas/crm-onboarding/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── lead-management/
     │   ├── README.md
@@ -398,8 +396,6 @@ docs/areas/crm-onboarding/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Booking & Scheduling](../booking/) - Consultation scheduling
 - [Patient Communications](../patient-communications/) - Lead nurture communications
 - [Billing & Insurance](../billing-insurance/) - Financial onboarding

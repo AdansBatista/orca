@@ -13,7 +13,20 @@
 | **Phase** | [Phase number from MASTER-INDEX] |
 | **Dependencies** | [List dependent areas] |
 | **Last Updated** | YYYY-MM-DD |
-| **Owner** | [Team member name] |
+
+---
+
+## Before Implementing This Area
+
+> **For LLMs**: Complete this checklist before writing any code for this area.
+
+- [ ] Verify dependencies are complete (see Quick Info → Dependencies)
+- [ ] Read [AUTH-GUIDE.md](../../guides/AUTH-GUIDE.md) for permission patterns
+- [ ] Read [TECH-STACK.md](../../guides/TECH-STACK.md) for coding standards
+- [ ] Check [QUICK-REFERENCE.md](../../QUICK-REFERENCE.md) for common patterns
+- [ ] Review **Data Models** section below for Prisma schema
+- [ ] Review **API Endpoints** section for route structure
+- [ ] Check **Business Rules** for validation requirements
 
 ---
 
@@ -31,15 +44,16 @@ What this area aims to achieve:
 
 | # | Sub-Area | Status | Functions | Priority |
 |---|----------|--------|-----------|----------|
-| 1.1 | [Sub-Area Name](./sub-areas/sub-area-name/) | 📋 Planned | X | High |
-| 1.2 | [Sub-Area Name](./sub-areas/sub-area-name/) | 📋 Planned | X | Medium |
-| 1.3 | [Sub-Area Name](./sub-areas/sub-area-name/) | 📋 Planned | X | Medium |
+| 1 | [Sub-Area Name](./sub-areas/sub-area-name/) | 📋 Planned | X | High |
+| 2 | [Sub-Area Name](./sub-areas/sub-area-name/) | 📋 Planned | X | Medium |
+| 3 | [Sub-Area Name](./sub-areas/sub-area-name/) | 📋 Planned | X | Medium |
+| 4 | [Sub-Area Name](./sub-areas/sub-area-name/) | 📋 Planned | X | Medium |
 
 ---
 
 ## Sub-Area Details
 
-### 1.1 [Sub-Area Name]
+### 1. [Sub-Area Name]
 *[Brief description]*
 
 **Key Functions:**
@@ -51,7 +65,7 @@ What this area aims to achieve:
 
 ---
 
-### 1.2 [Sub-Area Name]
+### 2. [Sub-Area Name]
 *[Brief description]*
 
 **Key Functions:**
@@ -143,9 +157,12 @@ How we measure success:
 
 ---
 
-## Features List
+## Related Documentation
 
-See [features.md](./features.md) for detailed feature specifications.
+- [MASTER-INDEX.md](../../MASTER-INDEX.md) - Project overview
+- [CURRENT-FOCUS.md](../../CURRENT-FOCUS.md) - Development priorities
+- [AUTH-GUIDE.md](../../guides/AUTH-GUIDE.md) - Permission patterns
+- [TECH-STACK.md](../../guides/TECH-STACK.md) - Coding standards
 
 ---
 

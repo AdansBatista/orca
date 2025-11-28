@@ -48,16 +48,16 @@ In busy orthodontic practices with multiple providers and treatment chairs, coor
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 2.3.1 | [Operations Dashboard](./sub-areas/operations-dashboard/) | Day/week/month dashboards and views | 📋 Planned | Critical |
-| 2.3.2 | [Patient Flow Management](./sub-areas/patient-flow/) | Queue management and patient journey tracking | 📋 Planned | Critical |
-| 2.3.3 | [Resource Coordination](./sub-areas/resource-coordination/) | Chair/room and staff assignments | 📋 Planned | High |
-| 2.3.4 | [AI Manager](./sub-areas/ai-manager/) | AI-powered insights and recommendations | 📋 Planned | Medium |
+| 1 | [Operations Dashboard](./sub-areas/operations-dashboard/) | Day/week/month dashboards and views | 📋 Planned | Critical |
+| 2 | [Patient Flow Management](./sub-areas/patient-flow/) | Queue management and patient journey tracking | 📋 Planned | Critical |
+| 3 | [Resource Coordination](./sub-areas/resource-coordination/) | Chair/room and staff assignments | 📋 Planned | High |
+| 4 | [AI Manager](./sub-areas/ai-manager/) | AI-powered insights and recommendations | 📋 Planned | Medium |
 
 ---
 
 ## Sub-Area Details
 
-### 2.3.1 Operations Dashboard
+### 1. Operations Dashboard
 
 Multi-view operational dashboards for different time horizons and perspectives.
 
@@ -79,7 +79,7 @@ Multi-view operational dashboards for different time horizons and perspectives.
 
 ---
 
-### 2.3.2 Patient Flow Management
+### 2. Patient Flow Management
 
 Track and manage patient journey through the clinic.
 
@@ -101,7 +101,7 @@ Track and manage patient journey through the clinic.
 
 ---
 
-### 2.3.3 Resource Coordination
+### 3. Resource Coordination
 
 Manage chairs, rooms, equipment, and staff assignments.
 
@@ -123,7 +123,7 @@ Manage chairs, rooms, equipment, and staff assignments.
 
 ---
 
-### 2.3.4 AI Manager
+### 4. AI Manager
 
 AI-powered operational assistance and insights.
 
@@ -613,9 +613,7 @@ enum TaskPriority {
 
 ```
 docs/areas/practice-orchestration/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── operations-dashboard/
     │   ├── README.md
@@ -656,8 +654,6 @@ docs/areas/practice-orchestration/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Booking & Scheduling](../booking-scheduling/) - Appointment source
 - [Staff Management](../staff-management/) - Staff schedules
 - [Resources Management](../resources-management/) - Chair/room data

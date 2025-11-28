@@ -47,16 +47,16 @@ The Treatment Management area provides comprehensive orthodontic treatment lifec
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 3.1 | [Treatment Planning](./sub-areas/treatment-planning/) | Treatment plans, case presentations, treatment options, case acceptance, phase definitions | 📋 Planned | Critical |
-| 3.2 | [Clinical Documentation](./sub-areas/clinical-documentation/) | Progress notes, procedure documentation, clinical findings, visit records | 📋 Planned | Critical |
-| 3.3 | [Appliance Management](./sub-areas/appliance-management/) | Bracket systems, wire sequences, aligners, retainers, auxiliary appliances | 📋 Planned | High |
-| 3.4 | [Treatment Tracking](./sub-areas/treatment-tracking/) | Timeline visualization, milestone tracking, progress monitoring, outcome assessment | 📋 Planned | High |
+| 1 | [Treatment Planning](./sub-areas/treatment-planning/) | Treatment plans, case presentations, treatment options, case acceptance, phase definitions | 📋 Planned | Critical |
+| 2 | [Clinical Documentation](./sub-areas/clinical-documentation/) | Progress notes, procedure documentation, clinical findings, visit records | 📋 Planned | Critical |
+| 3 | [Appliance Management](./sub-areas/appliance-management/) | Bracket systems, wire sequences, aligners, retainers, auxiliary appliances | 📋 Planned | High |
+| 4 | [Treatment Tracking](./sub-areas/treatment-tracking/) | Timeline visualization, milestone tracking, progress monitoring, outcome assessment | 📋 Planned | High |
 
 ---
 
 ## Sub-Area Details
 
-### 3.1 Treatment Planning
+### 1. Treatment Planning
 
 Create and manage comprehensive orthodontic treatment plans with professional case presentations.
 
@@ -78,7 +78,7 @@ Create and manage comprehensive orthodontic treatment plans with professional ca
 
 ---
 
-### 3.2 Clinical Documentation
+### 2. Clinical Documentation
 
 Document clinical visits, procedures, findings, and treatment progress.
 
@@ -100,7 +100,7 @@ Document clinical visits, procedures, findings, and treatment progress.
 
 ---
 
-### 3.3 Appliance Management
+### 3. Appliance Management
 
 Track all orthodontic appliances from placement through removal.
 
@@ -122,7 +122,7 @@ Track all orthodontic appliances from placement through removal.
 
 ---
 
-### 3.4 Treatment Tracking
+### 4. Treatment Tracking
 
 Monitor treatment progress against goals and timelines.
 
@@ -1575,9 +1575,7 @@ enum OutcomeRating {
 
 ```
 docs/areas/treatment-management/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── treatment-planning/
     │   ├── README.md
@@ -1624,8 +1622,6 @@ docs/areas/treatment-management/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Patient Management](../patient-management/) - Patient records
 - [Staff Management](../staff-management/) - Provider profiles
 - [Scheduling & Booking](../scheduling-booking/) - Appointment scheduling

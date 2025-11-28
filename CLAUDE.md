@@ -6,6 +6,52 @@
 
 ---
 
+## Quick Orientation
+
+**Orca** is an orthodontic practice management system with **13 functional areas** across **5 implementation phases**. All areas are currently in **Planning phase** - documentation is complete, code implementation has not started.
+
+### LLM Task Routing
+
+| Task Type | Read First | Then Check |
+|-----------|------------|------------|
+| **Implement Feature** | Area README → Sub-Area README | TECH-STACK.md, AUTH-GUIDE.md |
+| **Add UI Component** | STYLING-GUIDE.md | Area's UI Components section |
+| **Add API Endpoint** | AUTH-GUIDE.md Section 4 | TECH-STACK.md Section 3.3 |
+| **Database Changes** | TECH-STACK.md Section 3.4 | Area's Data Models section |
+| **Understand System** | MASTER-INDEX.md | Specific area README |
+
+### If You're Stuck
+
+| Problem | Solution |
+|---------|----------|
+| Don't know where to start | Read [docs/CURRENT-FOCUS.md](docs/CURRENT-FOCUS.md) |
+| Can't find patterns | Check [docs/QUICK-REFERENCE.md](docs/QUICK-REFERENCE.md) |
+| Confused about permissions | Read [docs/guides/AUTH-GUIDE.md](docs/guides/AUTH-GUIDE.md) |
+| Need domain context | Check area README's orthodontic-specific sections |
+| Understanding documentation structure | Read [docs/DOCUMENTATION-STANDARDS.md](docs/DOCUMENTATION-STANDARDS.md) |
+
+### Documentation Pyramid
+
+```
+CLAUDE.md (You are here - entry point)
+    ↓
+docs/MASTER-INDEX.md (Project status & area index)
+    ↓
+docs/guides/ (Technical standards - ALWAYS consult)
+├── TECH-STACK.md      → All code patterns
+├── STYLING-GUIDE.md   → All UI work
+├── AUTH-GUIDE.md      → Auth & permissions
+└── AI-INTEGRATION.md  → AI features
+    ↓
+docs/areas/{area}/README.md (Feature specifications)
+    ↓
+docs/areas/{area}/sub-areas/{sub-area}/README.md (Detailed specs)
+    ↓
+docs/areas/{area}/sub-areas/{sub-area}/functions/{function}.md (Implementation details)
+```
+
+---
+
 ## Project Overview
 
 Orca is a modern comprehensive, secure, AI-powered practice management system for orthodontic clinics. It features on-premises deployment with minimal internet exposure, multi-clinic support, and full regulatory compliance.
@@ -127,7 +173,10 @@ After completing features, update:
 
 ```
 docs/
-├── MASTER-INDEX.md          # Start here - project overview & status
+├── MASTER-INDEX.md          # Project overview & status
+├── CURRENT-FOCUS.md         # What to work on now
+├── QUICK-REFERENCE.md       # Pattern cheat sheet
+├── DOCUMENTATION-STANDARDS.md # Documentation conventions
 ├── guides/                  # Technical foundation documents
 │   ├── TECH-STACK.md       # Technology & coding standards
 │   ├── STYLING-GUIDE.md    # Design system & UI patterns
@@ -136,9 +185,11 @@ docs/
 ├── templates/               # Document templates
 └── areas/                   # Feature documentation by area
     └── {area-name}/
-        ├── README.md        # Area overview
-        ├── features.md      # Feature list
-        └── sub-areas/       # Detailed breakdown
+        ├── README.md        # Area overview & specifications
+        └── sub-areas/
+            └── {sub-area}/
+                ├── README.md    # Sub-area details
+                └── functions/   # Function-level specs
 ```
 
 ---

@@ -1306,9 +1306,7 @@ enum IssueStatus {
 
 ```
 docs/areas/vendors-management/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── vendor-profiles/
     │   ├── README.md
@@ -1351,8 +1349,6 @@ docs/areas/vendors-management/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Financial Management](../financial-management/) - Accounts payable integration
 - [Resources Management](../resources-management/) - Inventory integration
 - [Practice Orchestration](../practice-orchestration/) - Workflow integration

@@ -48,16 +48,16 @@ Orthodontic practices rely heavily on imaging for diagnosis, treatment planning,
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 3.3.1 | [Image Capture & Upload](./sub-areas/image-capture-upload/) | Multi-source image acquisition and upload | 📋 Planned | Critical |
-| 3.3.2 | [Image Viewing & Tools](./sub-areas/image-viewing-tools/) | Advanced viewer with analysis tools | 📋 Planned | Critical |
-| 3.3.3 | [Image Organization](./sub-areas/image-organization/) | Patient galleries, categorization, search | 📋 Planned | High |
-| 3.3.4 | [Reports & Collages](./sub-areas/reports-collages/) | Collages, presentations, and reports | 📋 Planned | High |
+| 1 | [Image Capture & Upload](./sub-areas/image-capture-upload/) | Multi-source image acquisition and upload | 📋 Planned | Critical |
+| 2 | [Image Viewing & Tools](./sub-areas/image-viewing-tools/) | Advanced viewer with analysis tools | 📋 Planned | Critical |
+| 3 | [Image Organization](./sub-areas/image-organization/) | Patient galleries, categorization, search | 📋 Planned | High |
+| 4 | [Reports & Collages](./sub-areas/reports-collages/) | Collages, presentations, and reports | 📋 Planned | High |
 
 ---
 
 ## Sub-Area Details
 
-### 3.3.1 Image Capture & Upload
+### 1. Image Capture & Upload
 
 Capture and import images from multiple sources with orthodontic-specific protocols.
 
@@ -79,7 +79,7 @@ Capture and import images from multiple sources with orthodontic-specific protoc
 
 ---
 
-### 3.3.2 Image Viewing & Tools
+### 2. Image Viewing & Tools
 
 Professional high-resolution image viewing with clinical analysis tools.
 
@@ -102,7 +102,7 @@ Professional high-resolution image viewing with clinical analysis tools.
 
 ---
 
-### 3.3.3 Image Organization
+### 3. Image Organization
 
 Organize, categorize, and search patient imaging efficiently.
 
@@ -124,7 +124,7 @@ Organize, categorize, and search patient imaging efficiently.
 
 ---
 
-### 3.3.4 Reports & Collages
+### 4. Reports & Collages
 
 Create professional presentations and documentation from patient images.
 
@@ -364,9 +364,7 @@ Orthodontic practices use standardized photo sets for consistent documentation:
 
 ```
 docs/areas/imaging-management/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── image-capture-upload/
     │   ├── README.md
@@ -413,8 +411,6 @@ docs/areas/imaging-management/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Treatment Management](../treatment-management/) - Treatment plan integration
 - [Compliance & Documentation](../compliance-documentation/) - Consent and audit
 - [Patient Communications](../patient-communications/) - Patient image access

@@ -48,16 +48,16 @@ Orthodontic practices work with multiple specialized labs for different products
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 3.4.1 | [Lab Orders](./sub-areas/lab-orders/) | Create and submit lab case orders | 📋 Planned | Critical |
-| 3.4.2 | [Lab Vendor Management](./sub-areas/lab-vendor-management/) | Lab directory, pricing, and contracts | 📋 Planned | High |
-| 3.4.3 | [Order Tracking](./sub-areas/order-tracking/) | Status monitoring and delivery coordination | 📋 Planned | High |
-| 3.4.4 | [Quality & Remakes](./sub-areas/quality-remakes/) | Inspection, remakes, and warranty | 📋 Planned | Medium |
+| 1 | [Lab Orders](./sub-areas/lab-orders/) | Create and submit lab case orders | 📋 Planned | Critical |
+| 2 | [Lab Vendor Management](./sub-areas/lab-vendor-management/) | Lab directory, pricing, and contracts | 📋 Planned | High |
+| 3 | [Order Tracking](./sub-areas/order-tracking/) | Status monitoring and delivery coordination | 📋 Planned | High |
+| 4 | [Quality & Remakes](./sub-areas/quality-remakes/) | Inspection, remakes, and warranty | 📋 Planned | Medium |
 
 ---
 
 ## Sub-Area Details
 
-### 3.4.1 Lab Orders
+### 1. Lab Orders
 
 Create and submit orthodontic lab orders with digital case files and prescriptions.
 
@@ -79,7 +79,7 @@ Create and submit orthodontic lab orders with digital case files and prescriptio
 
 ---
 
-### 3.4.2 Lab Vendor Management
+### 2. Lab Vendor Management
 
 Maintain relationships with orthodontic labs including pricing, contracts, and performance.
 
@@ -101,7 +101,7 @@ Maintain relationships with orthodontic labs including pricing, contracts, and p
 
 ---
 
-### 3.4.3 Order Tracking
+### 3. Order Tracking
 
 Monitor order status from submission through delivery with proactive alerts.
 
@@ -123,7 +123,7 @@ Monitor order status from submission through delivery with proactive alerts.
 
 ---
 
-### 3.4.4 Quality & Remakes
+### 4. Quality & Remakes
 
 Manage quality inspection, remake requests, and warranty claims.
 
@@ -382,9 +382,7 @@ Manage quality inspection, remake requests, and warranty claims.
 
 ```
 docs/areas/lab-work-management/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── lab-orders/
     │   ├── README.md
@@ -431,8 +429,6 @@ docs/areas/lab-work-management/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Treatment Management](../treatment-management/) - Treatment plan integration
 - [Imaging Management](../imaging-management/) - Digital files source
 - [Financial Management](../financial-management/) - Lab expense tracking

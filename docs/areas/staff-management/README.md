@@ -46,16 +46,16 @@ The Staff Management area provides comprehensive workforce management capabiliti
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 2.1 | [Staff Profiles & HR](./sub-areas/staff-profiles-hr/) | Employee profiles, employment records, credentials, certifications, emergency contacts | 📋 Planned | Critical |
-| 2.2 | [Scheduling & Time Management](./sub-areas/scheduling-time-management/) | Shift scheduling, time-off requests, coverage management, overtime tracking | 📋 Planned | High |
-| 2.3 | [Roles & Permissions](./sub-areas/roles-permissions/) | Role-based access control, custom roles, permission assignment, multi-location access | 📋 Planned | Critical |
-| 2.4 | [Performance & Training](./sub-areas/performance-training/) | Performance metrics, goal tracking, review cycles, training records | 📋 Planned | Medium |
+| 1 | [Staff Profiles & HR](./sub-areas/staff-profiles-hr/) | Employee profiles, employment records, credentials, certifications, emergency contacts | 📋 Planned | Critical |
+| 2 | [Scheduling & Time Management](./sub-areas/scheduling-time-management/) | Shift scheduling, time-off requests, coverage management, overtime tracking | 📋 Planned | High |
+| 3 | [Roles & Permissions](./sub-areas/roles-permissions/) | Role-based access control, custom roles, permission assignment, multi-location access | 📋 Planned | Critical |
+| 4 | [Performance & Training](./sub-areas/performance-training/) | Performance metrics, goal tracking, review cycles, training records | 📋 Planned | Medium |
 
 ---
 
 ## Sub-Area Details
 
-### 2.1 Staff Profiles & HR
+### 1. Staff Profiles & HR
 
 Comprehensive employee profile and HR record management for all practice staff.
 
@@ -77,7 +77,7 @@ Comprehensive employee profile and HR record management for all practice staff.
 
 ---
 
-### 2.2 Scheduling & Time Management
+### 2. Scheduling & Time Management
 
 Manage staff schedules, time-off requests, and ensure adequate coverage across locations.
 
@@ -99,7 +99,7 @@ Manage staff schedules, time-off requests, and ensure adequate coverage across l
 
 ---
 
-### 2.3 Roles & Permissions
+### 3. Roles & Permissions
 
 Define and manage access control with role-based permissions and multi-location access.
 
@@ -121,7 +121,7 @@ Define and manage access control with role-based permissions and multi-location 
 
 ---
 
-### 2.4 Performance & Training
+### 4. Performance & Training
 
 Track staff performance, manage goals, conduct reviews, and maintain training records.
 
@@ -1191,9 +1191,7 @@ enum TrainingStatus {
 
 ```
 docs/areas/staff-management/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── staff-profiles-hr/
     │   ├── README.md
@@ -1233,8 +1231,6 @@ docs/areas/staff-management/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Authentication & Authorization](../authentication/) - User authentication
 - [Scheduling & Booking](../scheduling-booking/) - Appointment scheduling integration
 - [Financial Management](../financial-management/) - Payroll integration

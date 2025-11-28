@@ -47,16 +47,16 @@ Orthodontic practices face unique compliance challenges including radiation safe
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 12.1 | [Consent Forms](./sub-areas/consent-forms/) | Patient consents, treatment agreements, HIPAA acknowledgments | 📋 Planned | Critical |
-| 12.2 | [Clinical Protocols](./sub-areas/clinical-protocols/) | Treatment protocols, safety procedures, infection control | 📋 Planned | Critical |
-| 12.3 | [Staff Training](./sub-areas/staff-training/) | Certifications, training tracking, compliance education | 📋 Planned | High |
-| 12.4 | [Audit Management](./sub-areas/audit-management/) | Audit trails, compliance audits, incident reporting | 📋 Planned | High |
+| 1 | [Consent Forms](./sub-areas/consent-forms/) | Patient consents, treatment agreements, HIPAA acknowledgments | 📋 Planned | Critical |
+| 2 | [Clinical Protocols](./sub-areas/clinical-protocols/) | Treatment protocols, safety procedures, infection control | 📋 Planned | Critical |
+| 3 | [Staff Training](./sub-areas/staff-training/) | Certifications, training tracking, compliance education | 📋 Planned | High |
+| 4 | [Audit Management](./sub-areas/audit-management/) | Audit trails, compliance audits, incident reporting | 📋 Planned | High |
 
 ---
 
 ## Sub-Area Details
 
-### 12.1 Consent Forms
+### 1. Consent Forms
 
 Manage all patient consent documentation with digital signatures, versioning, and expiration tracking.
 
@@ -78,7 +78,7 @@ Manage all patient consent documentation with digital signatures, versioning, an
 
 ---
 
-### 12.2 Clinical Protocols
+### 2. Clinical Protocols
 
 Repository of clinical protocols, procedure checklists, and safety procedures with compliance tracking.
 
@@ -100,7 +100,7 @@ Repository of clinical protocols, procedure checklists, and safety procedures wi
 
 ---
 
-### 12.3 Staff Training
+### 3. Staff Training
 
 Track staff certifications, continuing education, and mandatory training compliance.
 
@@ -122,7 +122,7 @@ Track staff certifications, continuing education, and mandatory training complia
 
 ---
 
-### 12.4 Audit Management
+### 4. Audit Management
 
 Maintain comprehensive audit trails and prepare for regulatory audits.
 
@@ -348,9 +348,7 @@ Maintain comprehensive audit trails and prepare for regulatory audits.
 
 ```
 docs/areas/compliance-documentation/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── consent-forms/
     │   ├── README.md
@@ -397,8 +395,6 @@ docs/areas/compliance-documentation/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Billing & Insurance](../billing-insurance/) - Related financial area
 - [Treatment Management](../treatment-management/) - Treatment consent source
 - [Staff Management](../staff-management/) - Staff certification source

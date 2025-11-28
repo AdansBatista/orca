@@ -48,16 +48,16 @@ Effective patient communication is critical in orthodontics where treatment span
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 2.4.1 | [Messaging Hub](./sub-areas/messaging-hub/) | Multi-channel messaging and delivery | 📋 Planned | Critical |
-| 2.4.2 | [Patient Portal](./sub-areas/patient-portal/) | Self-service portal and account management | 📋 Planned | High |
-| 2.4.3 | [Automated Campaigns](./sub-areas/automated-campaigns/) | Workflows, reminders, and sequences | 📋 Planned | High |
-| 2.4.4 | [Educational Content Library](./sub-areas/educational-content-library/) | Patient education materials | 📋 Planned | Medium |
+| 1 | [Messaging Hub](./sub-areas/messaging-hub/) | Multi-channel messaging and delivery | 📋 Planned | Critical |
+| 2 | [Patient Portal](./sub-areas/patient-portal/) | Self-service portal and account management | 📋 Planned | High |
+| 3 | [Automated Campaigns](./sub-areas/automated-campaigns/) | Workflows, reminders, and sequences | 📋 Planned | High |
+| 4 | [Educational Content Library](./sub-areas/educational-content-library/) | Patient education materials | 📋 Planned | Medium |
 
 ---
 
 ## Sub-Area Details
 
-### 2.4.1 Messaging Hub
+### 1. Messaging Hub
 
 Unified multi-channel messaging center for SMS, email, and in-app notifications.
 
@@ -79,7 +79,7 @@ Unified multi-channel messaging center for SMS, email, and in-app notifications.
 
 ---
 
-### 2.4.2 Patient Portal
+### 2. Patient Portal
 
 Self-service portal for patients to manage appointments, view treatment progress, and handle billing.
 
@@ -102,7 +102,7 @@ Self-service portal for patients to manage appointments, view treatment progress
 
 ---
 
-### 2.4.3 Automated Campaigns
+### 3. Automated Campaigns
 
 Campaign engine for automated communication workflows and event-triggered sequences.
 
@@ -124,7 +124,7 @@ Campaign engine for automated communication workflows and event-triggered sequen
 
 ---
 
-### 2.4.4 Educational Content Library
+### 4. Educational Content Library
 
 Repository of patient education materials for orthodontic care.
 
@@ -374,9 +374,7 @@ Repository of patient education materials for orthodontic care.
 
 ```
 docs/areas/patient-communications/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── messaging-hub/
     │   ├── README.md
@@ -419,8 +417,6 @@ docs/areas/patient-communications/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Booking & Scheduling](../booking-scheduling/) - Appointment integration
 - [CRM & Onboarding](../crm-onboarding/) - Patient data source
 - [Treatment Management](../treatment-management/) - Treatment milestone triggers

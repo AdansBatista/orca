@@ -6,6 +6,34 @@
 
 ---
 
+## For LLMs: Quick Status
+
+| Attribute | Value |
+|-----------|-------|
+| **Current Phase** | Phase 1 - Foundation Infrastructure |
+| **Ready to Start** | Auth & User Management, Staff Management, Resources Management |
+| **Implementation Status** | 📋 All areas planned, no code implemented yet |
+
+### What to Work On
+
+1. **First Priority**: Authentication & Authorization (no dependencies)
+2. **After Auth**: Staff Management, Resources Management
+3. **Phase 2+**: Blocked until Phase 1 complete
+
+### Finding Documentation
+
+| Need | Location |
+|------|----------|
+| Project overview | You're here (MASTER-INDEX.md) |
+| What to work on now | [CURRENT-FOCUS.md](CURRENT-FOCUS.md) |
+| Quick patterns | [QUICK-REFERENCE.md](QUICK-REFERENCE.md) |
+| Coding standards | [guides/TECH-STACK.md](guides/TECH-STACK.md) |
+| UI standards | [guides/STYLING-GUIDE.md](guides/STYLING-GUIDE.md) |
+| Auth & permissions | [guides/AUTH-GUIDE.md](guides/AUTH-GUIDE.md) |
+| Specific area | `areas/{area-name}/README.md` |
+
+---
+
 ## Quick Stats
 
 | Metric | Count |

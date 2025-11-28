@@ -46,16 +46,16 @@ The Billing & Insurance Management area is the financial backbone of Orca, handl
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 11.1 | [Patient Billing](./sub-areas/patient-billing/) | Patient accounts, statements, estimates | 📋 Planned | Critical |
-| 11.2 | [Insurance Claims](./sub-areas/insurance-claims/) | Claims submission, tracking, EOB processing | 📋 Planned | Critical |
-| 11.3 | [Payment Processing](./sub-areas/payment-processing/) | Payment gateway, card processing, reconciliation | 📋 Planned | Critical |
-| 11.4 | [Collections Management](./sub-areas/collections/) | AR management, aging, collection workflows | 📋 Planned | High |
+| 1 | [Patient Billing](./sub-areas/patient-billing/) | Patient accounts, statements, estimates | 📋 Planned | Critical |
+| 2 | [Insurance Claims](./sub-areas/insurance-claims/) | Claims submission, tracking, EOB processing | 📋 Planned | Critical |
+| 3 | [Payment Processing](./sub-areas/payment-processing/) | Payment gateway, card processing, reconciliation | 📋 Planned | Critical |
+| 4 | [Collections Management](./sub-areas/collections/) | AR management, aging, collection workflows | 📋 Planned | High |
 
 ---
 
 ## Sub-Area Details
 
-### 11.1 Patient Billing
+### 1. Patient Billing
 
 Manage patient financial accounts, generate statements, and create treatment cost estimates.
 
@@ -75,7 +75,7 @@ Manage patient financial accounts, generate statements, and create treatment cos
 
 ---
 
-### 11.2 Insurance Claims
+### 2. Insurance Claims
 
 Handle the complete insurance claims lifecycle from submission to payment posting.
 
@@ -99,7 +99,7 @@ Handle the complete insurance claims lifecycle from submission to payment postin
 
 ---
 
-### 11.3 Payment Processing
+### 3. Payment Processing
 
 Modern payment gateway integration replacing traditional POS terminals.
 
@@ -122,7 +122,7 @@ Modern payment gateway integration replacing traditional POS terminals.
 
 ---
 
-### 11.4 Collections Management
+### 4. Collections Management
 
 Manage accounts receivable and collection workflows.
 
@@ -303,9 +303,7 @@ Manage accounts receivable and collection workflows.
 
 ```
 docs/areas/billing-insurance/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── patient-billing/
     │   ├── README.md
@@ -351,8 +349,6 @@ docs/areas/billing-insurance/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Financial Management](../financial-management/) - Related financial area
 - [Treatment Management](../treatment-management/) - Treatment cost source
 - [Patient Communications](../patient-communications/) - Statement delivery

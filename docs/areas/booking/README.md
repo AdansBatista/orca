@@ -47,16 +47,16 @@ The Booking & Scheduling area is the operational heart of Orca, managing all asp
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 2.1.1 | [Calendar Management](./sub-areas/calendar-management/) | Calendar views, schedule templates, visual scheduling | 📋 Planned | Critical |
-| 2.1.2 | [Appointment Management](./sub-areas/appointment-management/) | Appointment booking, types, recurring appointments | 📋 Planned | Critical |
-| 2.1.3 | [Waitlist & Recovery](./sub-areas/waitlist-recovery/) | Waitlist management, failed appointment recovery | 📋 Planned | High |
-| 2.1.4 | [Emergency & Reminders](./sub-areas/emergency-reminders/) | Emergency handling, on-call, automated reminders | 📋 Planned | High |
+| 1 | [Calendar Management](./sub-areas/calendar-management/) | Calendar views, schedule templates, visual scheduling | 📋 Planned | Critical |
+| 2 | [Appointment Management](./sub-areas/appointment-management/) | Appointment booking, types, recurring appointments | 📋 Planned | Critical |
+| 3 | [Waitlist & Recovery](./sub-areas/waitlist-recovery/) | Waitlist management, failed appointment recovery | 📋 Planned | High |
+| 4 | [Emergency & Reminders](./sub-areas/emergency-reminders/) | Emergency handling, on-call, automated reminders | 📋 Planned | High |
 
 ---
 
 ## Sub-Area Details
 
-### 2.1.1 Calendar Management
+### 1. Calendar Management
 
 Manage calendar views, schedule templates, and visual scheduling interfaces.
 
@@ -77,7 +77,7 @@ Manage calendar views, schedule templates, and visual scheduling interfaces.
 
 ---
 
-### 2.1.2 Appointment Management
+### 2. Appointment Management
 
 Handle the complete appointment lifecycle from booking to completion.
 
@@ -98,7 +98,7 @@ Handle the complete appointment lifecycle from booking to completion.
 
 ---
 
-### 2.1.3 Waitlist & Recovery
+### 3. Waitlist & Recovery
 
 Manage patient waitlists and recover from failed appointments.
 
@@ -119,7 +119,7 @@ Manage patient waitlists and recover from failed appointments.
 
 ---
 
-### 2.1.4 Emergency & Reminders
+### 4. Emergency & Reminders
 
 Handle emergency appointments, on-call scheduling, and automated reminders.
 
@@ -298,9 +298,7 @@ Handle emergency appointments, on-call scheduling, and automated reminders.
 
 ```
 docs/areas/booking/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── calendar-management/
     │   ├── README.md
@@ -341,8 +339,6 @@ docs/areas/booking/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Staff Management](../staff-management/) - Provider schedules
 - [Resources Management](../resources-management/) - Chair/room management
 - [Practice Orchestration](../practice-orchestration/) - Patient flow

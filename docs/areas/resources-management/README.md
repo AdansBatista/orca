@@ -45,16 +45,16 @@ The Resources Management area provides comprehensive tracking and management of 
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 3.1 | [Equipment Management](./sub-areas/equipment-management/) | Equipment catalog, tracking, maintenance, repair history, depreciation | 📋 Planned | High |
-| 3.2 | [Room/Chair Management](./sub-areas/room-chair-management/) | Treatment chair/operatory management, room configuration, equipment assignments | 📋 Planned | High |
-| 3.3 | [Inventory Management](./sub-areas/inventory-management/) | Materials/supplies catalog, stock levels, reorder automation, expiration tracking | 📋 Planned | High |
-| 3.4 | [Sterilization & Compliance](./sub-areas/sterilization-compliance/) | Instrument sterilization logs, cycle tracking, compliance documentation | 📋 Planned | Critical |
+| 1 | [Equipment Management](./sub-areas/equipment-management/) | Equipment catalog, tracking, maintenance, repair history, depreciation | 📋 Planned | High |
+| 2 | [Room/Chair Management](./sub-areas/room-chair-management/) | Treatment chair/operatory management, room configuration, equipment assignments | 📋 Planned | High |
+| 3 | [Inventory Management](./sub-areas/inventory-management/) | Materials/supplies catalog, stock levels, reorder automation, expiration tracking | 📋 Planned | High |
+| 4 | [Sterilization & Compliance](./sub-areas/sterilization-compliance/) | Instrument sterilization logs, cycle tracking, compliance documentation | 📋 Planned | Critical |
 
 ---
 
 ## Sub-Area Details
 
-### 3.1 Equipment Management
+### 1. Equipment Management
 
 Comprehensive tracking and management of orthodontic equipment throughout its lifecycle.
 
@@ -76,7 +76,7 @@ Comprehensive tracking and management of orthodontic equipment throughout its li
 
 ---
 
-### 3.2 Room/Chair Management
+### 2. Room/Chair Management
 
 Manage treatment operatories, chairs, and room-specific equipment configurations.
 
@@ -97,7 +97,7 @@ Manage treatment operatories, chairs, and room-specific equipment configurations
 
 ---
 
-### 3.3 Inventory Management
+### 3. Inventory Management
 
 Track orthodontic supplies and consumables with automated reorder and expiration management.
 
@@ -120,7 +120,7 @@ Track orthodontic supplies and consumables with automated reorder and expiration
 
 ---
 
-### 3.4 Sterilization & Compliance
+### 4. Sterilization & Compliance
 
 Document sterilization processes and maintain regulatory compliance records.
 
@@ -861,9 +861,7 @@ model InstrumentSetSterilization {
 
 ```
 docs/areas/resources-management/
-├── README.md                      # This file
-├── requirements.md                # Detailed requirements
-├── features.md                    # Feature overview
+├── README.md                      # This file (area overview)
 └── sub-areas/
     ├── equipment-management/
     │   ├── README.md
@@ -904,8 +902,6 @@ docs/areas/resources-management/
 
 ## Related Documentation
 
-- [Requirements](./requirements.md) - Detailed requirements list
-- [Features](./features.md) - Feature specifications
 - [Staff Management](../staff-management/) - Staff equipment certifications
 - [Scheduling & Booking](../scheduling-booking/) - Room availability integration
 - [Practice Orchestration](../practice-orchestration/) - Resource utilization tracking
