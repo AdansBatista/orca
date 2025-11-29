@@ -1,0 +1,7 @@
+# Ignore BSON snapshot data files (too large for git)
+*.bson
+*.bson.gz
+*/data/
+
+# Keep metadata files
+!.gitignore

@@ -32,6 +32,7 @@
 | Need domain context | Check area README's orthodontic-specific sections |
 | Understanding documentation structure | Read [docs/DOCUMENTATION-STANDARDS.md](docs/DOCUMENTATION-STANDARDS.md) |
 | **Continue documentation work** | Read [docs/DOCUMENTATION-PROGRESS.md](docs/DOCUMENTATION-PROGRESS.md) |
+| **After implementing a feature** | Run through [docs/IMPLEMENTATION-CHECKLIST.md](docs/IMPLEMENTATION-CHECKLIST.md) |
 
 ### Documentation Pyramid
 
@@ -206,6 +207,28 @@ See [PHI-FOG-USAGE.md](docs/guides/PHI-FOG-USAGE.md) for complete documentation.
 After completing features, update:
 - Status in [MASTER-INDEX.md](docs/MASTER-INDEX.md)
 - Feature documentation in `docs/areas/`
+
+### 7. Database Seeding (MANDATORY)
+**When creating or modifying Prisma models, ALWAYS create seed data.**
+
+```typescript
+// After adding a new model to schema.prisma:
+// 1. Create/update factory in prisma/seed/factories/{model}.factory.ts
+// 2. Add fixtures for reference data in prisma/seed/fixtures/
+// 3. Register in area seed file (prisma/seed/areas/{area}.seed.ts)
+// 4. Update area registry if adding new dependencies
+```
+
+**Commands:**
+```bash
+npm run db:seed                    # Seed with standard profile
+npm run db:seed -- --profile minimal  # Quick dev reset
+npm run db:seed -- --area auth:users  # Seed specific area
+npm run db:dump -- --name "checkpoint" # Export to snapshot
+npm run db:reset                   # Drop + seed fresh
+```
+
+See [SEEDING-GUIDE.md](docs/guides/SEEDING-GUIDE.md) for detailed patterns.
 
 ---
 
