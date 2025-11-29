@@ -20,8 +20,11 @@ import {
   MessageSquare,
   LogOut,
   User,
+  Eye,
+  EyeOff,
   type LucideIcon,
 } from "lucide-react";
+import { usePhiFog } from "@/contexts/phi-fog-context";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -216,6 +219,11 @@ export function Sidebar({
                   isCollapsed={isCollapsed}
                 />
               ))}
+              
+              {/* Add PHI Fog Toggle after System group */}
+              {group.label === "System" && (
+                <PhiFogToggleButton isCollapsed={isCollapsed} />
+              )}
             </div>
           </div>
         ))}
@@ -376,6 +384,61 @@ function NavItemComponent({ item, isCollapsed }: NavItemComponentProps) {
           {item.badge !== undefined && (
             <span className="rounded-full bg-primary-500 px-2 py-0.5 text-xs text-white">
               {item.badge}
+            </span>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return content;
+}
+
+/**
+ * PHI Fog Toggle Button for Sidebar
+ */
+function PhiFogToggleButton({ isCollapsed }: { isCollapsed: boolean }) {
+  const { isFogEnabled, toggleFog } = usePhiFog();
+  
+  const content = (
+    <button
+      onClick={toggleFog}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full",
+        "hover:bg-warning-100 hover:text-warning-700",
+        "dark:hover:bg-warning-900/20 dark:hover:text-warning-400",
+        isFogEnabled && "bg-warning-100 text-warning-700 dark:bg-warning-900/20 dark:text-warning-400",
+        !isFogEnabled && "text-muted-foreground",
+        isCollapsed && "justify-center px-2"
+      )}
+    >
+      {isFogEnabled ? (
+        <EyeOff className="h-5 w-5 shrink-0" />
+      ) : (
+        <Eye className="h-5 w-5 shrink-0" />
+      )}
+      {!isCollapsed && (
+        <>
+          <span className="flex-1 text-left">{isFogEnabled ? "Show PHI" : "Protect PHI"}</span>
+          {isFogEnabled && (
+            <span className="rounded-full bg-warning-500 px-2 py-0.5 text-xs text-white">
+              ON
+            </span>
+          )}
+        </>
+      )}
+    </button>
+  );
+
+  if (isCollapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent side="right" className="flex items-center gap-2">
+          {isFogEnabled ? "PHI Hidden" : "Protect PHI Data"}
+          {isFogEnabled && (
+            <span className="rounded-full bg-warning-500 px-2 py-0.5 text-xs text-white">
+              ON
             </span>
           )}
         </TooltipContent>

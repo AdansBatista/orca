@@ -161,12 +161,48 @@ const patients = await db.patient.findMany({});
 - Use soft deletes for patient data
 - Encrypt sensitive data at rest
 
-### 4. Follow the Guides
+### 4. PHI Display Protection (MANDATORY)
+**ALL rendered PHI data MUST be wrapped with `<PhiProtected>`.**
+
+```typescript
+import { PhiProtected } from '@/components/ui/phi-protected';
+import { getFakeName, getFakeEmail, getFakePhone } from '@/lib/fake-data';
+
+// ✅ CORRECT - Always wrap PHI with PhiProtected
+<PhiProtected fakeData={getFakeName()}>{patient.name}</PhiProtected>
+<PhiProtected fakeData={getFakeEmail()}>{patient.email}</PhiProtected>
+<PhiProtected fakeData={getFakePhone()}>{patient.phone}</PhiProtected>
+
+// ❌ WRONG - Never render PHI directly
+<span>{patient.name}</span>
+<p>{patient.email}</p>
+```
+
+**PHI fields that MUST be protected:**
+- Patient names (first, last, full)
+- Email addresses
+- Phone numbers
+- Physical addresses
+- SSN/ID numbers
+- Dates of birth
+- Medical record numbers
+- Treatment notes and details
+- Insurance information
+- Emergency contact information
+
+**Best practices:**
+- Always provide `fakeData` prop with appropriate fake data generator
+- Use `getFakeData(type)` or specific generators (`getFakeName()`, `getFakeEmail()`, etc.)
+- For input fields, use `<PhiProtectedInput>` component
+
+See [PHI-FOG-USAGE.md](docs/guides/PHI-FOG-USAGE.md) for complete documentation.
+
+### 5. Follow the Guides
 - Code patterns: [TECH-STACK.md](docs/guides/TECH-STACK.md)
 - UI/UX standards: [STYLING-GUIDE.md](docs/guides/STYLING-GUIDE.md)
 - Auth patterns: [AUTH-PATTERNS.md](docs/guides/AUTH-PATTERNS.md)
 
-### 5. Update Documentation
+### 6. Update Documentation
 After completing features, update:
 - Status in [MASTER-INDEX.md](docs/MASTER-INDEX.md)
 - Feature documentation in `docs/areas/`
@@ -427,6 +463,7 @@ Before writing UI code, answer these questions:
 - ❌ **Build custom buttons instead of using `<Button>` variants**
 - ❌ **Assemble form fields manually instead of using `<FormField>`**
 - ❌ **Create list items with raw divs instead of using `<ListItem>` or `<ListActivity>`**
+- ❌ **Render PHI data without wrapping in `<PhiProtected>` component**
 
 ---
 

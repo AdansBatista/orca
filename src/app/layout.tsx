@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
+import { PhiFogProvider } from "@/contexts/phi-fog-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
-        {children}
-        <Toaster richColors position="top-right" />
+        <PhiFogProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </PhiFogProvider>
       </body>
     </html>
   );

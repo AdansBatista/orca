@@ -57,6 +57,8 @@ import {
   DashboardGrid,
   StatsRow,
 } from "@/components/layout";
+import { PhiProtected } from "@/components/ui/phi-protected";
+import { getFakeName } from "@/lib/fake-data";
 
 // Mock data
 const todayAppointments = [
@@ -237,7 +239,11 @@ export default function DashboardPage() {
                                   {apt.initials}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="text-sm">{apt.patient}</span>
+                              <span className="text-sm">
+                                <PhiProtected fakeData={getFakeName()}>
+                                  {apt.patient}
+                                </PhiProtected>
+                              </span>
                             </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">{apt.type}</TableCell>
@@ -315,7 +321,11 @@ export default function DashboardPage() {
                     }
                   >
                     <div className="flex items-center justify-between">
-                      <ListItemTitle>{patient.name}</ListItemTitle>
+                      <ListItemTitle>
+                        <PhiProtected fakeData={getFakeName()}>
+                          {patient.name}
+                        </PhiProtected>
+                      </ListItemTitle>
                     </div>
                     <ListItemDescription>Next: {patient.nextAppt}</ListItemDescription>
                     <div className="mt-1.5">
