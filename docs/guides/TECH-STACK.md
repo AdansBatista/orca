@@ -16,15 +16,15 @@ This document defines the technology choices, coding patterns, and conventions f
 | **TailwindCSS** | 3+ | Utility-first CSS framework |
 | **shadcn/ui** | Latest | Component library (themed via CSS variables) |
 | **React Hook Form** | 7+ | Form state management |
-| **Zod** | 3+ | Schema validation |
-| **Recharts** | 2+ | Charts and data visualization |
-| **Cornerstone.js** | 3+ | DICOM/medical image viewing |
+| **Zod** | 4+ | Schema validation |
+| **Recharts** | 3+ | Charts and data visualization |
+| **Cornerstone.js** | 4+ | DICOM/medical image viewing |
 
 ### Backend Stack
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Next.js API Routes** | 15+ | Backend API endpoints |
+| **Next.js API Routes** | 15+ | Backend NextJS-Server-Actions first, neat API when needed |
 | **Node.js** | 20+ | JavaScript runtime |
 | **Prisma** | 5+ | ORM and database toolkit |
 | **NextAuth.js** | 4+ | Authentication |
