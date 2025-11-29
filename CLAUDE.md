@@ -15,7 +15,7 @@
 | Task Type | Read First | Then Check |
 |-----------|------------|------------|
 | **Implement Feature** | Area README → Sub-Area README | TECH-STACK.md, AUTH-PATTERNS.md |
-| **Add UI Component** | STYLING-GUIDE.md | Area's UI Components section |
+| **Add UI/Page** | `src/components/ui/` → `src/components/layout/` | `/ui-showcase`, STYLING-GUIDE.md |
 | **Add API Endpoint** | AUTH-PATTERNS.md | TECH-STACK.md |
 | **Database Changes** | TECH-STACK.md | Area's Data Models section |
 | **Understand System** | MASTER-INDEX.md | Specific area README |
@@ -224,10 +224,14 @@ See [Auth Area](docs/areas/auth/) for full permission matrix.
 5. Update MASTER-INDEX.md status when complete
 
 ### Adding UI Components
-1. Check [STYLING-GUIDE.md](docs/guides/STYLING-GUIDE.md) for design tokens
-2. Use shadcn/ui components where possible
-3. Follow component patterns in the guide
-4. Ensure accessibility compliance
+1. **FIRST: Check `src/components/ui/`** for existing components with variants
+2. **SECOND: Check `src/components/layout/`** for layout patterns (grids, master-detail, etc.)
+3. **Reference `/ui-showcase`** to see all available components and their variants
+4. Check [STYLING-GUIDE.md](docs/guides/STYLING-GUIDE.md) for design tokens
+5. Use component variants (e.g., `<Card variant="ghost">`) NOT raw Tailwind classes
+6. Ensure accessibility compliance
+
+**NEVER create raw divs with Tailwind when a component exists!**
 
 ### Adding API Endpoints
 1. Use `withAuth` wrapper
@@ -245,6 +249,168 @@ See [Auth Area](docs/areas/auth/) for full permission matrix.
 
 ---
 
+## CRITICAL: UI Component Standards
+
+### ⚠️ MANDATORY: Always Use Predefined Components
+
+**BEFORE writing ANY UI code**, you MUST:
+
+1. **Check `src/components/ui/`** for existing components
+2. **Use component variants** instead of raw Tailwind classes
+3. **Reference the UI Showcase** at `/ui-showcase` to see available patterns
+
+### Available UI Components (ALWAYS USE THESE)
+
+| Need | Use Component | NOT Raw Classes |
+|------|---------------|-----------------|
+| **Container/Box** | `<Card variant="...">` | ❌ `<div className="rounded-2xl bg-...">` |
+| **Button** | `<Button variant="..." size="...">` | ❌ `<button className="...">` |
+| **Text Input** | `<Input>` with `<FormField>` | ❌ `<input className="...">` |
+| **Select** | `<Select>` components | ❌ `<select className="...">` |
+| **Status Indicator** | `<Badge variant="...">` | ❌ `<span className="rounded-full...">` |
+| **Form Layout** | `<FormField label="..." error="...">` | ❌ `<div><label>...<input>` |
+| **Feedback Message** | `<Alert variant="...">` | ❌ `<div className="bg-red-100...">` |
+| **Modal** | `<Dialog>` | ❌ Custom modal div |
+| **Side Panel** | `<Sheet>` | ❌ Custom slide-out div |
+| **Stats Display** | `<StatCard accentColor="...">` | ❌ `<div className="border-l-4...">` |
+| **Table** | `<Table>` components | ❌ `<table className="...">` |
+| **Layout Grid** | `<DashboardGrid>`, `<CardGrid>` | ❌ `<div className="grid grid-cols...">` |
+| **List Item** | `<ListItem>`, `<ListActivity>` | ❌ `<div className="flex items-center gap-3 p-3 rounded-xl...">` |
+
+### Card Variants (USE THESE!)
+
+```tsx
+// ✅ CORRECT - Use Card with variant
+<Card variant="ghost">
+  <CardContent>Demo info here</CardContent>
+</Card>
+
+<Card variant="bento" interactive>
+  <CardHeader compact>
+    <CardTitle size="sm">Title</CardTitle>
+  </CardHeader>
+  <CardContent compact>Content</CardContent>
+</Card>
+
+// ❌ WRONG - Raw Tailwind classes
+<div className="rounded-2xl bg-muted/50 border border-border/50 p-4">
+  <p>Demo info here</p>
+</div>
+```
+
+**Available Card Variants:**
+- `default` - Standard card with border and shadow
+- `elevated` - More shadow emphasis
+- `glass` - Frosted glass effect
+- `gradient` - Subtle gradient background
+- `ghost` - Minimal styling (info boxes, subtle containers)
+- `bento` - Bento-style layout cards
+- `compact` - Smaller rounded corners
+
+### Button Variants
+
+```tsx
+// ✅ CORRECT
+<Button variant="default">Primary Action</Button>
+<Button variant="accent">Accent Action</Button>
+<Button variant="soft">Subtle Action</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="destructive">Dangerous</Button>
+
+// ❌ WRONG - Custom button styling
+<button className="bg-primary-600 hover:bg-primary-700 rounded-full px-4 py-2">
+```
+
+### Badge Variants
+
+```tsx
+// ✅ CORRECT
+<Badge variant="success" dot>Active</Badge>
+<Badge variant="warning">Pending</Badge>
+<Badge variant="info">New</Badge>
+<Badge variant="soft-primary">Category</Badge>
+
+// ❌ WRONG
+<span className="rounded-full bg-green-100 text-green-800 px-2 py-1 text-xs">
+```
+
+### Form Fields
+
+```tsx
+// ✅ CORRECT - Use FormField wrapper
+<FormField label="Email" required error={errors.email}>
+  <Input type="email" placeholder="you@example.com" />
+</FormField>
+
+// ❌ WRONG - Manual label/input/error assembly
+<div className="space-y-2">
+  <label className="text-sm font-medium">Email *</label>
+  <input className="rounded-md border p-2 w-full" />
+  <p className="text-sm text-red-500">{error}</p>
+</div>
+```
+
+### List Items
+
+```tsx
+// ✅ CORRECT - Use ListItem for interactive list items
+import { ListItem, ListItemTitle, ListItemDescription, ListActivity } from '@/components/ui/list-item';
+
+<ListItem
+  showArrow
+  leading={<Avatar>...</Avatar>}
+  trailing={<Badge variant="success">Active</Badge>}
+>
+  <ListItemTitle>John Doe</ListItemTitle>
+  <ListItemDescription>Next appointment: Feb 15</ListItemDescription>
+</ListItem>
+
+// For activity/notification lists with color indicators
+<ListActivity indicatorColor="success">
+  <p className="text-sm">Payment received</p>
+  <p className="text-xs text-muted-foreground">5 min ago</p>
+</ListActivity>
+
+// ❌ WRONG - Manual list item styling
+<div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 cursor-pointer">
+```
+
+**ListItem Variants:** `default`, `ghost`, `bordered`, `elevated`
+**ListItem Sizes:** `sm`, `default`, `lg`
+
+### Layout Components
+
+```tsx
+// ✅ CORRECT - Use layout components from @/components/layout
+import { DashboardGrid, StatsRow, CardGrid, MasterDetail, DataTableLayout } from '@/components/layout';
+
+<StatsRow>
+  <StatCard accentColor="primary">...</StatCard>
+  <StatCard accentColor="accent">...</StatCard>
+</StatsRow>
+
+<DashboardGrid>
+  <DashboardGrid.TwoThirds>Main content</DashboardGrid.TwoThirds>
+  <DashboardGrid.OneThird>Sidebar</DashboardGrid.OneThird>
+</DashboardGrid>
+
+// ❌ WRONG - Manual grid classes everywhere
+<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+```
+
+### Pre-Implementation Checklist
+
+Before writing UI code, answer these questions:
+
+1. ✅ Did I check `src/components/ui/` for existing components?
+2. ✅ Did I check `src/components/layout/` for layout patterns?
+3. ✅ Am I using component props/variants instead of custom Tailwind?
+4. ✅ Did I reference `/ui-showcase` for the correct pattern?
+5. ✅ Am I using semantic tokens (`text-muted-foreground`) not raw colors (`text-gray-500`)?
+
+---
+
 ## What NOT to Do
 
 - ❌ Query database without `clinicId` filter
@@ -256,6 +422,11 @@ See [Auth Area](docs/areas/auth/) for full permission matrix.
 - ❌ Ignore TypeScript errors
 - ❌ Skip input validation
 - ❌ Create files without following naming conventions
+- ❌ **Use raw Tailwind classes when a UI component exists**
+- ❌ **Create card-like containers without using `<Card>` component**
+- ❌ **Build custom buttons instead of using `<Button>` variants**
+- ❌ **Assemble form fields manually instead of using `<FormField>`**
+- ❌ **Create list items with raw divs instead of using `<ListItem>` or `<ListActivity>`**
 
 ---
 

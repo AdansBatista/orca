@@ -3,6 +3,7 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -148,24 +149,31 @@ export function Sidebar({
       {/* Logo / Brand Area */}
       <div
         className={cn(
-          "flex h-16 items-center border-b border-border/50 px-4",
+          "flex h-16 items-center px-4",
           isCollapsed ? "justify-center" : "justify-between"
         )}
       >
         {logo ? (
           logo
         ) : (
-          <div
+          <Link
+            href="/dashboard"
             className={cn(
-              "flex items-center gap-2 transition-opacity duration-200",
-              isCollapsed && "opacity-0 w-0 overflow-hidden"
+              "flex items-center gap-2 transition-all duration-200",
+              isCollapsed && "justify-center"
             )}
           >
-            <div className="h-8 w-8 rounded-xl bg-gradient-primary flex items-center justify-center">
-              <span className="text-white font-bold text-sm">O</span>
-            </div>
-            <span className="font-semibold text-lg">Orca</span>
-          </div>
+            <Image
+              src="/images/logo/orca-icon.png"
+              alt="Orca"
+              width={36}
+              height={36}
+              className="shrink-0"
+            />
+            {!isCollapsed && (
+              <span className="font-bold text-primary-700 text-lg">ORCA</span>
+            )}
+          </Link>
         )}
 
         {/* Collapse Toggle */}

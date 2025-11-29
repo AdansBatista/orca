@@ -46,6 +46,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  ListItem,
+  ListItemTitle,
+  ListItemDescription,
+  ListActivity,
+} from "@/components/ui/list-item";
+import {
   PageHeader,
   PageContent,
   DashboardGrid,
@@ -80,7 +86,7 @@ export default function DashboardPage() {
     <>
       <PageHeader
         title="Dashboard"
-        description="Welcome back, Dr. Smith"
+        compact
         breadcrumbs={[
           { label: "Home", href: "/dashboard" },
           { label: "Dashboard" },
@@ -127,69 +133,69 @@ export default function DashboardPage() {
       />
 
       <PageContent density="comfortable">
-        {/* Stats Row */}
-        <StatsRow>
-          <StatCard accentColor="primary">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Total Patients</p>
-                <p className="text-2xl font-bold">1,234</p>
-                <p className="text-xs text-success-600 flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3" />
-                  +12% from last month
-                </p>
-              </div>
-              <div className="icon-container">
-                <Users className="h-5 w-5" />
-              </div>
-            </div>
-          </StatCard>
-
-          <StatCard accentColor="accent">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Today&apos;s Appointments</p>
-                <p className="text-2xl font-bold">8</p>
-                <p className="text-xs text-muted-foreground mt-1">3 completed, 5 remaining</p>
-              </div>
-              <div className="icon-container-accent">
-                <Calendar className="h-5 w-5" />
-              </div>
-            </div>
-          </StatCard>
-
-          <StatCard accentColor="warning">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Pending Tasks</p>
-                <p className="text-2xl font-bold">12</p>
-                <p className="text-xs text-warning-600 mt-1">4 high priority</p>
-              </div>
-              <div className="flex items-center justify-center rounded-xl bg-warning-100 p-2 text-warning-600">
-                <Clock className="h-5 w-5" />
-              </div>
-            </div>
-          </StatCard>
-
-          <StatCard accentColor="success">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">This Week</p>
-                <p className="text-2xl font-bold">42</p>
-                <p className="text-xs text-success-600 flex items-center gap-1 mt-1">
-                  <Check className="h-3 w-3" />
-                  98% completion rate
-                </p>
-              </div>
-              <div className="flex items-center justify-center rounded-xl bg-success-100 p-2 text-success-600">
-                <Activity className="h-5 w-5" />
-              </div>
-            </div>
-          </StatCard>
-        </StatsRow>
-
-        {/* Main Content Grid */}
         <DashboardGrid>
+          {/* Stats Row */}
+          <DashboardGrid.FullWidth>
+            <StatsRow>
+              <StatCard accentColor="primary">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Patients</p>
+                    <p className="text-2xl font-bold">1,234</p>
+                    <p className="text-xs text-success-600 flex items-center gap-1 mt-1">
+                      <TrendingUp className="h-3 w-3" />
+                      +12% from last month
+                    </p>
+                  </div>
+                  <div className="icon-container">
+                    <Users className="h-5 w-5" />
+                  </div>
+                </div>
+              </StatCard>
+
+              <StatCard accentColor="accent">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Today&apos;s Appointments</p>
+                    <p className="text-2xl font-bold">8</p>
+                    <p className="text-xs text-muted-foreground mt-1">3 completed, 5 remaining</p>
+                  </div>
+                  <div className="icon-container-accent">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                </div>
+              </StatCard>
+
+              <StatCard accentColor="warning">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Pending Tasks</p>
+                    <p className="text-2xl font-bold">12</p>
+                    <p className="text-xs text-warning-600 mt-1">4 high priority</p>
+                  </div>
+                  <div className="flex items-center justify-center rounded-xl bg-warning-100 p-2 text-warning-600">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                </div>
+              </StatCard>
+
+              <StatCard accentColor="success">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">This Week</p>
+                    <p className="text-2xl font-bold">42</p>
+                    <p className="text-xs text-success-600 flex items-center gap-1 mt-1">
+                      <Check className="h-3 w-3" />
+                      98% completion rate
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center rounded-xl bg-success-100 p-2 text-success-600">
+                    <Activity className="h-5 w-5" />
+                  </div>
+                </div>
+              </StatCard>
+            </StatsRow>
+          </DashboardGrid.FullWidth>
           {/* Today's Schedule */}
           <DashboardGrid.TwoThirds>
             <Card variant="bento" className="h-full">
@@ -288,39 +294,40 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {recentPatients.map((patient, i) => (
-                  <div
+                  <ListItem
                     key={i}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
+                    showArrow
+                    leading={
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-gradient-primary text-white text-sm">
+                          {patient.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    }
+                    trailing={
+                      <Badge
+                        variant={patient.status === "Active" ? "success" : "warning"}
+                        size="sm"
+                        dot
+                      >
+                        {patient.status}
+                      </Badge>
+                    }
                   >
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-gradient-primary text-white text-sm">
-                        {patient.initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium truncate">{patient.name}</p>
-                        <Badge
-                          variant={patient.status === "Active" ? "success" : "warning"}
-                          size="sm"
-                          dot
-                        >
-                          {patient.status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Next: {patient.nextAppt}</p>
-                      <div className="mt-1.5">
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-primary rounded-full transition-all"
-                            style={{ width: `${patient.progress}%` }}
-                          />
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{patient.progress}% treatment</p>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <ListItemTitle>{patient.name}</ListItemTitle>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
+                    <ListItemDescription>Next: {patient.nextAppt}</ListItemDescription>
+                    <div className="mt-1.5">
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-primary rounded-full transition-all"
+                          style={{ width: `${patient.progress}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{patient.progress}% treatment</p>
+                    </div>
+                  </ListItem>
                 ))}
               </CardContent>
             </Card>
@@ -366,20 +373,13 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {notifications.map((notif, i) => (
-                  <div
+                  <ListActivity
                     key={i}
-                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
+                    indicatorColor={notif.color as "primary" | "success" | "warning" | "info"}
                   >
-                    <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${
-                      notif.color === "primary" ? "bg-primary-500" :
-                      notif.color === "success" ? "bg-success-500" :
-                      notif.color === "warning" ? "bg-warning-500" : "bg-info-500"
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm leading-tight">{notif.message}</p>
-                      <p className="text-xs text-muted-foreground">{notif.time}</p>
-                    </div>
-                  </div>
+                    <p className="text-sm leading-tight">{notif.message}</p>
+                    <p className="text-xs text-muted-foreground">{notif.time}</p>
+                  </ListActivity>
                 ))}
               </CardContent>
             </Card>

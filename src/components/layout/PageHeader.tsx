@@ -29,6 +29,8 @@ interface PageHeaderProps {
   children?: React.ReactNode;
   /** Make header sticky */
   sticky?: boolean;
+  /** Compact mode - inline breadcrumbs with title, reduced padding */
+  compact?: boolean;
   /** Additional className */
   className?: string;
 }
@@ -64,8 +66,61 @@ export function PageHeader({
   actions,
   children,
   sticky = true,
+  compact = false,
   className,
 }: PageHeaderProps) {
+  // Compact mode: single row with breadcrumbs and title inline
+  if (compact) {
+    return (
+      <header
+        className={cn(
+          "border-b border-border/50 bg-background/80 backdrop-blur-md",
+          sticky && "sticky top-0 z-30",
+          className
+        )}
+      >
+        <div className="px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Breadcrumbs inline */}
+              {breadcrumbs && breadcrumbs.length > 0 && (
+                <Breadcrumb>
+                  <BreadcrumbList className="text-xs">
+                    {breadcrumbs.map((item, index) => (
+                      <React.Fragment key={index}>
+                        <BreadcrumbItem>
+                          {item.href ? (
+                            <BreadcrumbLink href={item.href} className="text-xs">
+                              {item.label}
+                            </BreadcrumbLink>
+                          ) : (
+                            <BreadcrumbPage className="text-xs font-medium">
+                              {item.label}
+                            </BreadcrumbPage>
+                          )}
+                        </BreadcrumbItem>
+                        {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
+                      </React.Fragment>
+                    ))}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              )}
+            </div>
+
+            {/* Actions */}
+            {actions && (
+              <div className="flex items-center gap-2 shrink-0">{actions}</div>
+            )}
+          </div>
+        </div>
+
+        {/* Additional content (tabs, filters, etc.) */}
+        {children && <div className="px-6 pb-3">{children}</div>}
+      </header>
+    );
+  }
+
+  // Default mode
   return (
     <header
       className={cn(
