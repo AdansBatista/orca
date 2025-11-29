@@ -13,7 +13,7 @@ const cardVariants = cva(
         elevated:
           "bg-card border border-border/30 shadow-md",
         glass:
-          "bg-white/60 backdrop-blur-md border border-white/30 shadow-sm",
+          "bg-white/60 backdrop-blur-md border border-white/30 shadow-sm dark:bg-silk-900/60 dark:border-white/10",
         "glass-dark":
           "bg-silk-900/60 backdrop-blur-md border border-white/10 shadow-sm",
         ghost:

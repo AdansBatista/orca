@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 import { PhiFogProvider } from "@/contexts/phi-fog-context";
 import "./globals.css";
 
@@ -16,10 +17,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
-        <PhiFogProvider>
-          {children}
-          <Toaster richColors position="top-right" />
-        </PhiFogProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <PhiFogProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </PhiFogProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

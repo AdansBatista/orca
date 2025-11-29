@@ -133,9 +133,10 @@
 }
 
 @layer components {
-  /* Glass morphism card */
+  /* Glass morphism card - auto dark mode */
   .glass {
     @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-glass;
+    @apply dark:bg-silk-900/80 dark:border-white/10;
   }
 
   .glass-dark {
@@ -161,6 +162,8 @@
     @apply relative overflow-hidden rounded-2xl p-4 transition-all duration-300;
     @apply bg-white/60 backdrop-blur-md border border-white/30;
     @apply hover:shadow-lift hover:bg-white/80 hover:-translate-y-0.5;
+    @apply dark:bg-silk-900/60 dark:border-white/10;
+    @apply dark:hover:bg-silk-900/80;
   }
 
   /* Compact card for data-dense areas */

@@ -22,8 +22,12 @@ import {
   User,
   Eye,
   EyeOff,
+  Sun,
+  Moon,
+  Monitor,
   type LucideIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { usePhiFog } from "@/contexts/phi-fog-context";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -33,6 +37,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import {
@@ -243,6 +250,8 @@ export function Sidebar({
  * Default user profile footer with logout
  */
 function UserProfileFooter({ isCollapsed }: { isCollapsed: boolean }) {
+  const { theme, setTheme } = useTheme();
+
   const userContent = (
     <div
       className={cn(
@@ -293,6 +302,35 @@ function UserProfileFooter({ isCollapsed }: { isCollapsed: boolean }) {
                 Profile Settings
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                {theme === "dark" ? (
+                  <Moon className="mr-2 h-4 w-4" />
+                ) : theme === "light" ? (
+                  <Sun className="mr-2 h-4 w-4" />
+                ) : (
+                  <Monitor className="mr-2 h-4 w-4" />
+                )}
+                Theme
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  <Sun className="mr-2 h-4 w-4" />
+                  Light
+                  {theme === "light" && <span className="ml-auto text-xs">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  <Moon className="mr-2 h-4 w-4" />
+                  Dark
+                  {theme === "dark" && <span className="ml-auto text-xs">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  <Monitor className="mr-2 h-4 w-4" />
+                  System
+                  {theme === "system" && <span className="ml-auto text-xs">✓</span>}
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="text-destructive focus:text-destructive">
               <Link href="/login">
@@ -324,6 +362,35 @@ function UserProfileFooter({ isCollapsed }: { isCollapsed: boolean }) {
               Profile Settings
             </Link>
           </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              {theme === "dark" ? (
+                <Moon className="mr-2 h-4 w-4" />
+              ) : theme === "light" ? (
+                <Sun className="mr-2 h-4 w-4" />
+              ) : (
+                <Monitor className="mr-2 h-4 w-4" />
+              )}
+              Theme
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem onClick={() => setTheme("light")}>
+                <Sun className="mr-2 h-4 w-4" />
+                Light
+                {theme === "light" && <span className="ml-auto text-xs">✓</span>}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("dark")}>
+                <Moon className="mr-2 h-4 w-4" />
+                Dark
+                {theme === "dark" && <span className="ml-auto text-xs">✓</span>}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("system")}>
+                <Monitor className="mr-2 h-4 w-4" />
+                System
+                {theme === "system" && <span className="ml-auto text-xs">✓</span>}
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild className="text-destructive focus:text-destructive">
             <Link href="/login">
