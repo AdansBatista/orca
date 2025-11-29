@@ -4,7 +4,7 @@
 
 **Modern Practice Management System for Orthodontics Clinics**
 
-Orca is a comprehensive, web-based practice management system designed to handle all facets of orthodontics practicesfrom patient care and treatment management to administrative operations and financial oversight. Built for small to medium-sized orthodontics clinics, Orca empowers orthodontist-owners with modern tools to efficiently manage both the clinical and business aspects of their practice.
+Orca is the state of the art and comprehensive, web-based practice management system designed to handle all facets of orthodontics practicesfrom patient care and treatment management to administrative operations and financial oversight. Built for small to medium-sized orthodontics clinics, Orca empowers orthodontist-owners with modern tools to efficiently manage both the clinical and business aspects of their practice.
 
 ---
 
