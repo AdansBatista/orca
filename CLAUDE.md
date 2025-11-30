@@ -33,6 +33,7 @@
 | Understanding documentation structure | Read [docs/DOCUMENTATION-STANDARDS.md](docs/DOCUMENTATION-STANDARDS.md) |
 | **Continue documentation work** | Read [docs/DOCUMENTATION-PROGRESS.md](docs/DOCUMENTATION-PROGRESS.md) |
 | **After implementing a feature** | Run through [docs/IMPLEMENTATION-CHECKLIST.md](docs/IMPLEMENTATION-CHECKLIST.md) |
+| **Build/type errors or compatibility issues** | Check [docs/guides/KNOWN-ISSUES.md](docs/guides/KNOWN-ISSUES.md) |
 
 ### Documentation Pyramid
 
@@ -45,7 +46,8 @@ docs/guides/ (Technical standards - ALWAYS consult)
 ├── TECH-STACK.md       → All code patterns
 ├── STYLING-GUIDE.md    → All UI work
 ├── AUTH-PATTERNS.md    → Auth code patterns
-└── AI-INTEGRATION.md   → AI features
+├── AI-INTEGRATION.md   → AI features
+└── KNOWN-ISSUES.md     → Compatibility fixes & lessons learned
     ↓
 docs/areas/{area}/README.md (Feature specifications)
     ↓
