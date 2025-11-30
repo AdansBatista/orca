@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,20 +13,56 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { FormField } from "@/components/ui/form-field";
 import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Error messages for different auth errors
+const ERROR_MESSAGES: Record<string, string> = {
+  CredentialsSignin: "Invalid email or password",
+  ACCOUNT_DISABLED: "Your account has been disabled. Contact your administrator.",
+  ACCOUNT_LOCKED: "Your account is temporarily locked due to too many failed attempts. Try again in 15 minutes.",
+  CLINIC_DISABLED: "This clinic has been disabled. Contact support.",
+  default: "An error occurred during sign in. Please try again.",
+};
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const errorParam = searchParams.get("error");
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(
+    errorParam ? ERROR_MESSAGES[errorParam] || ERROR_MESSAGES.default : null
+  );
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // Simulate login delay (no actual auth)
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 800);
+    try {
+      const result = await signIn("credentials", {
+        email: email.toLowerCase().trim(),
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError(ERROR_MESSAGES[result.error] || ERROR_MESSAGES.default);
+        setIsLoading(false);
+        return;
+      }
+
+      // Success - redirect to callback URL
+      router.push(callbackUrl);
+      router.refresh();
+    } catch {
+      setError(ERROR_MESSAGES.default);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,15 +87,26 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-5">
           <FormField label="Email" required>
             <Input
               type="email"
               placeholder="you@clinic.com"
-              defaultValue="dr.smith@orca.clinic"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
               inputSize="lg"
+              disabled={isLoading}
+              required
             />
           </FormField>
 
@@ -67,16 +115,20 @@ export default function LoginPage() {
               <Input
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
-                defaultValue="password123"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 className="pr-12"
                 inputSize="lg"
+                disabled={isLoading}
+                required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={isLoading}
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -89,17 +141,11 @@ export default function LoginPage() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Checkbox id="remember" defaultChecked />
+              <Checkbox id="remember" disabled={isLoading} />
               <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
                 Remember me
               </Label>
             </div>
-            <Link
-              href="/forgot-password"
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-            >
-              Forgot password?
-            </Link>
           </div>
 
           <Button
@@ -107,30 +153,17 @@ export default function LoginPage() {
             className="w-full"
             size="lg"
             loading={isLoading}
+            disabled={isLoading || !email || !password}
           >
             {!isLoading && <LogIn className="h-5 w-5" />}
             Sign in
           </Button>
         </form>
 
-        {/* Divider */}
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Demo Mode
-            </span>
-          </div>
-        </div>
-
-        {/* Demo Info */}
-        <Card variant="ghost" padding="default">
+        {/* Info Card */}
+        <Card variant="ghost" padding="default" className="mt-8">
           <p className="text-sm text-muted-foreground text-center">
-            Use the pre-filled credentials to explore the demo.
-            <br />
-            <span className="text-xs">No actual authentication is performed.</span>
+            Contact your clinic administrator if you need access or have forgotten your password.
           </p>
         </Card>
 

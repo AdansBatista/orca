@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PhiFogProvider } from "@/contexts/phi-fog-context";
+import { SessionProvider } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,17 +18,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <PhiFogProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </PhiFogProvider>
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <PhiFogProvider>
+              {children}
+              <Toaster richColors position="top-right" />
+            </PhiFogProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

@@ -24,7 +24,7 @@ This document defines the technology choices, coding patterns, and conventions f
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Next.js API Routes** | 15+ | Backend NextJS-Server-Actions first, neat API when needed |
+| **Next.js API Routes** | 15+ | neat API based |
 | **Node.js** | 20+ | JavaScript runtime |
 | **Prisma** | 5+ | ORM and database toolkit |
 | **NextAuth.js** | 4+ | Authentication |

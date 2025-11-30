@@ -38,7 +38,13 @@
 - [ ] Import order follows convention
 - [ ] File naming follows conventions
 
-### 6. Documentation
+### 6. Authentication & Authorization
+- [ ] API routes use `withAuth()` wrapper
+- [ ] Permission checks use correct permission codes (e.g., `patients:read`)
+- [ ] UI elements gated with `<PermissionGate>` where needed
+- [ ] Session user properties accessed correctly (`session.user.clinicId`, etc.)
+
+### 7. Documentation
 - [ ] MASTER-INDEX.md status updated
 - [ ] Area README updated if needed
 
@@ -72,12 +78,38 @@ where: { clinicId: session.user.clinicId }
 
 ### Audit Logging
 ```typescript
+import { logAudit } from '@/lib/audit';
+
 await logAudit(session, {
   action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE',
   entity: 'ModelName',
   entityId: record.id,
   details: { /* changed fields */ },
 });
+```
+
+### API Route Protection
+```typescript
+import { withAuth } from '@/lib/auth';
+
+export const GET = withAuth(
+  async (req, session) => {
+    const data = await db.model.findMany({
+      where: { clinicId: session.user.clinicId },
+    });
+    return NextResponse.json({ success: true, data });
+  },
+  { permissions: ['resource:read'] }
+);
+```
+
+### UI Permission Gating
+```typescript
+import { PermissionGate } from '@/components/auth';
+
+<PermissionGate permission="patients:write">
+  <Button>Add Patient</Button>
+</PermissionGate>
 ```
 
 ---
@@ -98,10 +130,25 @@ await logAudit(session, {
 ## Seeding Commands
 
 ```bash
-npm run db:seed                  # Standard
+npm run db:seed                  # Standard profile
 npm run db:seed:minimal          # Fast reset
 npm run db:seed -- --area {id}   # Specific area
 npm run db:list                  # Show areas
+npx tsx scripts/seed-auth.ts     # Auth seed only (roles, users, clinic)
+```
+
+## Development Commands
+
+```bash
+# Database
+docker-compose up -d             # Start MongoDB
+docker-compose down              # Stop MongoDB
+docker-compose down -v           # Stop & clear data
+npx prisma@5 studio              # Visual DB browser (localhost:5555)
+npx prisma@5 db push             # Push schema changes
+
+# Dev server
+npm run dev                      # Start Next.js (localhost:3000)
 ```
 
 ---

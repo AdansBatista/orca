@@ -56,13 +56,18 @@ What this area aims to achieve:
 ### 1. Authentication
 *Login, sessions, tokens, and password management*
 
-**Key Functions:**
+**Phase 1 Functions:**
 - User Login Flow (NextAuth.js + CredentialsProvider)
 - Session Management (JWT in HTTP-only cookies)
-- Password Policy Enforcement
+- Password Policy (8+ chars, basic complexity)
 - Session Duration & Timeout Rules
+
+**Future Functions (Phase 2+):**
+- Password Reset Flow (self-service)
 - Token Refresh & Validation
-- MFA Implementation (Future)
+- MFA Implementation
+
+> **Note**: In Phase 1, user creation and password resets are admin-only operations.
 
 **Documentation:** [sub-areas/authentication/](./sub-areas/authentication/)
 
@@ -324,15 +329,22 @@ model AuditLog {
 
 ### Authentication Endpoints
 
+**Phase 1 (Current):**
+
 | Method | Path | Description | Auth Required |
 |--------|------|-------------|---------------|
 | POST | `/api/auth/login` | User login | No |
 | POST | `/api/auth/logout` | User logout | Yes |
 | GET | `/api/auth/session` | Get current session | Yes |
-| POST | `/api/auth/refresh` | Refresh session | Yes |
-| POST | `/api/auth/password/reset-request` | Request password reset | No |
-| POST | `/api/auth/password/reset` | Complete password reset | No |
 | POST | `/api/auth/password/change` | Change password (logged in) | Yes |
+
+**Future (Phase 2+):**
+
+| Method | Path | Description | Phase |
+|--------|------|-------------|-------|
+| POST | `/api/auth/refresh` | Refresh session | Phase 2 |
+| POST | `/api/auth/password/reset-request` | Request password reset | Phase 2 |
+| POST | `/api/auth/password/reset` | Complete password reset | Phase 2 |
 
 ### User & Role Endpoints
 
@@ -363,8 +375,13 @@ model AuditLog {
 ### Authentication Rules
 
 1. **Password Requirements**
-   - Minimum 12 characters
-   - At least 1 uppercase, 1 lowercase, 1 number, 1 special character
+
+   **Phase 1 (Current):**
+   - Minimum 8 characters
+   - At least 1 uppercase, 1 lowercase, 1 number
+
+   **Future (Phase 2+):**
+   - Special character requirement
    - Cannot reuse last 5 passwords
    - Maximum age: 90 days
 

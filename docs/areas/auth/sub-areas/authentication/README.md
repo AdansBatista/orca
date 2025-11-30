@@ -31,14 +31,24 @@ This sub-area handles all aspects of user authentication including login flows, 
 
 ## Functions
 
+### Phase 1 (Current Scope)
+
 | # | Function | Description | Priority |
 |---|----------|-------------|----------|
 | 1 | [User Login](./functions/) | Credential validation and session creation | Critical |
 | 2 | [Session Management](./functions/) | JWT handling, refresh, validation | Critical |
-| 3 | [Password Policy](./functions/) | Validation, history, expiration | High |
+| 3 | [Password Policy](./functions/) | Basic validation (8+ chars, complexity) | High |
 | 4 | [Session Duration](./functions/) | Timeout rules, idle detection | High |
-| 5 | [Password Reset](./functions/) | Self-service password recovery | High |
-| 6 | [MFA Implementation](./functions/) | Multi-factor auth (Future) | Medium |
+
+### Future Phases
+
+| # | Function | Description | Phase |
+|---|----------|-------------|-------|
+| 5 | Password Reset | Self-service password recovery | Phase 2 |
+| 6 | MFA Implementation | Multi-factor authentication | Phase 3 |
+| 7 | User Self-Registration | Public sign-up flow | Phase 3 |
+
+> **Note**: In Phase 1, user creation and password resets are performed by super_admin or clinic_admin only.
 
 ---
 
@@ -105,15 +115,22 @@ model PasswordResetToken {
 
 ## API Endpoints
 
+### Phase 1 (Current Scope)
+
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
 | POST | `/api/auth/login` | User login | No |
 | POST | `/api/auth/logout` | User logout | Yes |
 | GET | `/api/auth/session` | Get current session | Yes |
-| POST | `/api/auth/refresh` | Refresh session token | Yes |
-| POST | `/api/auth/password/reset-request` | Request password reset | No |
-| POST | `/api/auth/password/reset` | Complete password reset | No |
 | POST | `/api/auth/password/change` | Change password (logged in) | Yes |
+
+### Future Phases
+
+| Method | Path | Description | Phase |
+|--------|------|-------------|-------|
+| POST | `/api/auth/refresh` | Refresh session token | Phase 2 |
+| POST | `/api/auth/password/reset-request` | Request password reset | Phase 2 |
+| POST | `/api/auth/password/reset` | Complete password reset | Phase 2 |
 
 ### Request/Response Examples
 
@@ -175,28 +192,35 @@ model PasswordResetToken {
 
 ### Password Policy
 
+#### Phase 1 (Current)
+
 | Requirement | Value |
 |-------------|-------|
-| Minimum length | 12 characters |
+| Minimum length | 8 characters |
 | Uppercase letters | At least 1 |
 | Lowercase letters | At least 1 |
 | Numbers | At least 1 |
-| Special characters | At least 1 |
-| Password history | Cannot reuse last 5 |
-| Maximum age | 90 days |
+
+#### Future Enhancements
+
+| Requirement | Value | Phase |
+|-------------|-------|-------|
+| Special characters | At least 1 | Phase 2 |
+| Password history | Cannot reuse last 5 | Phase 2 |
+| Maximum age | 90 days | Phase 2 |
 
 ### Password Validation Schema
 
 ```typescript
 import { z } from 'zod';
 
+// Phase 1: Basic password requirements for on-premises deployment
 export const passwordSchema = z
   .string()
-  .min(12, 'Password must be at least 12 characters')
+  .min(8, 'Password must be at least 8 characters')
   .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
   .regex(/[a-z]/, 'Must contain at least one lowercase letter')
-  .regex(/[0-9]/, 'Must contain at least one number')
-  .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Must contain at least one special character');
+  .regex(/[0-9]/, 'Must contain at least one number');
 ```
 
 ### Session Rules
@@ -237,7 +261,9 @@ export const passwordSchema = z
 
 ---
 
-## MFA Implementation (Future)
+## MFA Implementation (Phase 3 - Future)
+
+> **Status**: Deferred to Phase 3. On-premises deployment with physical access control reduces immediate MFA need.
 
 ```typescript
 // MFA flow when implemented

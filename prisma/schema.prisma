@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// AUTH AREA - Core authentication and authorization models
+// =============================================================================
+
+/// Clinic - Multi-tenant isolation unit
+model Clinic {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  slug      String   @unique
+  address   String?
+  phone     String?
+  email     String?
+  timezone  String   @default("America/Toronto")
+  settings  Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users           User[]
+  patients        Patient[]
+  roleAssignments RoleAssignment[]
+
+  @@map("clinics")
+}
+
+/// User - System user account
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  email          String    @unique
+  emailVerified  DateTime?
+  passwordHash   String?
+  firstName      String
+  lastName       String
+  avatar         String?
+  phone          String?
+  role           UserRole  @default(clinical_staff)
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime? // Soft delete
+
+  // Multi-clinic support
+  clinicId  String   @db.ObjectId   // Primary/current clinic
+  clinicIds String[] @db.ObjectId   // All assigned clinics (for multi-clinic users)
+  clinic    Clinic   @relation(fields: [clinicId], references: [id])
+
+  // NextAuth.js relations
+  accounts Account[]
+  sessions Session[]
+
+  // Role assignments (for fine-grained permissions)
+  roleAssignments RoleAssignment[]
+
+  // Audit trail
+  createdBy String? @db.ObjectId
+  updatedBy String? @db.ObjectId
+
+  @@index([clinicId])
+  @@map("users")
+}
+
+/// Account - OAuth provider accounts (NextAuth.js)
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+/// Session - User sessions (NextAuth.js)
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+/// VerificationToken - Email verification tokens (NextAuth.js)
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+/// Role - System and custom roles with permissions
+model Role {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   // Display name (e.g., "Clinic Administrator")
+  code        String   @unique // System code (e.g., "clinic_admin")
+  description String?
+  isSystem    Boolean  @default(false) // System roles cannot be deleted
+  permissions String[] // Array of permission codes (e.g., ["patients:read", "patients:write"])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  assignments RoleAssignment[]
+
+  @@map("roles")
+}
+
+/// RoleAssignment - Links users to roles within specific clinics
+model RoleAssignment {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String    @db.ObjectId
+  roleId     String    @db.ObjectId
+  clinicId   String    @db.ObjectId // Role applies to this clinic
+  assignedBy String    @db.ObjectId
+  assignedAt DateTime  @default(now())
+  expiresAt  DateTime? // Optional expiration
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id])
+  clinic Clinic @relation(fields: [clinicId], references: [id])
+
+  @@unique([userId, roleId, clinicId])
+  @@index([userId])
+  @@index([clinicId])
+  @@map("role_assignments")
+}
+
+/// AuditLog - Security and compliance audit trail
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String?  @db.ObjectId
+  userName   String?  // Denormalized for log readability
+  userRole   String?  // Denormalized for log readability
+  clinicId   String?  @db.ObjectId
+  action     String   // CREATE, READ, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  entity     String   // Patient, Appointment, Invoice, etc.
+  entityId   String?
+  details    Json?    // Action-specific details
+  ipAddress  String?
+  userAgent  String?
+  occurredAt DateTime @default(now())
+
+  @@index([clinicId])
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([occurredAt])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// =============================================================================
+// PATIENT AREA - Patient records (placeholder for future implementation)
+// =============================================================================
+
+/// Patient - Patient records
+model Patient {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  dateOfBirth DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime? // Soft delete for HIPAA compliance
+
+  // Multi-clinic isolation
+  clinicId String @db.ObjectId
+  clinic   Clinic @relation(fields: [clinicId], references: [id])
+
+  // Audit trail
+  createdBy String? @db.ObjectId
+  updatedBy String? @db.ObjectId
+
+  @@index([clinicId])
+  @@index([lastName, firstName])
+  @@map("patients")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  super_admin
+  clinic_admin
+  doctor
+  clinical_staff
+  front_desk
+  billing
+  read_only
+}
