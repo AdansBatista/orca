@@ -268,6 +268,10 @@ model StaffProfile {
   emergencyContacts EmergencyContact[]
   employmentRecords EmploymentRecord[]
   documents        StaffDocument[]
+  shifts           StaffShift[]
+  timeOffRequests  TimeOffRequest[]
+  availability     StaffAvailability[]
+  overtimeLogs     OvertimeLog[]
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -549,4 +553,428 @@ enum DocumentAccessLevel {
   HR_ONLY
   MANAGEMENT
   CONFIDENTIAL
+}
+
+// =============================================================================
+// STAFF SCHEDULING & TIME MANAGEMENT
+// =============================================================================
+
+/// StaffShift - Individual work shifts for staff members
+model StaffShift {
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String      @db.ObjectId
+
+  // Shift Details
+  shiftDate        DateTime    @db.Date
+  startTime        DateTime    // Full datetime for the shift start
+  endTime          DateTime    // Full datetime for the shift end
+  breakMinutes     Int         @default(0)
+  scheduledHours   Float       // Calculated hours (endTime - startTime - break)
+
+  // Location
+  locationId       String      @db.ObjectId  // Which clinic/location
+
+  // Shift Type & Status
+  shiftType        ShiftType   @default(REGULAR)
+  status           ShiftStatus @default(SCHEDULED)
+
+  // Actual Times (for time tracking / clock in-out)
+  clockIn          DateTime?
+  clockOut         DateTime?
+  actualBreakMinutes Int?
+  actualHours      Float?
+
+  // Notes and metadata
+  notes            String?
+  color            String?     // For UI display
+
+  // Template reference (if created from template)
+  templateId       String?     @db.ObjectId
+
+  // Timestamps and Audit
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  createdBy        String?     @db.ObjectId
+  updatedBy        String?     @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String      @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([shiftDate])
+  @@index([locationId])
+  @@index([status])
+  @@index([shiftType])
+  @@map("staff_shifts")
+}
+
+/// TimeOffRequest - Staff time-off/leave requests
+model TimeOffRequest {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String         @db.ObjectId
+
+  // Request Details
+  requestType      TimeOffType
+  startDate        DateTime       @db.Date
+  endDate          DateTime       @db.Date
+  totalDays        Float          // Can be fractional for partial days
+  totalHours       Float?
+
+  // Partial Day Options
+  isPartialDay     Boolean        @default(false)
+  partialStartTime DateTime?
+  partialEndTime   DateTime?
+
+  // Status
+  status           TimeOffStatus  @default(PENDING)
+
+  // Reason and notes
+  reason           String?
+  notes            String?
+
+  // Approval tracking
+  reviewedBy       String?        @db.ObjectId
+  reviewedAt       DateTime?
+  approvalNotes    String?
+  rejectionReason  String?
+
+  // Coverage
+  coverageRequired Boolean        @default(true)
+  coverageStaffId  String?        @db.ObjectId
+  coverageNotes    String?
+
+  // Timestamps
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  // Multi-clinic isolation
+  clinicId         String         @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile   @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([status])
+  @@index([requestType])
+  @@map("time_off_requests")
+}
+
+/// ScheduleTemplate - Reusable schedule templates
+model ScheduleTemplate {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Template Details
+  name             String
+  description      String?
+  templateType     TemplateType     @default(STANDARD)
+  periodType       TemplatePeriod   @default(WEEKLY)
+
+  // Scope (optional filters for when template applies)
+  locationId       String?          @db.ObjectId  // null = all locations
+  department       String?
+
+  // Status
+  isActive         Boolean          @default(true)
+  isDefault        Boolean          @default(false)
+
+  // Effective dates
+  effectiveFrom    DateTime?
+  effectiveUntil   DateTime?
+
+  // Template Data - stored as JSON array of shift definitions
+  shifts           Json             // Array of TemplateShiftData
+
+  // Timestamps and Audit
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  createdBy        String?          @db.ObjectId
+  updatedBy        String?          @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String           @db.ObjectId
+
+  @@index([clinicId])
+  @@index([templateType])
+  @@index([isActive])
+  @@map("schedule_templates")
+}
+
+/// StaffAvailability - Staff availability preferences and blocks
+model StaffAvailability {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String           @db.ObjectId
+
+  // Availability Type
+  availabilityType AvailabilityType
+  isRecurring      Boolean          @default(false)
+
+  // For Recurring availability (weekly pattern)
+  dayOfWeek        Int?             // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime        String?          // "HH:mm" format
+  endTime          String?          // "HH:mm" format
+
+  // For Specific Date availability
+  specificDate     DateTime?        @db.Date
+  allDay           Boolean          @default(false)
+
+  // Location Preference (optional)
+  locationId       String?          @db.ObjectId
+
+  // Effective Period (for recurring)
+  effectiveFrom    DateTime?
+  effectiveUntil   DateTime?
+
+  // Notes
+  reason           String?
+  notes            String?
+
+  // Status
+  isActive         Boolean          @default(true)
+
+  // Timestamps
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Multi-clinic isolation
+  clinicId         String           @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile     @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([dayOfWeek])
+  @@index([specificDate])
+  @@index([availabilityType])
+  @@map("staff_availability")
+}
+
+/// CoverageRequirement - Minimum staffing requirements
+model CoverageRequirement {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Requirement Details
+  name             String
+  description      String?
+
+  // Location this applies to
+  locationId       String       @db.ObjectId
+
+  // Role/Department filter (optional)
+  department       String?
+  providerType     ProviderType?
+
+  // Staffing Levels
+  minimumStaff     Int
+  optimalStaff     Int?
+  maximumStaff     Int?
+
+  // Time Period (when this requirement applies)
+  dayOfWeek        Int?         // null = all days
+  startTime        String?      // "HH:mm" - null = all hours
+  endTime          String?      // "HH:mm"
+
+  // Priority and importance
+  priority         Int          @default(1)  // Higher = more important
+  isCritical       Boolean      @default(false)
+
+  // Status
+  isActive         Boolean      @default(true)
+
+  // Timestamps
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Multi-clinic isolation
+  clinicId         String       @db.ObjectId
+
+  @@index([clinicId])
+  @@index([locationId])
+  @@index([isActive])
+  @@map("coverage_requirements")
+}
+
+/// ShiftSwapRequest - Shift swap/trade requests between staff
+model ShiftSwapRequest {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Original Shift being swapped
+  originalShiftId  String       @db.ObjectId
+  requesterId      String       @db.ObjectId  // Staff requesting the swap
+
+  // Swap Type
+  swapType         SwapType
+
+  // Target (for SWAP type - exchanging shifts)
+  targetShiftId    String?      @db.ObjectId
+  targetStaffId    String?      @db.ObjectId
+
+  // Status
+  status           SwapStatus   @default(PENDING)
+
+  // Approval tracking
+  targetAcceptedAt DateTime?    // When target staff accepted
+  approvedBy       String?      @db.ObjectId
+  approvedAt       DateTime?
+
+  // Notes
+  reason           String?
+  notes            String?
+
+  // Timestamps
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Multi-clinic isolation
+  clinicId         String       @db.ObjectId
+
+  @@index([clinicId])
+  @@index([originalShiftId])
+  @@index([requesterId])
+  @@index([status])
+  @@map("shift_swap_requests")
+}
+
+/// OvertimeLog - Weekly overtime tracking
+model OvertimeLog {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String         @db.ObjectId
+
+  // Period
+  weekStartDate    DateTime       @db.Date  // Monday of the week
+  weekEndDate      DateTime       @db.Date  // Sunday of the week
+
+  // Hours breakdown
+  regularHours     Float
+  overtimeHours    Float
+  totalHours       Float
+
+  // Status
+  status           OvertimeStatus @default(PENDING)
+  preApproved      Boolean        @default(false)
+
+  // Approval tracking
+  approvedBy       String?        @db.ObjectId
+  approvedAt       DateTime?
+
+  // Notes
+  reason           String?
+  notes            String?
+
+  // Timestamps
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  // Multi-clinic isolation
+  clinicId         String         @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile   @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([staffProfileId, weekStartDate])
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([weekStartDate])
+  @@index([status])
+  @@map("overtime_logs")
+}
+
+// =============================================================================
+// SCHEDULING ENUMS
+// =============================================================================
+
+enum ShiftType {
+  REGULAR
+  OVERTIME
+  ON_CALL
+  TRAINING
+  MEETING
+  COVERAGE     // Filling in for someone
+  FLOAT        // Floating/flexible assignment
+}
+
+enum ShiftStatus {
+  SCHEDULED    // Scheduled but not yet confirmed
+  CONFIRMED    // Staff confirmed attendance
+  IN_PROGRESS  // Currently working
+  COMPLETED    // Shift completed
+  CANCELLED    // Shift cancelled
+  NO_SHOW      // Staff didn't show
+  SWAP_PENDING // Pending swap approval
+}
+
+enum TimeOffType {
+  VACATION
+  SICK
+  PERSONAL
+  BEREAVEMENT
+  JURY_DUTY
+  MILITARY
+  MATERNITY
+  PATERNITY
+  FMLA
+  UNPAID
+  CONTINUING_EDUCATION
+  HOLIDAY
+  OTHER
+}
+
+enum TimeOffStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  WITHDRAWN
+}
+
+enum TemplateType {
+  STANDARD       // Regular operating hours
+  EXTENDED_HOURS // Extended/overtime coverage
+  HOLIDAY        // Holiday schedule
+  SEASONAL       // Seasonal variation
+  CUSTOM         // Custom template
+}
+
+enum TemplatePeriod {
+  DAILY
+  WEEKLY
+  BI_WEEKLY
+  MONTHLY
+}
+
+enum AvailabilityType {
+  AVAILABLE      // Can work
+  UNAVAILABLE    // Cannot work
+  PREFERRED      // Prefers to work
+  IF_NEEDED      // Available if needed
+  BLOCKED        // System-blocked (leave, etc.)
+}
+
+enum SwapType {
+  SWAP           // Exchange shifts with another staff
+  GIVEAWAY       // Give shift to another staff
+  PICKUP         // Pick up an open shift
+}
+
+enum SwapStatus {
+  PENDING        // Awaiting target/approval
+  ACCEPTED       // Target accepted, awaiting manager
+  APPROVED       // Manager approved
+  REJECTED       // Rejected
+  CANCELLED      // Cancelled by requester
+  COMPLETED      // Swap completed
+}
+
+enum OvertimeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
 }

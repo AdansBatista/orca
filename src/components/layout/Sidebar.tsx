@@ -26,6 +26,8 @@ import {
   Moon,
   Monitor,
   UserCog,
+  CalendarClock,
+  CalendarOff,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -119,6 +121,8 @@ const defaultNavGroups: NavGroup[] = [
     label: "Management",
     items: [
       { label: "Staff", href: "/staff", icon: UserCog },
+      { label: "Schedules", href: "/staff/schedules", icon: CalendarClock },
+      { label: "Time Off", href: "/staff/time-off", icon: CalendarOff },
       { label: "Billing", href: "/billing", icon: DollarSign },
       { label: "Reports", href: "/reports", icon: BarChart3 },
       { label: "Documents", href: "/documents", icon: FileText },
@@ -416,7 +420,15 @@ function NavItemComponent({ item, isCollapsed }: NavItemComponentProps) {
   const Icon = item.icon;
 
   // Check if this item is active based on current pathname
-  const isActive = item.active ?? (pathname === item.href || pathname.startsWith(item.href + "/"));
+  // Special handling for /staff to avoid matching /staff/schedules and /staff/time-off
+  const isActive = item.active ?? (() => {
+    if (pathname === item.href) return true;
+    if (item.href === "/staff") {
+      // Only match /staff or /staff/[id] (UUID pattern), not /staff/schedules, /staff/time-off, etc.
+      return pathname === "/staff" || /^\/staff\/[a-f0-9-]+/.test(pathname);
+    }
+    return pathname.startsWith(item.href + "/");
+  })();
 
   const content = (
     <Link

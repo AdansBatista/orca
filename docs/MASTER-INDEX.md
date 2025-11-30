@@ -11,13 +11,13 @@
 | Attribute | Value |
 |-----------|-------|
 | **Current Phase** | Phase 1 - Foundation Infrastructure |
-| **In Progress** | Staff Management (Staff Profiles & HR) |
-| **Implementation Status** | ✅ Auth complete, 🔨 Staff in development |
+| **In Progress** | Staff Management (Roles & Permissions, Performance & Training) |
+| **Implementation Status** | ✅ Auth complete, 🔨 Staff in development (2/4 sub-areas done) |
 
 ### What to Work On
 
-1. **In Progress**: Staff Management - Staff Profiles & HR (core CRUD, credentials, certifications)
-2. **Next**: Staff Management - remaining sub-areas (scheduling, performance)
+1. **In Progress**: Staff Management - Roles & Permissions (custom roles, permission assignment)
+2. **Next**: Staff Management - Performance & Training (metrics, goals, reviews)
 3. **Then**: Resources Management
 4. **Phase 2+**: Blocked until Phase 1 complete
 
@@ -355,12 +355,12 @@ Before implementing any feature, consult these guides:
 *Team coordination, scheduling, and assignments*
 
 **Sub-Areas:**
-- 6.1 Staff Profiles & HR - `🔨 In Development` (CRUD, credentials, certifications, emergency contacts)
-- 6.2 Scheduling & Time Management - `📋 Planned`
+- 6.1 Staff Profiles & HR - `✅ Complete` (CRUD, credentials, certifications, emergency contacts, documents)
+- 6.2 Scheduling & Time Management - `✅ Complete` (shifts, time-off, templates, availability, coverage)
 - 6.3 Roles & Permissions - `📋 Planned`
 - 6.4 Performance & Training - `📋 Planned`
 
-**Key Functions:** Employee profiles, credential management, certification tracking, emergency contacts, employment records
+**Key Functions:** Employee profiles, credential management, certification tracking, emergency contacts, employment records, shift scheduling, time-off management, schedule templates
 
 ---
 
@@ -627,6 +627,8 @@ Before implementing any feature, consult these guides:
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2024-11-30 | Staff Management - Scheduling & Time Management sub-area complete | Claude |
+| 2024-11-30 | Staff Management - Staff Profiles & HR sub-area complete | Claude |
 | 2024-11-29 | Auth & Authorization area implementation complete (Phase 1 scope) | Claude |
 | 2024-11-26 | Initial creation | Claude |
 | 2024-11-26 | Added detailed Billing & Insurance area documentation (4 sub-areas, 31 functions) | Claude |
@@ -640,5 +642,5 @@ Before implementing any feature, consult these guides:
 ---
 
 **Status**: Active
-**Last Updated**: 2024-11-29
+**Last Updated**: 2024-11-30
 **Owner**: Development Team

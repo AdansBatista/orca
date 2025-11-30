@@ -9,3 +9,6 @@ export { EmploymentRecordsList } from './EmploymentRecordsList';
 export { EmploymentRecordForm } from './EmploymentRecordForm';
 export { DocumentsList } from './DocumentsList';
 export { DocumentUploadForm } from './DocumentUploadForm';
+
+// Scheduling components
+export * from './scheduling';

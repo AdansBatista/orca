@@ -1,6 +1,6 @@
 # Current Development Focus
 
-> **Last Updated**: 2024-11-29
+> **Last Updated**: 2024-11-30
 >
 > **Purpose**: Single source of truth for what LLMs and developers should work on
 
@@ -11,7 +11,7 @@
 | Attribute | Value |
 |-----------|-------|
 | **Current Phase** | Phase 1 - Foundation Infrastructure |
-| **Implementation Status** | 🔄 Phase 1 In Progress (Auth ✅ Complete) |
+| **Implementation Status** | 🔄 Phase 1 In Progress (Auth ✅, Staff 2/4 sub-areas ✅) |
 | **Documentation Status** | ✅ Complete for all 13 areas |
 
 ---
@@ -26,12 +26,17 @@ These areas have no dependencies and can be started immediately:
 - **Completed Features**: User login, session management (JWT), role-based permissions, audit logging
 - **Code Patterns**: [AUTH-PATTERNS.md](guides/AUTH-PATTERNS.md)
 
-### 2. Staff Management (NEXT PRIORITY)
+### 2. Staff Management (IN PROGRESS - 2/4 sub-areas complete)
 - **Documentation**: [docs/areas/staff-management/](areas/staff-management/)
 - **Depends On**: Authentication ✅
-- **Key Deliverables**: Staff profiles, credentials, scheduling, roles
+- **Completed Sub-Areas**:
+  - ✅ Staff Profiles & HR (profiles, credentials, certifications, emergency contacts, documents)
+  - ✅ Scheduling & Time Management (shifts, time-off, templates, availability, coverage)
+- **Remaining Sub-Areas**:
+  - 📋 Roles & Permissions (custom roles, permission assignment)
+  - 📋 Performance & Training (metrics, goals, reviews)
 - **Priority**: Critical - providers needed for appointments
-- **Status**: Ready to implement
+- **Status**: In Progress
 
 ### 3. Resources Management
 - **Documentation**: [docs/areas/resources-management/](areas/resources-management/)
@@ -95,8 +100,12 @@ If asked to "implement the next feature" or "start development" without specific
 ```
 Is Auth implemented?
 ├── No  → Start Auth (see areas/auth/ and guides/AUTH-PATTERNS.md)
-└── Yes ✅ → Is Staff Management implemented?
-             ├── No  → Start Staff Management ← YOU ARE HERE
+└── Yes ✅ → Is Staff Management fully implemented?
+             ├── No  → Continue Staff Management ← YOU ARE HERE
+             │        ├── Staff Profiles & HR ✅
+             │        ├── Scheduling & Time Management ✅
+             │        ├── Roles & Permissions ← NEXT
+             │        └── Performance & Training
              └── Yes → Is Resources Management implemented?
                        ├── No  → Start Resources Management
                        └── Yes → Phase 1 complete! Start Phase 2 (Booking)
@@ -108,6 +117,8 @@ Is Auth implemented?
 
 | Date | Area/Feature | Status |
 |------|--------------|--------|
+| 2024-11-30 | Staff Management - Scheduling & Time Management | ✅ Complete |
+| 2024-11-30 | Staff Management - Staff Profiles & HR | ✅ Complete |
 | 2024-11-29 | Auth & Authorization (Phase 1) | ✅ Complete |
 
 ---
@@ -116,7 +127,8 @@ Is Auth implemented?
 
 | Area | Sub-Area | Assignee | Started | Status |
 |------|----------|----------|---------|--------|
-| Staff Management | - | - | - | Ready to start |
+| Staff Management | Roles & Permissions | - | - | Next up |
+| Staff Management | Performance & Training | - | - | Queued |
 
 ---
 

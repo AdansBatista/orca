@@ -142,10 +142,129 @@ These features depend on the File Upload Infrastructure backlog item being compl
 
 ---
 
+## Scheduling & Time Management Gaps
+
+**Status:** Pending (future enhancement)
+
+**Context:** Core scheduling features are implemented. The following gaps exist versus the documented specifications.
+
+### Shift Scheduling
+
+#### Missing Features
+
+- [ ] **Drag-and-drop shift assignment**
+  - Current: Uses dialog forms for shift creation/editing
+  - Needed: Visual drag-and-drop on calendar grid
+  - Affects: `ScheduleCalendar.tsx`
+
+- [ ] **Schedule publication workflow**
+  - Publish draft schedules to make them visible to staff
+  - Track published vs draft status
+  - Notification on publication
+
+- [ ] **Bulk shift creation endpoint**
+  - Schema exists: `bulkCreateShiftsSchema` in `scheduling.ts`
+  - Endpoint not implemented
+  - Create `POST /api/staff/shifts/bulk` route
+
+- [ ] **Day/month view options**
+  - Current: Only week view in `ScheduleCalendar.tsx`
+  - Add day view for detailed single-day scheduling
+  - Add month view for overview/planning
+
+#### Missing Validations
+
+- [ ] **Double-booking prevention**
+  - Check for overlapping shifts for same staff member
+  - Block or warn on conflict detection
+  - Cross-location checking
+
+- [ ] **Cross-location conflict warnings**
+  - Warn when scheduling staff at multiple locations same time
+  - Consider travel time between locations
+
+- [ ] **6-hour break requirement enforcement**
+  - Shifts over 6 hours must include break time
+  - Business rule exists in docs, not enforced in code
+  - Add validation in `createShiftSchema`
+
+- [ ] **Historical shift deletion prevention**
+  - Prevent deleting/modifying completed shifts
+  - Allow admin override with audit logging
+
+#### Missing Integrations
+
+- [ ] **Provider schedule sync with appointments**
+  - Staff shifts should affect appointment availability
+  - Block booking when provider not scheduled
+  - Integrate with future Booking & Scheduling area
+
+- [ ] **Notification system for schedule publication**
+  - Email/SMS notifications when schedules published
+  - Notify affected staff of schedule changes
+  - Integrate with future Patient Communications area
+
+---
+
+### Time-Off Management
+
+#### Missing Features
+
+- [ ] **PTO balance tracking endpoint**
+  - Track accrued, used, remaining PTO by type
+  - API endpoint to query balances
+  - Consider annual carryover rules
+
+- [ ] **Blackout date management**
+  - Define dates when time-off requests blocked/restricted
+  - Holiday seasons, training days, etc.
+  - Admin UI for managing blackout dates
+
+- [ ] **Bulk time-off for practice closures**
+  - Close practice for holidays/events
+  - Auto-generate time-off records for all staff
+  - Mark as HOLIDAY type
+
+- [ ] **Coverage impact calculation**
+  - Show how time-off affects staffing levels
+  - Highlight coverage gaps before approval
+  - Suggest alternative dates if understaffed
+
+#### Missing Validations
+
+- [ ] **Advance notice requirements**
+  - Vacation requires X days advance notice
+  - Different requirements per leave type
+  - Configurable per clinic
+
+- [ ] **Type-specific rules (sick leave same-day)**
+  - Sick leave allows same-day requests
+  - Vacation requires advance notice
+  - FMLA has specific documentation requirements
+
+- [ ] **Manager self-approval prevention**
+  - Managers cannot approve their own time-off
+  - Route to their manager or designated approver
+  - Audit trail for approval chain
+
+- [ ] **FMLA special routing**
+  - FMLA requests need HR/compliance review
+  - Additional documentation requirements
+  - Special approval workflow
+
+#### Missing Integrations
+
+- [ ] **Automatic schedule blocking for approved time-off**
+  - When time-off approved, auto-block shifts for those dates
+  - Remove/cancel existing shifts in range
+  - Prevent new shift scheduling during time-off
+
+---
+
 ## Other Backlog Items
 
 *(Add future deferred items here)*
 
 ---
 
-**Last Updated:** 2024-11-29
+**Last Updated:** 2024-11-30

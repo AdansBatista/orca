@@ -12,11 +12,11 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | 🔄 In Progress |
 | **Priority** | High |
 | **Phase** | 1 - Foundation Infrastructure |
 | **Dependencies** | Authentication & Authorization |
-| **Last Updated** | 2024-11-27 |
+| **Last Updated** | 2024-11-30 |
 
 ---
 
@@ -46,8 +46,8 @@ The Staff Management area provides comprehensive workforce management capabiliti
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 1 | [Staff Profiles & HR](./sub-areas/staff-profiles-hr/) | Employee profiles, employment records, credentials, certifications, emergency contacts | 📋 Planned | Critical |
-| 2 | [Scheduling & Time Management](./sub-areas/scheduling-time-management/) | Shift scheduling, time-off requests, coverage management, overtime tracking | 📋 Planned | High |
+| 1 | [Staff Profiles & HR](./sub-areas/staff-profiles-hr/) | Employee profiles, employment records, credentials, certifications, emergency contacts | ✅ Complete | Critical |
+| 2 | [Scheduling & Time Management](./sub-areas/scheduling-time-management/) | Shift scheduling, time-off requests, coverage management, overtime tracking | ✅ Complete | High |
 | 3 | [Roles & Permissions](./sub-areas/roles-permissions/) | Role-based access control, custom roles, permission assignment, multi-location access | 📋 Planned | Critical |
 | 4 | [Performance & Training](./sub-areas/performance-training/) | Performance metrics, goal tracking, review cycles, training records | 📋 Planned | Medium |
 
@@ -1252,6 +1252,6 @@ docs/areas/staff-management/
 
 ---
 
-**Status**: 📋 Planned
-**Last Updated**: 2024-11-27
+**Status**: 🔄 In Progress
+**Last Updated**: 2024-11-30
 **Owner**: Development Team
