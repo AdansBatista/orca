@@ -1,21 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createEmergencyContactSchema } from '@/lib/validations/staff';
 
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
-
 /**
  * GET /api/staff/[id]/emergency-contacts
  * List all emergency contacts for a staff member
  */
-export const GET = withAuth(
+export const GET = withAuth<{ id: string }>(
   async (req, session, context) => {
-    const { id: staffProfileId } = await (context as RouteContext).params;
+    const { id: staffProfileId } = await context.params;
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
@@ -59,9 +55,9 @@ export const GET = withAuth(
  * POST /api/staff/[id]/emergency-contacts
  * Add a new emergency contact to a staff member
  */
-export const POST = withAuth(
+export const POST = withAuth<{ id: string }>(
   async (req, session, context) => {
-    const { id: staffProfileId } = await (context as RouteContext).params;
+    const { id: staffProfileId } = await context.params;
     const body = await req.json();
 
     // Verify staff profile exists and belongs to clinic

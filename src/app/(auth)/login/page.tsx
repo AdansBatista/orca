@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, LogIn, AlertCircle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   default: "An error occurred during sign in. Please try again.",
 };
 
-export default function LoginPage() {
+/**
+ * Login form component that uses useSearchParams
+ * Wrapped in Suspense boundary for Next.js 15 compatibility
+ */
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -66,6 +70,97 @@ export default function LoginPage() {
   };
 
   return (
+    <>
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Login Form */}
+      <form onSubmit={handleLogin} className="space-y-5">
+        <FormField label="Email" required>
+          <Input
+            type="email"
+            placeholder="you@clinic.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            inputSize="lg"
+            disabled={isLoading}
+            required
+          />
+        </FormField>
+
+        <FormField label="Password" required>
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="pr-12"
+              inputSize="lg"
+              disabled={isLoading}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              disabled={isLoading}
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+        </FormField>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Checkbox id="remember" disabled={isLoading} />
+            <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+              Remember me
+            </Label>
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          loading={isLoading}
+          disabled={isLoading || !email || !password}
+        >
+          {!isLoading && <LogIn className="h-5 w-5" />}
+          Sign in
+        </Button>
+      </form>
+    </>
+  );
+}
+
+/**
+ * Loading fallback for Suspense boundary
+ */
+function LoginFormFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="text-sm text-muted-foreground">Loading...</p>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center p-6 sm:p-8 bg-background">
       <div className="w-full max-w-md">
         {/* Logo */}
@@ -87,78 +182,10 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-5">
-          <FormField label="Email" required>
-            <Input
-              type="email"
-              placeholder="you@clinic.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              inputSize="lg"
-              disabled={isLoading}
-              required
-            />
-          </FormField>
-
-          <FormField label="Password" required>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="pr-12"
-                inputSize="lg"
-                disabled={isLoading}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                disabled={isLoading}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-          </FormField>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="remember" disabled={isLoading} />
-              <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
-                Remember me
-              </Label>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            loading={isLoading}
-            disabled={isLoading || !email || !password}
-          >
-            {!isLoading && <LogIn className="h-5 w-5" />}
-            Sign in
-          </Button>
-        </form>
+        {/* Login Form - wrapped in Suspense for useSearchParams */}
+        <Suspense fallback={<LoginFormFallback />}>
+          <LoginForm />
+        </Suspense>
 
         {/* Info Card */}
         <Card variant="ghost" padding="default" className="mt-8">

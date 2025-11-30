@@ -16,7 +16,7 @@ import {
   Trash2,
   AlertTriangle,
 } from 'lucide-react';
-import type { StaffProfile, Credential, Certification, EmergencyContact } from '@prisma/client';
+import type { StaffProfile, Credential, Certification, EmergencyContact, EmploymentRecord, StaffDocument } from '@prisma/client';
 
 import { PageHeader, PageContent, DashboardGrid } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -43,12 +43,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { PhiProtected } from '@/components/ui/phi-protected';
 import { getFakeName, getFakeEmail, getFakePhone, getFakeAddress } from '@/lib/fake-data';
-import { CredentialsList, CertificationsList } from '@/components/staff';
+import { CredentialsList, CertificationsList, EmploymentRecordsList, DocumentsList } from '@/components/staff';
 
 type StaffWithRelations = StaffProfile & {
   credentials: Credential[];
   certifications: Certification[];
   emergencyContacts: EmergencyContact[];
+  employmentRecords: EmploymentRecord[];
+  documents: StaffDocument[];
 };
 
 const statusVariants: Record<string, 'success' | 'warning' | 'error' | 'info' | 'ghost'> = {
@@ -119,6 +121,8 @@ export default function StaffDetailPage() {
   const staffId = params.id as string;
 
   const [staff, setStaff] = useState<StaffWithRelations | null>(null);
+  const [employmentRecords, setEmploymentRecords] = useState<EmploymentRecord[]>([]);
+  const [documents, setDocuments] = useState<StaffDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -141,9 +145,35 @@ export default function StaffDetailPage() {
     }
   }, [staffId]);
 
+  const fetchEmploymentRecords = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/staff/${staffId}/employment-records`);
+      const result = await response.json();
+      if (result.success) {
+        setEmploymentRecords(result.data);
+      }
+    } catch {
+      // Silent fail - employment records are supplementary
+    }
+  }, [staffId]);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/staff/${staffId}/documents`);
+      const result = await response.json();
+      if (result.success) {
+        setDocuments(result.data);
+      }
+    } catch {
+      // Silent fail - documents are supplementary
+    }
+  }, [staffId]);
+
   useEffect(() => {
     fetchStaff();
-  }, [fetchStaff]);
+    fetchEmploymentRecords();
+    fetchDocuments();
+  }, [fetchStaff, fetchEmploymentRecords, fetchDocuments]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -475,6 +505,26 @@ export default function StaffDetailPage() {
                 certifications={staff.certifications}
                 canEdit={true}
                 onUpdate={fetchStaff}
+              />
+            </DashboardGrid.Half>
+
+            {/* Employment History */}
+            <DashboardGrid.Half>
+              <EmploymentRecordsList
+                staffProfileId={staff.id}
+                records={employmentRecords}
+                canEdit={true}
+                onUpdate={fetchEmploymentRecords}
+              />
+            </DashboardGrid.Half>
+
+            {/* Documents */}
+            <DashboardGrid.Half>
+              <DocumentsList
+                staffProfileId={staff.id}
+                documents={documents}
+                canEdit={true}
+                onUpdate={fetchDocuments}
               />
             </DashboardGrid.Half>
 

@@ -214,7 +214,7 @@ model Patient {
 /// StaffProfile - Extended profile for clinic staff members
 model StaffProfile {
   id               String          @id @default(auto()) @map("_id") @db.ObjectId
-  userId           String          @unique @db.ObjectId // Links to User account
+  userId           String?         @unique @db.ObjectId // Links to User account (optional - staff can exist before user account)
   employeeNumber   String          // Unique within clinic
 
   // Personal Information

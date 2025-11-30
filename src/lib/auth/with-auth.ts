@@ -30,12 +30,20 @@ interface WithAuthOptions {
 }
 
 /**
- * Handler function type with session
+ * Handler for routes WITHOUT dynamic params
  */
-type AuthenticatedHandler = (
+type SimpleHandler = (
+  req: NextRequest,
+  session: Session
+) => Promise<NextResponse>;
+
+/**
+ * Handler for routes WITH dynamic params (Next.js 15 async params)
+ */
+type ParamsHandler<T extends Record<string, string>> = (
   req: NextRequest,
   session: Session,
-  context?: { params?: Record<string, string> }
+  context: { params: Promise<T> }
 ) => Promise<NextResponse>;
 
 /**
@@ -61,25 +69,39 @@ function errorResponse(
  * Provides authentication and authorization checks for API endpoints.
  *
  * @example
- * // Basic auth check
+ * // Basic auth check (no dynamic params)
  * export const GET = withAuth(async (req, session) => {
  *   return NextResponse.json({ success: true, data: { user: session.user } });
  * });
  *
  * @example
- * // With permission check
- * export const POST = withAuth(
- *   async (req, session) => {
+ * // With dynamic params (Next.js 15)
+ * export const GET = withAuth<{ id: string }>(
+ *   async (req, session, context) => {
+ *     const { id } = await context.params;
  *     // Handler logic
  *   },
- *   { permissions: ['patients:write'] }
+ *   { permissions: ['resource:read'] }
  * );
  */
+// Overload for routes WITHOUT dynamic params
 export function withAuth(
-  handler: AuthenticatedHandler,
+  handler: SimpleHandler,
+  options?: WithAuthOptions
+): (req: NextRequest) => Promise<NextResponse>;
+
+// Overload for routes WITH dynamic params
+export function withAuth<T extends Record<string, string>>(
+  handler: ParamsHandler<T>,
+  options?: WithAuthOptions
+): (req: NextRequest, context: { params: Promise<T> }) => Promise<NextResponse>;
+
+// Implementation
+export function withAuth<T extends Record<string, string>>(
+  handler: SimpleHandler | ParamsHandler<T>,
   options: WithAuthOptions = {}
-): (req: NextRequest, context?: { params?: Record<string, string> }) => Promise<NextResponse> {
-  return async (req: NextRequest, context?: { params?: Record<string, string> }) => {
+): (req: NextRequest, context?: { params: Promise<T> }) => Promise<NextResponse> {
+  return async (req: NextRequest, context?: { params: Promise<T> }) => {
     try {
       // Get session
       const session = await auth();
@@ -88,7 +110,10 @@ export function withAuth(
       if (!session?.user) {
         if (options.allowUnauthenticated) {
           // Allow through without session
-          return handler(req, session as Session, context);
+          if (context) {
+            return (handler as ParamsHandler<T>)(req, session as Session, context);
+          }
+          return (handler as SimpleHandler)(req, session as Session);
         }
         return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
       }
@@ -116,7 +141,10 @@ export function withAuth(
       }
 
       // Call the handler
-      return handler(req, session, context);
+      if (context) {
+        return (handler as ParamsHandler<T>)(req, session, context);
+      }
+      return (handler as SimpleHandler)(req, session);
     } catch (error) {
       console.error('API Error:', error);
 

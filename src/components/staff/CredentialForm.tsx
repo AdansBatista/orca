@@ -51,7 +51,8 @@ export function CredentialForm({ staffProfileId, onSuccess, onCancel }: Credenti
     setValue,
     formState: { errors },
   } = useForm<CreateCredentialInput>({
-    resolver: zodResolver(createCredentialSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(createCredentialSchema) as any,
     defaultValues: {
       staffProfileId,
       status: 'ACTIVE',

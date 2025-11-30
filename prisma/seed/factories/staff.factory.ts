@@ -1,4 +1,4 @@
-import type { Prisma, StaffProfile, Credential, Certification, EmergencyContact } from '@prisma/client';
+import type { Prisma, StaffProfile, Credential, Certification, EmergencyContact, EmploymentRecord } from '@prisma/client';
 import { BaseFactory } from './base.factory';
 import type { FactoryContext, FactoryOptions } from '../types';
 import { orthoGenerator } from '../generators';
@@ -8,6 +8,28 @@ import { orthoGenerator } from '../generators';
 // ============================================================================
 
 const DEPARTMENTS = ['Clinical', 'Front Office', 'Billing', 'Administration', 'Lab'];
+
+const EMPLOYMENT_RECORD_SCENARIOS = [
+  // Initial hire
+  { recordType: 'HIRE', reason: 'New employee' },
+  // Promotions
+  { recordType: 'PROMOTION', reason: 'Excellent performance' },
+  { recordType: 'PROMOTION', reason: 'Leadership development' },
+  // Title changes
+  { recordType: 'TITLE_CHANGE', reason: 'Role expansion' },
+  { recordType: 'TITLE_CHANGE', reason: 'Restructuring' },
+  // Department changes
+  { recordType: 'DEPARTMENT_CHANGE', reason: 'Internal transfer request' },
+  { recordType: 'DEPARTMENT_CHANGE', reason: 'Operational needs' },
+  // Status changes
+  { recordType: 'STATUS_CHANGE', reason: 'Return from leave' },
+  { recordType: 'LEAVE_START', reason: 'Medical leave' },
+  { recordType: 'LEAVE_START', reason: 'Parental leave' },
+  { recordType: 'LEAVE_END', reason: 'Leave completed' },
+  // Employment type changes
+  { recordType: 'EMPLOYMENT_TYPE_CHANGE', reason: 'Transition to full-time' },
+  { recordType: 'EMPLOYMENT_TYPE_CHANGE', reason: 'Requested reduced hours' },
+];
 
 const JOB_TITLES: Record<string, string[]> = {
   ORTHODONTIST: ['Orthodontist', 'Lead Orthodontist', 'Senior Orthodontist', 'Associate Orthodontist'],
@@ -473,7 +495,129 @@ export class StaffFactory extends BaseFactory<StaffCreateInput, StaffProfile> {
       });
     }
 
+    // Add employment records (always start with HIRE record)
+    await this.createEmploymentRecords(staff);
+
     return staff;
+  }
+
+  /**
+   * Create employment records for a staff member.
+   * Always creates an initial HIRE record, plus 0-3 additional records.
+   */
+  async createEmploymentRecords(staff: StaffProfile): Promise<EmploymentRecord[]> {
+    const records: EmploymentRecord[] = [];
+
+    // Always create initial HIRE record on hire date
+    const hireRecord = await this.db.employmentRecord.create({
+      data: {
+        staffProfileId: staff.id,
+        recordType: 'HIRE',
+        effectiveDate: staff.hireDate,
+        newTitle: staff.title,
+        newDepartment: staff.department,
+        newEmploymentType: staff.employmentType,
+        newStatus: 'ACTIVE',
+        reason: 'New employee hire',
+        notes: 'Initial employment record',
+        clinicId: this.clinicId,
+        createdBy: this.createdBy,
+      },
+    });
+    records.push(hireRecord);
+    this.idTracker.add('EmploymentRecord', hireRecord.id, this.clinicId);
+
+    // Calculate days since hire
+    const daysSinceHire = Math.floor(
+      (Date.now() - new Date(staff.hireDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    // Only add more records if employee has been here > 6 months
+    if (daysSinceHire > 180) {
+      // Add 0-3 additional employment events based on tenure
+      const additionalRecords = Math.min(
+        randomInt(0, 3),
+        Math.floor(daysSinceHire / 365) // Max 1 per year
+      );
+
+      let currentTitle = staff.title;
+      let currentDept = staff.department;
+      let currentType = staff.employmentType;
+      let lastEventDate = new Date(staff.hireDate);
+
+      for (let i = 0; i < additionalRecords; i++) {
+        // Pick a random scenario (excluding HIRE)
+        const scenario = randomItem(
+          EMPLOYMENT_RECORD_SCENARIOS.filter(s => s.recordType !== 'HIRE')
+        );
+
+        // Calculate a date between last event and now
+        const minDays = 90; // At least 90 days after last event
+        const daysAvailable = daysSinceHire - Math.floor(
+          (lastEventDate.getTime() - new Date(staff.hireDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysAvailable < minDays) break;
+
+        const eventDate = new Date(lastEventDate);
+        eventDate.setDate(eventDate.getDate() + randomInt(minDays, Math.min(365, daysAvailable)));
+
+        // Build record data based on type
+        const recordData: Prisma.EmploymentRecordCreateInput = {
+          staffProfile: { connect: { id: staff.id } },
+          recordType: scenario.recordType,
+          effectiveDate: eventDate,
+          reason: scenario.reason,
+          clinicId: this.clinicId,
+          createdBy: this.createdBy,
+        };
+
+        // Add type-specific fields
+        switch (scenario.recordType) {
+          case 'PROMOTION':
+          case 'TITLE_CHANGE': {
+            const titles = JOB_TITLES[staff.providerType || 'OTHER'] || JOB_TITLES.OTHER;
+            const newTitle = randomItem(titles.filter(t => t !== currentTitle));
+            recordData.previousTitle = currentTitle;
+            recordData.newTitle = newTitle || currentTitle;
+            currentTitle = recordData.newTitle;
+            break;
+          }
+          case 'DEPARTMENT_CHANGE': {
+            const newDept = randomItem(DEPARTMENTS.filter(d => d !== currentDept));
+            recordData.previousDepartment = currentDept;
+            recordData.newDepartment = newDept || currentDept;
+            currentDept = recordData.newDepartment;
+            break;
+          }
+          case 'EMPLOYMENT_TYPE_CHANGE': {
+            const types = ['FULL_TIME', 'PART_TIME', 'CONTRACT'] as const;
+            const newType = randomItem(types.filter(t => t !== currentType));
+            recordData.previousEmploymentType = currentType;
+            recordData.newEmploymentType = newType || currentType;
+            currentType = recordData.newEmploymentType;
+            break;
+          }
+          case 'STATUS_CHANGE':
+          case 'LEAVE_START':
+          case 'LEAVE_END': {
+            recordData.previousStatus = scenario.recordType === 'LEAVE_START' ? 'ACTIVE' : 'ON_LEAVE';
+            recordData.newStatus = scenario.recordType === 'LEAVE_START' ? 'ON_LEAVE' : 'ACTIVE';
+            break;
+          }
+        }
+
+        const record = await this.db.employmentRecord.create({
+          data: recordData,
+        });
+        records.push(record);
+        this.idTracker.add('EmploymentRecord', record.id, this.clinicId);
+
+        lastEventDate = eventDate;
+      }
+    }
+
+    return records;
   }
 }
 

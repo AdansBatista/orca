@@ -70,7 +70,8 @@ export function StaffProfileForm({ initialData, staffId, mode }: StaffProfileFor
     setValue,
     formState: { errors },
   } = useForm<CreateStaffProfileInput>({
-    resolver: zodResolver(createStaffProfileSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(createStaffProfileSchema) as any,
     defaultValues: {
       employmentType: 'FULL_TIME',
       status: 'ACTIVE',

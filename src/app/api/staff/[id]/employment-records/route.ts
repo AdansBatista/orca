@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
-import { createCredentialSchema } from '@/lib/validations/staff';
+import { createEmploymentRecordSchema } from '@/lib/validations/staff';
 
 /**
- * GET /api/staff/[id]/credentials
- * List all credentials for a staff member
+ * GET /api/staff/[id]/employment-records
+ * List all employment records for a staff member
  */
 export const GET = withAuth<{ id: string }>(
   async (req, session, context) => {
@@ -35,25 +35,25 @@ export const GET = withAuth<{ id: string }>(
       );
     }
 
-    const credentials = await db.credential.findMany({
+    const employmentRecords = await db.employmentRecord.findMany({
       where: {
         staffProfileId,
         ...getClinicFilter(session),
       },
       orderBy: [
-        { status: 'asc' },
-        { expirationDate: 'asc' },
+        { effectiveDate: 'desc' },
+        { createdAt: 'desc' },
       ],
     });
 
-    return NextResponse.json({ success: true, data: credentials });
+    return NextResponse.json({ success: true, data: employmentRecords });
   },
   { permissions: ['staff:view', 'staff:edit', 'staff:full'] }
 );
 
 /**
- * POST /api/staff/[id]/credentials
- * Add a new credential to a staff member
+ * POST /api/staff/[id]/employment-records
+ * Add a new employment record to a staff member
  */
 export const POST = withAuth<{ id: string }>(
   async (req, session, context) => {
@@ -83,7 +83,7 @@ export const POST = withAuth<{ id: string }>(
     }
 
     // Validate input
-    const result = createCredentialSchema.safeParse({
+    const result = createEmploymentRecordSchema.safeParse({
       ...body,
       staffProfileId,
     });
@@ -94,7 +94,7 @@ export const POST = withAuth<{ id: string }>(
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Invalid credential data',
+            message: 'Invalid employment record data',
             details: result.error.flatten(),
           },
         },
@@ -102,35 +102,12 @@ export const POST = withAuth<{ id: string }>(
       );
     }
 
-    // Check if credential of same type already exists
-    const existing = await db.credential.findFirst({
-      where: {
-        staffProfileId,
-        type: result.data.type,
-        status: { in: ['ACTIVE', 'RENEWAL_PENDING'] },
-      },
-    });
-
-    if (existing) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'DUPLICATE_CREDENTIAL',
-            message: `An active ${result.data.type} credential already exists`,
-          },
-        },
-        { status: 409 }
-      );
-    }
-
-    // Create the credential
-    const credential = await db.credential.create({
+    // Create the employment record
+    const employmentRecord = await db.employmentRecord.create({
       data: {
         ...result.data,
         clinicId: session.user.clinicId,
         createdBy: session.user.id,
-        updatedBy: session.user.id,
       },
     });
 
@@ -138,21 +115,20 @@ export const POST = withAuth<{ id: string }>(
     const { ipAddress, userAgent } = getRequestMeta(req);
     await logAudit(session, {
       action: 'CREATE',
-      entity: 'Credential',
-      entityId: credential.id,
+      entity: 'EmploymentRecord',
+      entityId: employmentRecord.id,
       details: {
         staffProfileId,
-        type: credential.type,
-        name: credential.name,
-        number: credential.number,
-        expirationDate: credential.expirationDate,
+        recordType: employmentRecord.recordType,
+        effectiveDate: employmentRecord.effectiveDate,
+        reason: employmentRecord.reason,
       },
       ipAddress,
       userAgent,
     });
 
     return NextResponse.json(
-      { success: true, data: credential },
+      { success: true, data: employmentRecord },
       { status: 201 }
     );
   },

@@ -55,7 +55,8 @@ export function CertificationForm({ staffProfileId, onSuccess, onCancel }: Certi
     setValue,
     formState: { errors },
   } = useForm<CreateCertificationInput>({
-    resolver: zodResolver(createCertificationSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(createCertificationSchema) as any,
     defaultValues: {
       staffProfileId,
       status: 'ACTIVE',

@@ -85,6 +85,35 @@ export const DocumentAccessLevelEnum = z.enum([
   'CONFIDENTIAL',
 ]);
 
+export const EmploymentRecordTypeEnum = z.enum([
+  'HIRE',
+  'PROMOTION',
+  'TRANSFER',
+  'DEMOTION',
+  'TERMINATION',
+  'RESIGNATION',
+  'STATUS_CHANGE',
+  'DEPARTMENT_CHANGE',
+  'TITLE_CHANGE',
+  'EMPLOYMENT_TYPE_CHANGE',
+  'LEAVE_START',
+  'LEAVE_END',
+  'REHIRE',
+  'OTHER',
+]);
+
+export const DocumentCategoryEnum = z.enum([
+  'CONTRACT',
+  'ID',
+  'TAX',
+  'MEDICAL',
+  'BACKGROUND',
+  'CERTIFICATION',
+  'PERFORMANCE',
+  'DISCIPLINARY',
+  'OTHER',
+]);
+
 // =============================================================================
 // Validation Helpers
 // =============================================================================
@@ -286,6 +315,56 @@ export const updateEmergencyContactSchema = createEmergencyContactSchema.partial
 });
 
 // =============================================================================
+// Employment Record Schemas
+// =============================================================================
+
+export const createEmploymentRecordSchema = z.object({
+  staffProfileId: z.string(),
+  recordType: EmploymentRecordTypeEnum,
+  effectiveDate: z.coerce.date(),
+  endDate: z.coerce.date().optional().nullable(),
+
+  // Position changes
+  previousTitle: z.string().max(100).optional().nullable(),
+  newTitle: z.string().max(100).optional().nullable(),
+  previousDepartment: z.string().max(100).optional().nullable(),
+  newDepartment: z.string().max(100).optional().nullable(),
+  previousEmploymentType: EmploymentTypeEnum.optional().nullable(),
+  newEmploymentType: EmploymentTypeEnum.optional().nullable(),
+  previousStatus: StaffStatusEnum.optional().nullable(),
+  newStatus: StaffStatusEnum.optional().nullable(),
+
+  // Additional details
+  reason: z.string().max(500).optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+  approvedBy: z.string().optional().nullable(),
+});
+
+export const updateEmploymentRecordSchema = createEmploymentRecordSchema.partial().extend({
+  id: z.string(),
+});
+
+// =============================================================================
+// Staff Document Schemas
+// =============================================================================
+
+export const createStaffDocumentSchema = z.object({
+  staffProfileId: z.string(),
+  name: z.string().min(1, 'Document name is required').max(200),
+  description: z.string().max(500).optional().nullable(),
+  category: DocumentCategoryEnum,
+  fileUrl: z.string().min(1, 'File URL is required'),
+  fileName: z.string().min(1, 'File name is required').max(255),
+  fileSize: z.number().int().positive().optional().nullable(),
+  mimeType: z.string().max(100).optional().nullable(),
+  accessLevel: DocumentAccessLevelEnum.default('HR_ONLY'),
+});
+
+export const updateStaffDocumentSchema = createStaffDocumentSchema.partial().extend({
+  id: z.string(),
+});
+
+// =============================================================================
 // Type Exports
 // =============================================================================
 
@@ -298,3 +377,7 @@ export type CreateCertificationInput = z.infer<typeof createCertificationSchema>
 export type UpdateCertificationInput = z.infer<typeof updateCertificationSchema>;
 export type CreateEmergencyContactInput = z.infer<typeof createEmergencyContactSchema>;
 export type UpdateEmergencyContactInput = z.infer<typeof updateEmergencyContactSchema>;
+export type CreateEmploymentRecordInput = z.infer<typeof createEmploymentRecordSchema>;
+export type UpdateEmploymentRecordInput = z.infer<typeof updateEmploymentRecordSchema>;
+export type CreateStaffDocumentInput = z.infer<typeof createStaffDocumentSchema>;
+export type UpdateStaffDocumentInput = z.infer<typeof updateStaffDocumentSchema>;

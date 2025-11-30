@@ -60,6 +60,8 @@ export interface IdTracker {
   count(model: string): number;
   /** Clear all tracked IDs */
   clear(): void;
+  /** Get a summary of tracked IDs (model -> count) */
+  summary(): Record<string, number>;
 }
 
 /**

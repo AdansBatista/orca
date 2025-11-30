@@ -1,4 +1,5 @@
 import type { Session } from 'next-auth';
+import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import type { AuditAction } from './auth/types';
 
@@ -36,7 +37,7 @@ export async function logAudit(
         action: input.action,
         entity: input.entity,
         entityId: input.entityId,
-        details: input.details ?? null,
+        details: (input.details ?? null) as Prisma.InputJsonValue | null,
         ipAddress: input.ipAddress,
         userAgent: input.userAgent,
       },
@@ -69,7 +70,7 @@ export async function logAuthEvent(
         action,
         entity: 'Auth',
         entityId: userId,
-        details: details ?? null,
+        details: (details ?? null) as Prisma.InputJsonValue | null,
         ipAddress,
         userAgent,
       },

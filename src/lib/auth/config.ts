@@ -164,4 +164,7 @@ export const authConfig: NextAuthConfig = {
     maxAge: SESSION_MAX_AGE,
     updateAge: SESSION_UPDATE_AGE,
   },
+  // Trust the host in development/local production builds
+  // In true production, this should be handled via AUTH_TRUST_HOST env var
+  trustHost: true,
 };

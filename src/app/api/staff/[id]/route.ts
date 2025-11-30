@@ -1,21 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateStaffProfileSchema } from '@/lib/validations/staff';
 
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
-
 /**
  * GET /api/staff/[id]
  * Get a single staff profile with all related data
  */
-export const GET = withAuth(
+export const GET = withAuth<{ id: string }>(
   async (req, session, context) => {
-    const { id } = await (context as RouteContext).params;
+    const { id } = await context.params;
 
     const staffProfile = await db.staffProfile.findFirst({
       where: {
@@ -62,9 +58,9 @@ export const GET = withAuth(
  * PATCH /api/staff/[id]
  * Update a staff profile
  */
-export const PATCH = withAuth(
+export const PATCH = withAuth<{ id: string }>(
   async (req, session, context) => {
-    const { id } = await (context as RouteContext).params;
+    const { id } = await context.params;
     const body = await req.json();
 
     // Find existing staff profile
@@ -223,9 +219,9 @@ export const PATCH = withAuth(
  * DELETE /api/staff/[id]
  * Soft delete a staff profile
  */
-export const DELETE = withAuth(
+export const DELETE = withAuth<{ id: string }>(
   async (req, session, context) => {
-    const { id } = await (context as RouteContext).params;
+    const { id } = await context.params;
 
     // Find existing staff profile
     const existing = await db.staffProfile.findFirst({

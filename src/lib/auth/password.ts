@@ -49,6 +49,6 @@ export function validatePassword(password: string): {
 
   return {
     valid: false,
-    errors: result.error.errors.map((e) => e.message),
+    errors: result.error.issues.map((e) => e.message),
   };
 }
