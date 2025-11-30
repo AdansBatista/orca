@@ -11,15 +11,14 @@
 | Attribute | Value |
 |-----------|-------|
 | **Current Phase** | Phase 1 - Foundation Infrastructure |
-| **In Progress** | Staff Management (Roles & Permissions, Performance & Training) |
-| **Implementation Status** | ✅ Auth complete, 🔨 Staff in development (2/4 sub-areas done) |
+| **In Progress** | Staff Management (Performance & Training) |
+| **Implementation Status** | ✅ Auth complete, 🔨 Staff in development (3/4 sub-areas done) |
 
 ### What to Work On
 
-1. **In Progress**: Staff Management - Roles & Permissions (custom roles, permission assignment)
-2. **Next**: Staff Management - Performance & Training (metrics, goals, reviews)
-3. **Then**: Resources Management
-4. **Phase 2+**: Blocked until Phase 1 complete
+1. **In Progress**: Staff Management - Performance & Training (metrics, goals, reviews)
+2. **Next**: Resources Management
+3. **Phase 2+**: Blocked until Phase 1 complete
 
 ### Finding Documentation
 
@@ -357,7 +356,7 @@ Before implementing any feature, consult these guides:
 **Sub-Areas:**
 - 6.1 Staff Profiles & HR - `✅ Complete` (CRUD, credentials, certifications, emergency contacts, documents)
 - 6.2 Scheduling & Time Management - `✅ Complete` (shifts, time-off, templates, availability, coverage)
-- 6.3 Roles & Permissions - `📋 Planned`
+- 6.3 Roles & Permissions - `✅ Complete` (role CRUD, permission matrix, role assignments)
 - 6.4 Performance & Training - `📋 Planned`
 
 **Key Functions:** Employee profiles, credential management, certification tracking, emergency contacts, employment records, shift scheduling, time-off management, schedule templates

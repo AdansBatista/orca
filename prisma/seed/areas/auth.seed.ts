@@ -1,5 +1,5 @@
 import type { SeedContext } from '../types';
-import { SYSTEM_ROLES, ROLE_PERMISSIONS, getPermissionsForRole } from '../fixtures';
+import { SYSTEM_ROLES, CUSTOM_ROLES, getPermissionsForRole } from '../fixtures';
 import { orthoGenerator } from '../generators';
 // import bcrypt from 'bcryptjs';  // Uncomment when bcrypt is installed
 
@@ -27,10 +27,26 @@ export async function seedRoles(ctx: SeedContext): Promise<void> {
     });
 
     idTracker.add('Role', role.id);
-    logger.info(`Created role: ${role.name}`);
+    logger.info(`Created system role: ${role.name}`);
   }
 
-  logger.endArea('Roles & Permissions', SYSTEM_ROLES.length);
+  // Create custom roles (demo/example roles)
+  for (const roleData of CUSTOM_ROLES) {
+    const role = await db.role.create({
+      data: {
+        code: roleData.code,
+        name: roleData.name,
+        description: roleData.description,
+        isSystem: roleData.isSystem,
+        permissions: roleData.permissions,
+      },
+    });
+
+    idTracker.add('Role', role.id);
+    logger.info(`Created custom role: ${role.name}`);
+  }
+
+  logger.endArea('Roles & Permissions', SYSTEM_ROLES.length + CUSTOM_ROLES.length);
 }
 
 /**

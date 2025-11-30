@@ -70,6 +70,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'settings:full',
     'users:full',
     'staff:full',
+    'roles:full',
     'audit:view',
   ],
   doctor: [

@@ -1,4 +1,4 @@
-export { SYSTEM_ROLES, getRoleByCode, type RoleCode } from './roles.fixture';
+export { SYSTEM_ROLES, CUSTOM_ROLES, getRoleByCode, type RoleCode } from './roles.fixture';
 
 export {
   PERMISSION_RESOURCES,

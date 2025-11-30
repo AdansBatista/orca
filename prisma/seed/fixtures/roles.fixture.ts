@@ -62,3 +62,75 @@ export type RoleCode = (typeof SYSTEM_ROLES)[number]['code'];
 export function getRoleByCode(code: RoleCode) {
   return SYSTEM_ROLES.find((r) => r.code === code);
 }
+
+/**
+ * Custom roles for demo/testing purposes
+ * These are examples of organization-specific roles
+ */
+export const CUSTOM_ROLES = [
+  {
+    code: 'senior_assistant',
+    name: 'Senior Assistant',
+    description: 'Experienced clinical assistant with additional responsibilities',
+    isSystem: false,
+    permissions: [
+      'patients:read',
+      'patients:update',
+      'appointments:read',
+      'appointments:update',
+      'treatment:read',
+      'imaging:read',
+      'imaging:create',
+      'inventory:read',
+      'inventory:update',
+    ],
+  },
+  {
+    code: 'treatment_coordinator',
+    name: 'Treatment Coordinator',
+    description: 'Handles new patient consultations and financial discussions',
+    isSystem: false,
+    permissions: [
+      'patients:create',
+      'patients:read',
+      'patients:update',
+      'appointments:*',
+      'treatment:read',
+      'billing:read',
+      'communications:*',
+      'leads:*',
+      'reports:read',
+    ],
+  },
+  {
+    code: 'office_manager',
+    name: 'Office Manager',
+    description: 'Manages day-to-day operations and staff coordination',
+    isSystem: false,
+    permissions: [
+      'patients:read',
+      'patients:update',
+      'appointments:*',
+      'staff:read',
+      'staff:update',
+      'billing:read',
+      'reports:*',
+      'communications:*',
+      'leads:*',
+      'inventory:*',
+    ],
+  },
+  {
+    code: 'insurance_specialist',
+    name: 'Insurance Specialist',
+    description: 'Handles insurance claims, verification, and billing coordination',
+    isSystem: false,
+    permissions: [
+      'patients:read',
+      'billing:*',
+      'insurance:*',
+      'reports:read',
+      'appointments:read',
+    ],
+  },
+];
