@@ -5,7 +5,7 @@
  * For CLI usage, use `scripts/db/seed.ts` instead.
  */
 
-import { seed } from './seed';
+import { seed } from './seed/index';
 
 seed()
   .then(() => {

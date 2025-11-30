@@ -25,6 +25,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -117,6 +118,7 @@ const defaultNavGroups: NavGroup[] = [
   {
     label: "Management",
     items: [
+      { label: "Staff", href: "/staff", icon: UserCog },
       { label: "Billing", href: "/billing", icon: DollarSign },
       { label: "Reports", href: "/reports", icon: BarChart3 },
       { label: "Documents", href: "/documents", icon: FileText },

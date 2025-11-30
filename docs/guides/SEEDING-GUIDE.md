@@ -417,6 +417,28 @@ Ensure seed order respects dependencies:
 }
 ```
 
+### 5. Explicitly Set Optional Fields to `null` (MongoDB)
+
+**CRITICAL**: MongoDB treats "field not set" differently from "field = null". This affects query behavior.
+
+```typescript
+// ❌ WRONG - Field is unset, won't match `where: { deletedAt: null }`
+const base = {
+  firstName: 'John',
+  lastName: 'Doe',
+  // deletedAt is not set
+};
+
+// ✅ CORRECT - Explicitly set to null for proper query matching
+const base = {
+  firstName: 'John',
+  lastName: 'Doe',
+  deletedAt: null,  // Explicitly set for MongoDB compatibility
+};
+```
+
+For soft-delete fields (`deletedAt`) and other optional fields used in queries, **always explicitly set them to `null`** in factories.
+
 ---
 
 ## Troubleshooting
@@ -438,6 +460,29 @@ Use `--profile minimal` for faster resets during development.
 ### TypeScript errors after schema change
 
 Run `npx prisma generate` to regenerate the Prisma client.
+
+### Query returns empty but data exists in database (MongoDB)
+
+If you can see records in Prisma Studio but queries return empty, check for the MongoDB null vs unset issue:
+
+```typescript
+// This won't match records where deletedAt is unset (field doesn't exist)
+await db.model.findMany({ where: { deletedAt: null } });
+```
+
+**Diagnosis:**
+```typescript
+// Without filter - returns records
+await db.staffProfile.findMany({ where: { clinicId } }); // ✅ Works
+
+// With null filter - returns empty
+await db.staffProfile.findMany({ where: { clinicId, deletedAt: null } }); // ❌ Empty
+```
+
+**Fix options:**
+1. Update existing data: `await db.model.updateMany({ where: {}, data: { deletedAt: null } })`
+2. Fix the factory to explicitly set `deletedAt: null`
+3. Use `{ deletedAt: { isSet: false } }` in queries (not recommended - fix the data instead)
 
 ---
 

@@ -13,7 +13,7 @@
  *   npm run db:seed -- --help
  */
 
-import { seed, seedWithProfile, seedAreas, seedPhase, listAreas, profiles } from '../../prisma/seed';
+import { seed, seedWithProfile, seedAreas, seedPhase, listAreas, profiles } from '../../prisma/seed/index';
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);

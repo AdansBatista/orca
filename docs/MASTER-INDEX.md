@@ -11,14 +11,15 @@
 | Attribute | Value |
 |-----------|-------|
 | **Current Phase** | Phase 1 - Foundation Infrastructure |
-| **Ready to Start** | Staff Management, Resources Management |
-| **Implementation Status** | ✅ Auth complete, remaining Phase 1 areas ready |
+| **In Progress** | Staff Management (Staff Profiles & HR) |
+| **Implementation Status** | ✅ Auth complete, 🔨 Staff in development |
 
 ### What to Work On
 
-1. **Next Priority**: Staff Management (Auth ✅ complete)
-2. **Then**: Resources Management
-3. **Phase 2+**: Blocked until Phase 1 complete
+1. **In Progress**: Staff Management - Staff Profiles & HR (core CRUD, credentials, certifications)
+2. **Next**: Staff Management - remaining sub-areas (scheduling, performance)
+3. **Then**: Resources Management
+4. **Phase 2+**: Blocked until Phase 1 complete
 
 ### Finding Documentation
 
@@ -78,7 +79,7 @@ Before implementing any feature, consult these guides:
 | # | Area | Status | Priority | Dependencies |
 |---|------|--------|----------|--------------|
 | 1.1 | [Auth & Authorization](./areas/auth/) | ✅ Complete | Critical | None |
-| 1.2 | [Staff Management](./areas/staff-management/) | 📋 Planned | Critical | Auth ✅ |
+| 1.2 | [Staff Management](./areas/staff-management/) | 🔨 In Development | Critical | Auth ✅ |
 | 1.3 | [Resources Management](./areas/resources-management/) | 📋 Planned | High | Auth ✅, Staff |
 
 ### Phase 2: Core Operations
@@ -130,7 +131,7 @@ Before implementing any feature, consult these guides:
 | [Imaging Management](./areas/imaging-management/) | 📋 Planned | 4 | 24 | [View](./areas/imaging-management/) |
 | [Lab Work Management](./areas/lab-work-management/) | 📋 Planned | 4 | 24 | [View](./areas/lab-work-management/) |
 | [Practice Orchestration](./areas/practice-orchestration/) | 📋 Planned | TBD | TBD | [View](./areas/practice-orchestration/) |
-| [Staff Management](./areas/staff-management/) | 📋 Planned | TBD | TBD | [View](./areas/staff-management/) |
+| [Staff Management](./areas/staff-management/) | 🔨 In Development | 4 | TBD | [View](./areas/staff-management/) |
 | [Resources Management](./areas/resources-management/) | 📋 Planned | TBD | TBD | [View](./areas/resources-management/) |
 | [CRM & Onboarding](./areas/crm-onboarding/) | 📋 Planned | 4 | 24 | [View](./areas/crm-onboarding/) |
 | [Patient Communications](./areas/patient-communications/) | 📋 Planned | 4 | 20 | [View](./areas/patient-communications/) |
@@ -354,12 +355,12 @@ Before implementing any feature, consult these guides:
 *Team coordination, scheduling, and assignments*
 
 **Sub-Areas:**
-- 6.1 Staff Profiles - `📋 Planned`
-- 6.2 Staff Scheduling - `📋 Planned`
-- 6.3 Role Assignments - `📋 Planned`
-- 6.4 Performance Tracking - `📋 Planned`
+- 6.1 Staff Profiles & HR - `🔨 In Development` (CRUD, credentials, certifications, emergency contacts)
+- 6.2 Scheduling & Time Management - `📋 Planned`
+- 6.3 Roles & Permissions - `📋 Planned`
+- 6.4 Performance & Training - `📋 Planned`
 
-**Key Functions:** TBD after sub-area planning
+**Key Functions:** Employee profiles, credential management, certification tracking, emergency contacts, employment records
 
 ---
 

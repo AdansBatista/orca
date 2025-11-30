@@ -208,6 +208,254 @@ model Patient {
 }
 
 // =============================================================================
+// STAFF MANAGEMENT AREA - Staff profiles, credentials, certifications
+// =============================================================================
+
+/// StaffProfile - Extended profile for clinic staff members
+model StaffProfile {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String          @unique @db.ObjectId // Links to User account
+  employeeNumber   String          // Unique within clinic
+
+  // Personal Information
+  firstName        String
+  lastName         String
+  middleName       String?
+  preferredName    String?
+  email            String
+  phone            String?
+  mobilePhone      String?
+  dateOfBirth      DateTime?
+  address          String?
+  city             String?
+  state            String?
+  postalCode       String?
+  country          String          @default("CA")
+
+  // Employment Information
+  employmentType   EmploymentType  @default(FULL_TIME)
+  status           StaffStatus     @default(ACTIVE)
+  hireDate         DateTime
+  terminationDate  DateTime?
+  department       String?
+  title            String?
+
+  // Provider-Specific Fields (for clinical staff)
+  isProvider       Boolean         @default(false)
+  providerType     ProviderType?
+  npiNumber        String?         // National Provider Identifier (10 digits)
+  deaNumber        String?         // DEA registration number
+  stateLicenseNumber String?
+
+  // Work Preferences
+  defaultClinicId  String?         @db.ObjectId
+  clinicIds        String[]        @db.ObjectId // Assigned clinics
+  notes            String?
+
+  // Timestamps and Audit
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?       // Soft delete
+  createdBy        String?         @db.ObjectId
+  updatedBy        String?         @db.ObjectId
+
+  // Multi-clinic isolation (primary clinic for data isolation)
+  clinicId         String          @db.ObjectId
+
+  // Relations
+  credentials      Credential[]
+  certifications   Certification[]
+  emergencyContacts EmergencyContact[]
+  employmentRecords EmploymentRecord[]
+  documents        StaffDocument[]
+
+  @@unique([clinicId, employeeNumber])
+  @@index([clinicId])
+  @@index([status])
+  @@index([lastName, firstName])
+  @@map("staff_profiles")
+}
+
+/// Credential - Provider licenses, registrations, and credentials
+model Credential {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String           @db.ObjectId
+
+  type             CredentialType
+  name             String           // e.g., "State Dental License", "DEA Registration"
+  number           String           // License/registration number
+  issuingAuthority String           // e.g., "Ontario Dental Association"
+  issuingState     String?          // State/province if applicable
+
+  issueDate        DateTime
+  expirationDate   DateTime?
+  status           CredentialStatus @default(ACTIVE)
+
+  // Verification
+  verifiedAt       DateTime?
+  verifiedBy       String?          @db.ObjectId
+  verificationNotes String?
+
+  // Document attachment
+  documentUrl      String?
+
+  // Timestamps
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  createdBy        String?          @db.ObjectId
+  updatedBy        String?          @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String           @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile     @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([staffProfileId])
+  @@index([clinicId])
+  @@index([expirationDate])
+  @@index([status])
+  @@map("credentials")
+}
+
+/// Certification - Clinical certifications and training completions
+model Certification {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String              @db.ObjectId
+
+  type             CertificationType
+  name             String              // e.g., "CPR/BLS Certification", "Invisalign Certified"
+  issuingOrganization String           // e.g., "American Heart Association"
+
+  issueDate        DateTime
+  expirationDate   DateTime?
+  status           CertificationStatus @default(ACTIVE)
+
+  // Achievement details
+  level            String?             // e.g., "Gold", "Platinum", "Level 2"
+  score            String?             // If applicable
+
+  // Document attachment
+  certificateUrl   String?
+
+  // Timestamps
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  createdBy        String?             @db.ObjectId
+  updatedBy        String?             @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String              @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile        @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([staffProfileId])
+  @@index([clinicId])
+  @@index([expirationDate])
+  @@index([status])
+  @@map("certifications")
+}
+
+/// EmergencyContact - Staff emergency contacts
+model EmergencyContact {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String       @db.ObjectId
+
+  name             String
+  relationship     String       // e.g., "Spouse", "Parent", "Sibling"
+  phone            String
+  alternatePhone   String?
+  email            String?
+  isPrimary        Boolean      @default(false)
+
+  // Timestamps
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Multi-clinic isolation
+  clinicId         String       @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([staffProfileId])
+  @@index([clinicId])
+  @@map("emergency_contacts")
+}
+
+/// EmploymentRecord - Employment history and changes
+model EmploymentRecord {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String         @db.ObjectId
+
+  recordType       String         // HIRE, PROMOTION, TRANSFER, TERMINATION, STATUS_CHANGE, etc.
+  effectiveDate    DateTime
+  endDate          DateTime?
+
+  // Position details
+  previousTitle    String?
+  newTitle         String?
+  previousDepartment String?
+  newDepartment    String?
+  previousEmploymentType EmploymentType?
+  newEmploymentType EmploymentType?
+  previousStatus   StaffStatus?
+  newStatus        StaffStatus?
+
+  // Additional details
+  reason           String?        // Reason for change
+  notes            String?
+  approvedBy       String?        @db.ObjectId
+
+  // Timestamps
+  createdAt        DateTime       @default(now())
+  createdBy        String?        @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String         @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile   @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([staffProfileId])
+  @@index([clinicId])
+  @@index([effectiveDate])
+  @@map("employment_records")
+}
+
+/// StaffDocument - HR documents and files
+model StaffDocument {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String              @db.ObjectId
+
+  name             String              // Document name
+  description      String?
+  category         String              // CONTRACT, ID, TAX, MEDICAL, BACKGROUND, OTHER
+  fileUrl          String              // Storage URL
+  fileName         String              // Original filename
+  fileSize         Int?                // Size in bytes
+  mimeType         String?
+
+  accessLevel      DocumentAccessLevel @default(HR_ONLY)
+
+  // Timestamps
+  uploadedAt       DateTime            @default(now())
+  uploadedBy       String?             @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String              @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile        @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([staffProfileId])
+  @@index([clinicId])
+  @@index([category])
+  @@map("staff_documents")
+}
+
+// =============================================================================
 // ENUMS
 // =============================================================================
 
@@ -219,4 +467,86 @@ enum UserRole {
   front_desk
   billing
   read_only
+}
+
+// Staff Management Enums
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  PRN          // Pro re nata (as needed)
+  TEMP
+}
+
+enum StaffStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+  SUSPENDED
+  PENDING      // Pending start
+}
+
+enum ProviderType {
+  ORTHODONTIST
+  GENERAL_DENTIST
+  ORAL_SURGEON
+  PERIODONTIST
+  ENDODONTIST
+  HYGIENIST
+  DENTAL_ASSISTANT
+  EFDA          // Expanded Function Dental Auxiliary
+  OTHER
+}
+
+enum CredentialType {
+  STATE_LICENSE
+  DEA_REGISTRATION
+  NPI
+  BOARD_CERTIFICATION
+  SPECIALTY_CERTIFICATION
+  RADIOLOGY_LICENSE
+  SEDATION_PERMIT
+  CONTROLLED_SUBSTANCE
+  OTHER
+}
+
+enum CredentialStatus {
+  ACTIVE
+  EXPIRED
+  PENDING
+  SUSPENDED
+  REVOKED
+  RENEWAL_PENDING
+}
+
+enum CertificationType {
+  CPR_BLS
+  ACLS
+  PALS
+  RADIOLOGY
+  NITROUS_OXIDE
+  LASER_CERTIFICATION
+  INVISALIGN
+  SURESMILE
+  INCOGNITO
+  DAMON
+  INFECTION_CONTROL
+  HIPAA
+  OSHA
+  OTHER
+}
+
+enum CertificationStatus {
+  ACTIVE
+  EXPIRED
+  PENDING
+  REVOKED
+}
+
+enum DocumentAccessLevel {
+  PUBLIC
+  STAFF_ONLY
+  HR_ONLY
+  MANAGEMENT
+  CONFIDENTIAL
 }

@@ -22,7 +22,6 @@ export async function seedRoles(ctx: SeedContext): Promise<void> {
         name: roleData.name,
         description: roleData.description,
         isSystem: roleData.isSystem,
-        level: roleData.level,
         permissions: permissions,
       },
     });
@@ -48,20 +47,21 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
   const roles = await db.role.findMany();
   const roleMap = new Map(roles.map((r) => [r.code, r.id]));
 
-  // Password hash - in production, use bcrypt
-  // const passwordHash = await bcrypt.hash('Password123!', 10);
-  const passwordHash = '$2a$10$placeholder_hash_for_development'; // Placeholder
+  // Password hash for "Password123!" - generated with bcrypt
+  const passwordHash = '$2b$10$GrGlAYs4z/F5A2CVCEZO0OXe5zUfD50zyl.t4ubR9DWBiJmoVYnli';
 
   let totalUsers = 0;
 
-  // Create super admin (system-wide, not clinic-scoped)
+  // Create super admin (system-wide, primary clinic is first one)
   const superAdmin = await db.user.create({
     data: {
       email: 'admin@system.local',
-      name: 'System Administrator',
+      firstName: 'System',
+      lastName: 'Administrator',
       passwordHash,
+      role: 'super_admin',
       isActive: true,
-      isSystemAdmin: true,
+      clinicId: clinicIds[0], // Primary clinic (required)
       clinicIds: clinicIds, // Access to all clinics
     },
   });
@@ -75,7 +75,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       roleId: roleMap.get('super_admin')!,
       clinicId: clinicIds[0], // Primary clinic
       assignedAt: new Date(),
-      assignedBy: 'system',
+      assignedBy: superAdmin.id, // Self-assigned for system bootstrap
     },
   });
 
@@ -84,7 +84,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
   // Create users for each clinic
   for (const clinicId of clinicIds) {
     const clinic = await db.clinic.findUnique({ where: { id: clinicId } });
-    const clinicCode = clinic?.code?.toLowerCase() || 'clinic';
+    const clinicSlug = clinic?.slug?.replace(/-/g, '') || 'clinic';
 
     // Distribution of users by role
     const userDistribution = calculateUserDistribution(usersPerClinic);
@@ -93,9 +93,11 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     const adminProfile = orthoGenerator.patientName(35);
     const clinicAdmin = await db.user.create({
       data: {
-        email: `admin@${clinicCode}.smileortho.com`,
-        name: `${adminProfile.firstName} ${adminProfile.lastName}`,
+        email: `admin@${clinicSlug}.smileortho.com`,
+        firstName: adminProfile.firstName,
+        lastName: adminProfile.lastName,
         passwordHash,
+        role: 'clinic_admin',
         isActive: true,
         clinicId,
         clinicIds: [clinicId],
@@ -120,9 +122,11 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       const profile = orthoGenerator.patientName(40);
       const user = await db.user.create({
         data: {
-          email: `dr.${profile.lastName.toLowerCase()}${i > 0 ? i + 1 : ''}@${clinicCode}.smileortho.com`,
-          name: `Dr. ${profile.firstName} ${profile.lastName}`,
+          email: `dr.${profile.lastName.toLowerCase()}${i > 0 ? i + 1 : ''}@${clinicSlug}.smileortho.com`,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
           passwordHash,
+          role: 'doctor',
           isActive: true,
           clinicId,
           clinicIds: [clinicId],
@@ -147,9 +151,11 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       const profile = orthoGenerator.patientName(30);
       const user = await db.user.create({
         data: {
-          email: `${profile.firstName.toLowerCase()}.${profile.lastName.toLowerCase()}${i > 0 ? i + 1 : ''}@${clinicCode}.smileortho.com`,
-          name: `${profile.firstName} ${profile.lastName}`,
+          email: `${profile.firstName.toLowerCase()}.${profile.lastName.toLowerCase()}${i > 0 ? i + 1 : ''}@${clinicSlug}.smileortho.com`,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
           passwordHash,
+          role: 'clinical_staff',
           isActive: true,
           clinicId,
           clinicIds: [clinicId],
@@ -174,9 +180,11 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       const profile = orthoGenerator.patientName(28);
       const user = await db.user.create({
         data: {
-          email: `frontdesk${i > 0 ? i + 1 : ''}@${clinicCode}.smileortho.com`,
-          name: `${profile.firstName} ${profile.lastName}`,
+          email: `frontdesk${i > 0 ? i + 1 : ''}@${clinicSlug}.smileortho.com`,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
           passwordHash,
+          role: 'front_desk',
           isActive: true,
           clinicId,
           clinicIds: [clinicId],
@@ -201,9 +209,11 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       const profile = orthoGenerator.patientName(32);
       const user = await db.user.create({
         data: {
-          email: `billing${i > 0 ? i + 1 : ''}@${clinicCode}.smileortho.com`,
-          name: `${profile.firstName} ${profile.lastName}`,
+          email: `billing${i > 0 ? i + 1 : ''}@${clinicSlug}.smileortho.com`,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
           passwordHash,
+          role: 'billing',
           isActive: true,
           clinicId,
           clinicIds: [clinicId],

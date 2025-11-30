@@ -69,6 +69,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'messages:full',
     'settings:full',
     'users:full',
+    'staff:full',
     'audit:view',
   ],
   doctor: [
@@ -79,6 +80,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'reports:view',
     'documents:full',
     'messages:full',
+    'staff:view',
   ],
   clinical_staff: [
     'patients:edit',
@@ -86,6 +88,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'treatments:view',
     'documents:edit',
     'messages:view',
+    'staff:view',
   ],
   front_desk: [
     'patients:edit',
@@ -93,6 +96,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'billing:view',
     'documents:view',
     'messages:full',
+    'staff:view',
   ],
   billing: [
     'patients:view',
@@ -100,6 +104,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'billing:full',
     'reports:view',
     'documents:view',
+    'staff:view',
   ],
   read_only: [
     'patients:view',
@@ -108,5 +113,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'billing:view',
     'reports:view',
     'documents:view',
+    'staff:view',
   ],
 };
