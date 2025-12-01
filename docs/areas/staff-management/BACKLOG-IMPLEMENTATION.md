@@ -1,393 +1,138 @@
-# Staff Management Backlog Implementation
+# Staff Management - Implementation Backlog
 
-> **Status**: In Progress
-> **Started**: 2024-11-30
-> **Goal**: Complete all backlog items to mark Staff Management area as fully implemented
-
----
-
-## Progress Overview
-
-| Phase | Status | Description |
-|-------|--------|-------------|
-| Phase 1 | ✅ Complete | Foundation (Schema, Permissions, Validations) |
-| Phase 2 | ⬜ Pending | Critical Business Logic |
-| Phase 3 | ⬜ Pending | Scheduling Enhancements |
-| Phase 4 | ⬜ Pending | Document Management |
-| Phase 5 | ⬜ Pending | Employment Records Enhancements |
-| Phase 6 | ⬜ Pending | Cleanup & Backlog Update |
+> **Purpose**: Track remaining features to implement for Staff Management area  
+> **Status**: Post-MVP Enhancements  
+> **Last Updated**: 2024-11-30
 
 ---
 
-## Scope
+## Overview
 
-### In Scope (This Implementation)
-- Critical business logic validations
-- Scheduling enhancements (bulk shifts, month view, blackout dates, PTO tracking)
-- Document management (expiration tracking, new types, version history)
-- Employment records (PDF verification, compensation UI, supervisor tracking)
+This backlog contains features that are documented but not yet implemented. These are enhancements that can be added incrementally based on priority.
 
-### Deferred (Future Work)
-- File upload infrastructure → Imaging Management area
-- Drag-and-drop shift scheduling → Future UX enhancement
-- Full PTO balance tracking with limits → Future enhancement
-- Notification system → Patient Communications integration
+**Note**: Core Staff Profiles/HR and Scheduling/Time Management features are complete and production-ready.
 
 ---
 
-## Phase 1: Foundation
+## Scheduling & Time Management
 
-**Status**: ✅ Complete
+### Coverage Management
 
-> **Note**: Run `npx prisma generate && npx prisma db push` after stopping dev server if you encounter EPERM errors.
+- [ ] Coverage requirement API endpoints
+- [ ] Coverage gap detection logic
+- [ ] Automated understaffing alerts
+- [ ] Coverage management UI
 
-### Tasks
+### Overtime Tracking
 
-#### 1.1 Prisma Schema Updates
+- [ ] Overtime calculation logic
+- [ ] Overtime API endpoints
+- [ ] Overtime approval workflow UI
+- [ ] Overtime reports
 
-**File**: `prisma/schema.prisma`
+### Availability Management
 
-- [x] Add compensation fields to EmploymentRecord:
-  - `previousSalary`, `newSalary`, `previousHourlyRate`, `newHourlyRate`
-  - `supervisorId`, `documentIds`
+- [ ] Staff availability API endpoints
+- [ ] Recurring availability patterns
+- [ ] Availability UI components
 
-- [x] Add supervisor relationship to StaffProfile:
-  - `supervisorId`, `supervisor`, `directReports`
+### Schedule Templates
 
-- [x] Add document versioning/expiration to StaffDocument:
-  - `expirationDate`, `expirationStatus`, `version`, `previousVersionId`, `isCurrentVersion`, `effectiveDate`
+- [ ] Template API endpoints
+- [ ] Template library UI
+- [ ] Template application workflow
 
-- [x] Add `DocumentExpirationStatus` enum
+### Scheduling Enhancements
 
-- [x] Add new `BlackoutDate` model
-
-- [x] Add `BlackoutType` enum
-
-- [x] Add new `PTOUsage` model
-
-- [x] Add new document categories to `DocumentCategory` enum
-
-#### 1.2 Permission Updates
-
-**File**: `src/lib/auth/types.ts`
-
-- [x] Add `staff:compensation` permission to `clinic_admin` role
-
-#### 1.3 Validation Schema Updates
-
-**File**: `src/lib/validations/staff.ts`
-- [x] Add compensation fields to `createEmploymentRecordSchema`
-- [x] Add `supervisorId` and `documentIds` fields
-- [x] Update `DocumentCategoryEnum` with new types
-- [x] Add `DocumentExpirationStatusEnum`
-- [x] Add `replaceDocumentSchema` for versioning
-- [x] Add `documentQuerySchema` with expiration filters
-
-**File**: `src/lib/validations/scheduling.ts`
-- [x] Add `BlackoutTypeEnum`
-- [x] Add blackout date schemas
-- [x] Add `ptoUsageQuerySchema`
-- [x] Add 6-hour break refinement to `createShiftSchema`
-
-#### 1.4 Generate & Push
-
-- [x] Run `npx prisma generate`
-- [x] Run `npx prisma db push`
+- [ ] Drag-and-drop shift scheduling (UX enhancement)
+- [ ] Schedule publication workflow
+- [ ] PTO balance limits (currently unlimited PTO model)
+- [ ] Bulk time-off for practice closures
 
 ---
 
-## Phase 2: Critical Business Logic
+## Roles & Permissions
 
-**Status**: ⬜ Pending
+### Role Management Enhancements
 
-### Tasks
+- [ ] Role hierarchy (level, parentRoleId fields)
+- [ ] Role activate/deactivate endpoints
+- [ ] Role settings (RoleSettings type)
 
-#### 2.1 Automatic Account Deactivation on TERMINATION
+### Custom Roles Advanced Features
 
-**File**: `src/app/api/staff/[id]/employment-records/route.ts`
+- [ ] Clone role endpoint
+- [ ] Role change history tracking
+- [ ] Role export/import functionality
+- [ ] Role validation endpoint
 
-- [ ] After creating TERMINATION record:
-  - Update staff status to TERMINATED
-  - Deactivate linked user account
-  - Revoke all sessions
-  - Audit log the action
+### Role Templates
 
-#### 2.2 Compensation Permission Enforcement
+- [ ] RoleTemplate model
+- [ ] Template API endpoints
+- [ ] Template UI components
+- [ ] Industry-standard template library
 
-**New File**: `src/lib/auth/helpers.ts`
+### Multi-Location Access
 
-- [ ] Create `canViewCompensation(session)` helper
-- [ ] Create `filterCompensationFields(data, session)` helper
+- [ ] Location-specific role assignment UI
+- [ ] Cross-location access management
+- [ ] Location-based permission restrictions
 
-**File**: `src/app/api/staff/[id]/employment-records/route.ts`
+### Access Audit
 
-- [ ] GET: Filter compensation fields before returning
-- [ ] POST: Check permission before accepting compensation data
-
-#### 2.3 Manager Self-Approval Prevention
-
-**File**: `src/app/api/staff/time-off/[requestId]/approve/route.ts`
-
-- [ ] Get approver's staff profile
-- [ ] Prevent approval if approver === requester
-- [ ] Return 403 SELF_APPROVAL_NOT_ALLOWED
-
-#### 2.4 6-Hour Break Requirement
-
-**File**: `src/lib/validations/scheduling.ts`
-
-- [ ] Add refinement to `createShiftSchema`
-- [ ] Shifts > 6 hours require >= 30 min break
-
-#### 2.5 Historical Shift Protection
-
-**File**: `src/app/api/staff/shifts/[shiftId]/route.ts`
-
-- [ ] PUT: Check if shift is COMPLETED
-- [ ] DELETE: Check if shift is COMPLETED
-- [ ] Require admin override for completed shifts
-- [ ] Audit log override actions
-
-#### 2.6 Advance Notice & Type-Specific Rules
-
-**New File**: `src/lib/utils/time-off-policy.ts`
-
-- [ ] Define DEFAULT_POLICY with advance notice days per type
-- [ ] Create `validateAdvanceNotice()` function
-- [ ] Create `requiresHRReview()` function
-
-**File**: `src/app/api/staff/[id]/time-off/route.ts`
-
-- [ ] Validate advance notice before creating request
-- [ ] Flag FMLA for HR review
-
-#### 2.7 Cross-Location Conflict Warning
-
-**File**: `src/app/api/staff/[id]/shifts/route.ts`
-
-- [ ] Check for cross-location conflicts after overlap check
-- [ ] Return warning in response (don't block)
+- [ ] Audit log viewing UI
+- [ ] Audit reports and compliance dashboards
 
 ---
 
-## Phase 3: Scheduling Enhancements
+## Performance & Training
 
-**Status**: ⬜ Pending
+### Performance Metrics
 
-### Tasks
+- [ ] Performance metric tracking
+- [ ] Role-specific KPI dashboards
+- [ ] Performance trend analysis
 
-#### 3.1 Bulk Shift Creation
+### Goal Tracking
 
-**New File**: `src/app/api/staff/shifts/bulk/route.ts`
+- [ ] Goal setting and monitoring
+- [ ] Progress tracking
+- [ ] Goal achievement reports
 
-- [ ] POST handler with transaction
-- [ ] Validate all shifts
-- [ ] Check conflicts for all
-- [ ] Create atomically
-- [ ] Audit log
+### Review Cycles
 
-#### 3.2 Month View Calendar
+- [ ] Review cycle management
+- [ ] Configurable review templates
+- [ ] Review scheduling and reminders
 
-**File**: `src/components/staff/scheduling/ScheduleCalendar.tsx`
+### Training Records
 
-- [ ] Add `view` state ('week' | 'month')
-- [ ] Add view toggle buttons
-- [ ] Conditional rendering
+- [ ] Training record tracking
+- [ ] Training compliance monitoring
+- [ ] Training assignment workflow
 
-**New File**: `src/components/staff/scheduling/MonthView.tsx`
+### CE Credit Management
 
-- [ ] 6-week calendar grid
-- [ ] Shift counts per day
-- [ ] Click to expand day details
+- [ ] CE credit tracking for providers
+- [ ] Expiration alerts
+- [ ] CE requirement reports
 
-#### 3.3 Blackout Date Management
+### Recognition & Feedback
 
-**New Files**:
-- [ ] `src/app/api/staff/blackout-dates/route.ts` (GET, POST)
-- [ ] `src/app/api/staff/blackout-dates/[id]/route.ts` (GET, PUT, DELETE)
-- [ ] `src/components/staff/scheduling/BlackoutDateForm.tsx`
-- [ ] `src/components/staff/scheduling/BlackoutDateList.tsx`
-- [ ] `src/app/(app)/staff/schedules/blackout-dates/page.tsx`
-
-**File**: `src/app/api/staff/[id]/time-off/route.ts`
-
-- [ ] Check blackout dates before creating request
-- [ ] Block BLOCKED type, warn RESTRICTED/WARNING
-
-#### 3.4 PTO Usage Tracking
-
-**New Files**:
-- [ ] `src/lib/services/pto-tracking.ts`
-- [ ] `src/app/api/staff/pto-usage/route.ts`
-- [ ] `src/app/api/staff/[id]/pto-usage/route.ts`
-
-- [ ] Calculate usage from approved requests
-- [ ] Auto-update on time-off approval
+- [ ] Recognition system
+- [ ] Peer feedback
+- [ ] Performance feedback workflow
 
 ---
 
-## Phase 4: Document Management
+## Deferred Items
 
-**Status**: ⬜ Pending
+These items are intentionally deferred to other areas or require additional infrastructure:
 
-### Tasks
-
-#### 4.1 Expiration Tracking
-
-**File**: `src/components/staff/DocumentUploadForm.tsx`
-
-- [ ] Add `expirationDate` field
-- [ ] Add `effectiveDate` field
-
-**File**: `src/components/staff/DocumentsList.tsx`
-
-- [ ] Add expiration badge with status colors
-- [ ] Filter by expiration status
-
-**File**: `src/app/api/staff/[id]/documents/route.ts`
-
-- [ ] Support `expirationStatus` filter
-- [ ] Support `expiringWithinDays` filter
-
-**New File**: `src/app/api/staff/documents/expiring/route.ts`
-
-- [ ] GET documents expiring within N days
-
-#### 4.2 Additional Document Types
-
-**File**: `src/lib/validations/staff.ts`
-
-- [ ] Update `DocumentCategoryEnum` (done in Phase 1)
-
-**File**: `src/components/staff/DocumentUploadForm.tsx`
-
-- [ ] Update category dropdown options
-
-#### 4.3 Version History
-
-**New Files**:
-- [ ] `src/app/api/staff/[id]/documents/[documentId]/replace/route.ts`
-- [ ] `src/app/api/staff/[id]/documents/[documentId]/versions/route.ts`
-- [ ] `src/components/staff/DocumentVersionHistory.tsx`
-
----
-
-## Phase 5: Employment Records Enhancements
-
-**Status**: ⬜ Pending
-
-### Tasks
-
-#### 5.1 Employment Verification Letter
-
-- [ ] `npm install @react-pdf/renderer`
-
-**New Files**:
-- [ ] `src/lib/pdf/employment-verification-template.tsx`
-- [ ] `src/app/api/staff/[id]/employment-verification/route.ts`
-
-**Update**: Staff detail page
-- [ ] Add "Generate Verification Letter" button
-
-#### 5.2 Compensation Tracking UI
-
-**File**: `src/components/staff/EmploymentRecordForm.tsx`
-
-- [ ] Add compensation fields with PermissionGate
-
-**File**: `src/components/staff/EmploymentRecordsList.tsx`
-
-- [ ] Display compensation changes (permission-gated)
-
-#### 5.3 Supervisor Tracking
-
-**File**: `src/components/staff/EmploymentRecordForm.tsx`
-
-- [ ] Add supervisor dropdown
-
-**File**: `src/components/staff/EmploymentRecordsList.tsx`
-
-- [ ] Display supervisor name
-
-#### 5.4 Document Attachments
-
-**New File**: `src/components/staff/DocumentSelector.tsx`
-
-- [ ] Checkbox list of staff documents
-
-**File**: `src/components/staff/EmploymentRecordForm.tsx`
-
-- [ ] Add DocumentSelector for attachments
-
----
-
-## Phase 6: Cleanup & Backlog Update
-
-**Status**: ⬜ Pending
-
-### Tasks
-
-- [ ] Update `docs/BACKLOG.md` with remaining deferred items
-- [ ] Update seed data for new models
-- [ ] Run `npx tsc` and fix any type errors
-- [ ] Update Staff Management area README with implementation status
-- [ ] Commit all changes
-
----
-
-## Files Summary
-
-### Files to Modify
-
-| File | Phase |
-|------|-------|
-| `prisma/schema.prisma` | 1 |
-| `src/lib/auth/types.ts` | 1 |
-| `src/lib/validations/staff.ts` | 1 |
-| `src/lib/validations/scheduling.ts` | 1 |
-| `src/app/api/staff/[id]/employment-records/route.ts` | 2 |
-| `src/app/api/staff/time-off/[requestId]/approve/route.ts` | 2 |
-| `src/app/api/staff/shifts/[shiftId]/route.ts` | 2 |
-| `src/app/api/staff/[id]/time-off/route.ts` | 2, 3 |
-| `src/app/api/staff/[id]/shifts/route.ts` | 2 |
-| `src/components/staff/scheduling/ScheduleCalendar.tsx` | 3 |
-| `src/app/api/staff/[id]/documents/route.ts` | 4 |
-| `src/components/staff/DocumentUploadForm.tsx` | 4 |
-| `src/components/staff/DocumentsList.tsx` | 4 |
-| `src/components/staff/EmploymentRecordForm.tsx` | 5 |
-| `src/components/staff/EmploymentRecordsList.tsx` | 5 |
-
-### Files to Create
-
-| File | Phase |
-|------|-------|
-| `src/lib/auth/helpers.ts` | 2 |
-| `src/lib/utils/time-off-policy.ts` | 2 |
-| `src/app/api/staff/shifts/bulk/route.ts` | 3 |
-| `src/components/staff/scheduling/MonthView.tsx` | 3 |
-| `src/app/api/staff/blackout-dates/route.ts` | 3 |
-| `src/app/api/staff/blackout-dates/[id]/route.ts` | 3 |
-| `src/components/staff/scheduling/BlackoutDateForm.tsx` | 3 |
-| `src/components/staff/scheduling/BlackoutDateList.tsx` | 3 |
-| `src/app/(app)/staff/schedules/blackout-dates/page.tsx` | 3 |
-| `src/lib/services/pto-tracking.ts` | 3 |
-| `src/app/api/staff/pto-usage/route.ts` | 3 |
-| `src/app/api/staff/[id]/pto-usage/route.ts` | 3 |
-| `src/app/api/staff/documents/expiring/route.ts` | 4 |
-| `src/app/api/staff/[id]/documents/[documentId]/replace/route.ts` | 4 |
-| `src/app/api/staff/[id]/documents/[documentId]/versions/route.ts` | 4 |
-| `src/components/staff/DocumentVersionHistory.tsx` | 4 |
-| `src/lib/pdf/employment-verification-template.tsx` | 5 |
-| `src/app/api/staff/[id]/employment-verification/route.ts` | 5 |
-| `src/components/staff/DocumentSelector.tsx` | 5 |
-
----
-
-## Commit History
-
-| Date | Phase | Commit | Description |
-|------|-------|--------|-------------|
-| 2024-11-30 | 1 | (pending) | Foundation: Schema, permissions, validations |
+- **File Upload Infrastructure** → Imaging Management area
+- **PDF Generation** → Requires @react-pdf/renderer installation
+- **Notification System** → Patient Communications integration
 
 ---
 

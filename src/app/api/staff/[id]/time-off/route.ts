@@ -4,6 +4,11 @@ import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createTimeOffRequestSchema, timeOffQuerySchema } from '@/lib/validations/scheduling';
+import {
+  validateAdvanceNotice,
+  requiresHRReview,
+  checkConsecutiveDays,
+} from '@/lib/utils/time-off-policy';
 
 /**
  * GET /api/staff/:id/time-off
@@ -163,6 +168,86 @@ export const POST = withAuth<{ id: string }>(
       );
     }
 
+    // Validate advance notice requirements
+    const advanceNoticeResult = validateAdvanceNotice(
+      data.requestType,
+      new Date(data.startDate)
+    );
+
+    if (!advanceNoticeResult.isValid) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'INSUFFICIENT_ADVANCE_NOTICE',
+            message: advanceNoticeResult.message,
+            details: {
+              requiredDays: advanceNoticeResult.requiredDays,
+              actualDays: advanceNoticeResult.actualDays,
+              requestType: data.requestType,
+            },
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check for blackout dates that block or restrict the requested period
+    const blackoutDates = await db.blackoutDate.findMany({
+      where: {
+        clinicId: session.user.clinicId,
+        isActive: true,
+        OR: [
+          {
+            AND: [
+              { startDate: { lte: data.startDate } },
+              { endDate: { gte: data.startDate } },
+            ],
+          },
+          {
+            AND: [
+              { startDate: { lte: data.endDate } },
+              { endDate: { gte: data.endDate } },
+            ],
+          },
+          {
+            AND: [
+              { startDate: { gte: data.startDate } },
+              { endDate: { lte: data.endDate } },
+            ],
+          },
+        ],
+      },
+    });
+
+    // Check for BLOCKED blackout dates
+    const blockedDates = blackoutDates.filter(d => d.restrictionType === 'BLOCKED');
+    if (blockedDates.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'BLACKOUT_DATE_BLOCKED',
+            message: 'Time-off requests are not allowed during this period',
+            details: {
+              blackoutDates: blockedDates.map(d => ({
+                name: d.name,
+                startDate: d.startDate,
+                endDate: d.endDate,
+                description: d.description,
+              })),
+            },
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check for RESTRICTED or WARNING blackout dates (will be included in response)
+    const warningDates = blackoutDates.filter(
+      d => d.restrictionType === 'RESTRICTED' || d.restrictionType === 'WARNING'
+    );
+
     // Check for overlapping time-off requests
     const overlappingRequest = await db.timeOffRequest.findFirst({
       where: {
@@ -212,6 +297,12 @@ export const POST = withAuth<{ id: string }>(
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
+    // Check consecutive days warning
+    const consecutiveDaysWarning = checkConsecutiveDays(data.requestType, totalDays);
+
+    // Check if HR review is required
+    const needsHRReview = requiresHRReview(data.requestType);
+
     // Create the request
     const timeOffRequest = await db.timeOffRequest.create({
       data: {
@@ -220,6 +311,20 @@ export const POST = withAuth<{ id: string }>(
         clinicId: session.user.clinicId,
       },
     });
+
+    // Build warnings array for response
+    const warnings: string[] = [];
+    if (warningDates.length > 0) {
+      warnings.push(
+        `Note: This request overlaps with restricted periods: ${warningDates.map(d => d.name).join(', ')}`
+      );
+    }
+    if (consecutiveDaysWarning) {
+      warnings.push(consecutiveDaysWarning);
+    }
+    if (needsHRReview) {
+      warnings.push(`${data.requestType} requests require HR review and may take longer to process.`);
+    }
 
     // Audit log
     const { ipAddress, userAgent } = getRequestMeta(req);
@@ -239,7 +344,12 @@ export const POST = withAuth<{ id: string }>(
     });
 
     return NextResponse.json(
-      { success: true, data: timeOffRequest },
+      {
+        success: true,
+        data: timeOffRequest,
+        ...(warnings.length > 0 && { warnings }),
+        ...(needsHRReview && { requiresHRReview: true }),
+      },
       { status: 201 }
     );
   },

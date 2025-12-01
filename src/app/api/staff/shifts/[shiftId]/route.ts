@@ -103,6 +103,43 @@ export const PUT = withAuth<{ shiftId: string }>(
       );
     }
 
+    // Prevent modification of COMPLETED shifts without admin override
+    if (existingShift.status === 'COMPLETED') {
+      // Check for admin override flag in request body
+      if (!body.adminOverride) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'HISTORICAL_SHIFT_PROTECTED',
+              message: 'Cannot modify a completed shift. Admin override required.',
+              details: {
+                shiftId: existingShift.id,
+                status: existingShift.status,
+                shiftDate: existingShift.shiftDate,
+              },
+            },
+          },
+          { status: 403 }
+        );
+      }
+
+      // Log the admin override action
+      const { ipAddress: overrideIp, userAgent: overrideUa } = getRequestMeta(req);
+      await logAudit(session, {
+        action: 'UPDATE',
+        entity: 'StaffShift',
+        entityId: existingShift.id,
+        details: {
+          adminOverride: true,
+          reason: body.overrideReason || 'No reason provided',
+          originalStatus: existingShift.status,
+        },
+        ipAddress: overrideIp,
+        userAgent: overrideUa,
+      });
+    }
+
     // Prepare update data
     const dataToUpdate: Record<string, unknown> = {
       ...updateData,
@@ -153,6 +190,14 @@ export const DELETE = withAuth<{ shiftId: string }>(
   async (req, session, context) => {
     const { shiftId } = await context.params;
 
+    // Try to parse body for override options (body may be empty for DELETE)
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      // Empty body is acceptable for DELETE
+    }
+
     // Find existing shift
     const existingShift = await db.staffShift.findFirst({
       where: {
@@ -172,6 +217,42 @@ export const DELETE = withAuth<{ shiftId: string }>(
         },
         { status: 404 }
       );
+    }
+
+    // Prevent cancellation of COMPLETED shifts without admin override
+    if (existingShift.status === 'COMPLETED') {
+      if (!body.adminOverride) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'HISTORICAL_SHIFT_PROTECTED',
+              message: 'Cannot cancel a completed shift. Admin override required.',
+              details: {
+                shiftId: existingShift.id,
+                status: existingShift.status,
+                shiftDate: existingShift.shiftDate,
+              },
+            },
+          },
+          { status: 403 }
+        );
+      }
+
+      // Log the admin override action
+      const { ipAddress: overrideIp, userAgent: overrideUa } = getRequestMeta(req);
+      await logAudit(session, {
+        action: 'DELETE',
+        entity: 'StaffShift',
+        entityId: existingShift.id,
+        details: {
+          adminOverride: true,
+          reason: (body.overrideReason as string) || 'No reason provided',
+          originalStatus: existingShift.status,
+        },
+        ipAddress: overrideIp,
+        userAgent: overrideUa,
+      });
     }
 
     // Update status to CANCELLED instead of deleting

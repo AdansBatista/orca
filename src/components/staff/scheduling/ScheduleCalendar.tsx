@@ -1,25 +1,28 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Grid3X3 } from 'lucide-react';
 import type { StaffShift, StaffProfile } from '@prisma/client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PhiProtected } from '@/components/ui/phi-protected';
 import { getFakeName } from '@/lib/fake-data';
+import { MonthView } from './MonthView';
 
 type ShiftWithStaff = StaffShift & {
   staffProfile?: Pick<StaffProfile, 'id' | 'firstName' | 'lastName' | 'title'>;
 };
+
+type ViewMode = 'week' | 'month';
 
 interface ScheduleCalendarProps {
   staffProfileId?: string;
   locationId?: string;
   onShiftClick?: (shift: ShiftWithStaff) => void;
   onAddShift?: (date: Date) => void;
+  defaultView?: ViewMode;
 }
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -39,7 +42,9 @@ export function ScheduleCalendar({
   locationId,
   onShiftClick,
   onAddShift,
+  defaultView = 'week',
 }: ScheduleCalendarProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>(defaultView);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<ShiftWithStaff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,6 +138,46 @@ export function ScheduleCalendar({
     return date.toDateString() === today.toDateString();
   };
 
+  // View toggle component shared by both views
+  const viewToggle = (
+    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+      <Button
+        variant={viewMode === 'week' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => setViewMode('week')}
+      >
+        <Grid3X3 className="h-4 w-4 mr-1" />
+        Week
+      </Button>
+      <Button
+        variant={viewMode === 'month' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => setViewMode('month')}
+      >
+        <Calendar className="h-4 w-4 mr-1" />
+        Month
+      </Button>
+    </div>
+  );
+
+  // Render month view
+  if (viewMode === 'month') {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          {viewToggle}
+        </div>
+        <MonthView
+          staffProfileId={staffProfileId}
+          locationId={locationId}
+          onShiftClick={onShiftClick}
+          onDayClick={onAddShift}
+        />
+      </div>
+    );
+  }
+
+  // Render week view
   return (
     <Card>
       <CardHeader className="pb-4">
@@ -140,16 +185,20 @@ export function ScheduleCalendar({
           <CardTitle className="text-lg">
             Week of {weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={goToToday}>
-              Today
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => navigateWeek('next')}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-4">
+            {viewToggle}
+
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={goToToday}>
+                Today
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => navigateWeek('next')}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>

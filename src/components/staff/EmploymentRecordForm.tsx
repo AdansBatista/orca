@@ -21,6 +21,7 @@ interface EmploymentRecordFormProps {
   staffProfileId: string;
   onSuccess: () => void;
   onCancel: () => void;
+  canEditCompensation?: boolean;
 }
 
 const recordTypeOptions = [
@@ -60,8 +61,10 @@ const statusOptions = [
 const positionChangeTypes = ['PROMOTION', 'DEMOTION', 'TRANSFER', 'TITLE_CHANGE', 'DEPARTMENT_CHANGE'];
 const typeChangeTypes = ['EMPLOYMENT_TYPE_CHANGE'];
 const statusChangeTypes = ['STATUS_CHANGE', 'LEAVE_START', 'LEAVE_END', 'TERMINATION', 'RESIGNATION'];
+// Record types that typically include compensation changes
+const compensationTypes = ['HIRE', 'PROMOTION', 'DEMOTION', 'REHIRE'];
 
-export function EmploymentRecordForm({ staffProfileId, onSuccess, onCancel }: EmploymentRecordFormProps) {
+export function EmploymentRecordForm({ staffProfileId, onSuccess, onCancel, canEditCompensation = false }: EmploymentRecordFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +87,7 @@ export function EmploymentRecordForm({ staffProfileId, onSuccess, onCancel }: Em
   const showPositionFields = recordType && positionChangeTypes.includes(recordType);
   const showTypeFields = recordType && typeChangeTypes.includes(recordType);
   const showStatusFields = recordType && statusChangeTypes.includes(recordType);
+  const showCompensationFields = canEditCompensation && recordType && compensationTypes.includes(recordType);
 
   const onSubmit = async (data: CreateEmploymentRecordInput) => {
     setSubmitting(true);
@@ -240,6 +244,49 @@ export function EmploymentRecordForm({ staffProfileId, onSuccess, onCancel }: Em
               </SelectContent>
             </Select>
           </FormField>
+        </div>
+      )}
+
+      {/* Compensation Fields (permission-gated) */}
+      {showCompensationFields && (
+        <div className="border-t pt-4 mt-4">
+          <h4 className="text-sm font-medium mb-3">Compensation Changes</h4>
+          <div className="grid gap-4 grid-cols-2">
+            <FormField label="Previous Salary ($)" error={errors.previousSalary?.message}>
+              <Input
+                {...register('previousSalary', { valueAsNumber: true })}
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </FormField>
+            <FormField label="New Salary ($)" error={errors.newSalary?.message}>
+              <Input
+                {...register('newSalary', { valueAsNumber: true })}
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </FormField>
+          </div>
+          <div className="grid gap-4 grid-cols-2 mt-4">
+            <FormField label="Previous Hourly Rate ($)" error={errors.previousHourlyRate?.message}>
+              <Input
+                {...register('previousHourlyRate', { valueAsNumber: true })}
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </FormField>
+            <FormField label="New Hourly Rate ($)" error={errors.newHourlyRate?.message}>
+              <Input
+                {...register('newHourlyRate', { valueAsNumber: true })}
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </FormField>
+          </div>
         </div>
       )}
 

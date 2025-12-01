@@ -8,7 +8,9 @@
       "Bash(tree:*)",
       "Bash(for area in docs/areas/*/)",
       "Bash(done)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, FileText, Download, Trash2, File, FileImage, FilePlus } from 'lucide-react';
+import { Plus, FileText, Download, Trash2, File, FileImage, FilePlus, Clock, AlertTriangle, History, RefreshCw } from 'lucide-react';
+import { format } from 'date-fns';
 import type { StaffDocument } from '@prisma/client';
 
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ import { DocumentUploadForm } from './DocumentUploadForm';
 
 interface DocumentsListProps {
   staffProfileId: string;
-  documents: StaffDocument[];
+  documents: DocumentWithExpiration[];
   canEdit: boolean;
   onUpdate: () => void;
 }
@@ -43,7 +44,24 @@ const categoryLabels: Record<string, string> = {
   PERFORMANCE: 'Performance Review',
   DISCIPLINARY: 'Disciplinary',
   OTHER: 'Other',
+  // HR-specific document types
+  NDA: 'NDA',
+  I9: 'I-9',
+  W4: 'W-4',
+  DIRECT_DEPOSIT: 'Direct Deposit',
+  HANDBOOK_ACKNOWLEDGMENT: 'Handbook',
+  EMERGENCY_CONTACT_FORM: 'Emergency Contact',
+  BENEFITS_ENROLLMENT: 'Benefits',
+  PIP: 'PIP',
+  WRITTEN_WARNING: 'Warning',
+  COMMENDATION: 'Commendation',
 };
+
+// Extended document type with expiration fields
+interface DocumentWithExpiration extends StaffDocument {
+  calculatedExpirationStatus?: string;
+  daysUntilExpiration?: number | null;
+}
 
 const accessLevelLabels: Record<string, string> = {
   PUBLIC: 'Public',
@@ -141,11 +159,20 @@ export function DocumentsList({ staffProfileId, documents, canEdit, onUpdate }: 
             <div className="space-y-2">
               {documents.map((doc) => {
                 const FileIcon = getFileIcon(doc.mimeType);
+                const expirationStatus = doc.calculatedExpirationStatus || doc.expirationStatus;
+                const isExpired = expirationStatus === 'EXPIRED';
+                const isExpiringSoon = expirationStatus === 'EXPIRING_SOON';
 
                 return (
                   <div
                     key={doc.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                      isExpired
+                        ? 'bg-destructive/10 hover:bg-destructive/15 border border-destructive/20'
+                        : isExpiringSoon
+                        ? 'bg-warning/10 hover:bg-warning/15 border border-warning/20'
+                        : 'bg-muted/50 hover:bg-muted/70'
+                    }`}
                   >
                     <div className="flex-shrink-0">
                       <FileIcon className="h-8 w-8 text-muted-foreground" />
@@ -155,6 +182,12 @@ export function DocumentsList({ staffProfileId, documents, canEdit, onUpdate }: 
                         <span className="font-medium text-sm truncate">
                           {doc.name}
                         </span>
+                        {doc.version > 1 && (
+                          <Badge variant="outline" size="sm" className="gap-1">
+                            <History className="h-3 w-3" />
+                            v{doc.version}
+                          </Badge>
+                        )}
                         <Badge variant="ghost" size="sm">
                           {categoryLabels[doc.category] || doc.category}
                         </Badge>
@@ -164,6 +197,19 @@ export function DocumentsList({ staffProfileId, documents, canEdit, onUpdate }: 
                         >
                           {accessLevelLabels[doc.accessLevel] || doc.accessLevel}
                         </Badge>
+                        {/* Expiration badge */}
+                        {isExpired && (
+                          <Badge variant="destructive" size="sm" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Expired
+                          </Badge>
+                        )}
+                        {isExpiringSoon && doc.daysUntilExpiration !== null && (
+                          <Badge variant="warning" size="sm" className="gap-1">
+                            <Clock className="h-3 w-3" />
+                            Expires in {doc.daysUntilExpiration}d
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
                         <span>{doc.fileName}</span>
@@ -175,6 +221,12 @@ export function DocumentsList({ staffProfileId, documents, canEdit, onUpdate }: 
                         )}
                         <span>•</span>
                         <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                        {doc.expirationDate && (
+                          <>
+                            <span>•</span>
+                            <span>Expires: {format(new Date(doc.expirationDate), 'MMM d, yyyy')}</span>
+                          </>
+                        )}
                       </div>
                       {doc.description && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
@@ -192,14 +244,27 @@ export function DocumentsList({ staffProfileId, documents, canEdit, onUpdate }: 
                         <Download className="h-4 w-4" />
                       </Button>
                       {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setDeleteId(doc.id)}
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4 text-error-500" />
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              // TODO: Open replace document dialog
+                              console.log('Replace document:', doc.id);
+                            }}
+                            title="Replace with new version"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeleteId(doc.id)}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4 text-error-500" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>

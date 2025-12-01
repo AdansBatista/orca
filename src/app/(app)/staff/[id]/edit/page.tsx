@@ -153,6 +153,7 @@ export default function EditStaffPage() {
             hireDate: staff.hireDate,
             department: staff.department || undefined,
             title: staff.title || undefined,
+            supervisorId: staff.supervisorId || undefined,
             isProvider: staff.isProvider,
             providerType: staff.providerType as 'ORTHODONTIST' | 'GENERAL_DENTIST' | 'ORAL_SURGEON' | 'PERIODONTIST' | 'ENDODONTIST' | 'HYGIENIST' | 'DENTAL_ASSISTANT' | 'EFDA' | 'OTHER' | undefined,
             npiNumber: staff.npiNumber || undefined,

@@ -24,6 +24,7 @@ interface DocumentUploadFormProps {
 }
 
 const categoryOptions = [
+  // Standard categories
   { value: 'CONTRACT', label: 'Contract' },
   { value: 'ID', label: 'ID Document' },
   { value: 'TAX', label: 'Tax Document' },
@@ -33,6 +34,17 @@ const categoryOptions = [
   { value: 'PERFORMANCE', label: 'Performance Review' },
   { value: 'DISCIPLINARY', label: 'Disciplinary' },
   { value: 'OTHER', label: 'Other' },
+  // HR-specific document types
+  { value: 'NDA', label: 'NDA / Confidentiality Agreement' },
+  { value: 'I9', label: 'I-9 Employment Eligibility' },
+  { value: 'W4', label: 'W-4 Tax Withholding' },
+  { value: 'DIRECT_DEPOSIT', label: 'Direct Deposit Authorization' },
+  { value: 'HANDBOOK_ACKNOWLEDGMENT', label: 'Handbook Acknowledgment' },
+  { value: 'EMERGENCY_CONTACT_FORM', label: 'Emergency Contact Form' },
+  { value: 'BENEFITS_ENROLLMENT', label: 'Benefits Enrollment' },
+  { value: 'PIP', label: 'Performance Improvement Plan' },
+  { value: 'WRITTEN_WARNING', label: 'Written Warning' },
+  { value: 'COMMENDATION', label: 'Commendation / Award' },
 ];
 
 const accessLevelOptions = [
@@ -165,6 +177,27 @@ export function DocumentUploadForm({ staffProfileId, onSuccess, onCancel }: Docu
       <FormField label="Description" error={errors.description?.message}>
         <Textarea {...register('description')} placeholder="Brief description of this document..." rows={2} />
       </FormField>
+
+      {/* Expiration tracking */}
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="Effective Date" error={errors.effectiveDate?.message}>
+          <Input
+            {...register('effectiveDate')}
+            type="date"
+          />
+        </FormField>
+
+        <FormField
+          label="Expiration Date"
+          error={errors.expirationDate?.message}
+          description="Leave blank if document doesn't expire"
+        >
+          <Input
+            {...register('expirationDate')}
+            type="date"
+          />
+        </FormField>
+      </div>
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>

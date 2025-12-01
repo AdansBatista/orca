@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
-import { createStaffDocumentSchema } from '@/lib/validations/staff';
+import { createStaffDocumentSchema, documentQuerySchema } from '@/lib/validations/staff';
 
 /**
  * GET /api/staff/[id]/documents
@@ -12,6 +12,35 @@ import { createStaffDocumentSchema } from '@/lib/validations/staff';
 export const GET = withAuth<{ id: string }>(
   async (req, session, context) => {
     const { id: staffProfileId } = await context.params;
+    const { searchParams } = new URL(req.url);
+
+    // Parse query parameters
+    const rawParams = {
+      category: searchParams.get('category') ?? undefined,
+      expirationStatus: searchParams.get('expirationStatus') ?? undefined,
+      expiringWithinDays: searchParams.get('expiringWithinDays') ?? undefined,
+      includeVersionHistory: searchParams.get('includeVersionHistory') ?? undefined,
+      page: searchParams.get('page') ?? undefined,
+      pageSize: searchParams.get('pageSize') ?? undefined,
+    };
+
+    const queryResult = documentQuerySchema.safeParse(rawParams);
+
+    if (!queryResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid query parameters',
+            details: queryResult.error.flatten(),
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    const { category, expirationStatus, expiringWithinDays, includeVersionHistory, page, pageSize } = queryResult.data;
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
@@ -35,17 +64,86 @@ export const GET = withAuth<{ id: string }>(
       );
     }
 
+    // Build where clause
+    const where: Record<string, unknown> = {
+      staffProfileId,
+      ...getClinicFilter(session),
+    };
+
+    // Only show current versions unless version history is requested
+    if (!includeVersionHistory) {
+      where.isCurrentVersion = true;
+    }
+
+    if (category) {
+      where.category = category;
+    }
+
+    if (expirationStatus) {
+      where.expirationStatus = expirationStatus;
+    }
+
+    // Filter by expiring within N days
+    if (expiringWithinDays) {
+      const now = new Date();
+      const threshold = new Date();
+      threshold.setDate(threshold.getDate() + expiringWithinDays);
+      where.expirationDate = {
+        gte: now,
+        lte: threshold,
+      };
+    }
+
+    // Get total count
+    const total = await db.staffDocument.count({ where });
+
+    // Get paginated results
     const documents = await db.staffDocument.findMany({
-      where: {
-        staffProfileId,
-        ...getClinicFilter(session),
-      },
+      where,
       orderBy: [
+        { isCurrentVersion: 'desc' },
         { uploadedAt: 'desc' },
       ],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
-    return NextResponse.json({ success: true, data: documents });
+    // Add calculated fields for expiration
+    const now = new Date();
+    const documentsWithExpiration = documents.map((doc) => {
+      let calculatedStatus = doc.expirationStatus;
+      let daysUntilExpiration: number | null = null;
+
+      if (doc.expirationDate) {
+        const expDate = new Date(doc.expirationDate);
+        daysUntilExpiration = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilExpiration < 0) {
+          calculatedStatus = 'EXPIRED';
+        } else if (daysUntilExpiration <= 30) {
+          calculatedStatus = 'EXPIRING_SOON';
+        } else {
+          calculatedStatus = 'ACTIVE';
+        }
+      }
+
+      return {
+        ...doc,
+        calculatedExpirationStatus: calculatedStatus,
+        daysUntilExpiration,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        items: documentsWithExpiration,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
   },
   { permissions: ['staff:view', 'staff:edit', 'staff:full'] }
 );

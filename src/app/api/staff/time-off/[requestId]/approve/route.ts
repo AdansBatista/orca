@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { approveTimeOffSchema } from '@/lib/validations/scheduling';
+import { updatePTOUsage } from '@/lib/services/pto-tracking';
 
 /**
  * POST /api/staff/time-off/:requestId/approve
@@ -44,6 +45,7 @@ export const POST = withAuth<{ requestId: string }>(
             id: true,
             firstName: true,
             lastName: true,
+            userId: true,
           },
         },
       },
@@ -59,6 +61,20 @@ export const POST = withAuth<{ requestId: string }>(
           },
         },
         { status: 404 }
+      );
+    }
+
+    // Prevent self-approval: manager cannot approve their own request
+    if (existingRequest.staffProfile.userId === session.user.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'SELF_APPROVAL_NOT_ALLOWED',
+            message: 'You cannot approve your own time-off request',
+          },
+        },
+        { status: 403 }
       );
     }
 
@@ -86,6 +102,16 @@ export const POST = withAuth<{ requestId: string }>(
         approvalNotes,
       },
     });
+
+    // Update PTO usage tracking
+    const requestYear = existingRequest.startDate.getFullYear();
+    await updatePTOUsage(
+      existingRequest.staffProfileId,
+      session.user.clinicId,
+      existingRequest.requestType,
+      existingRequest.totalDays,
+      requestYear
+    );
 
     // Audit log
     const { ipAddress, userAgent } = getRequestMeta(req);

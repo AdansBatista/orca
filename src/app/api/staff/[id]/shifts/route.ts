@@ -212,6 +212,60 @@ export const POST = withAuth<{ id: string }>(
       );
     }
 
+    // Check for cross-location conflicts (different clinic, same time)
+    // This is a warning, not a blocker
+    let crossLocationWarning: string | null = null;
+
+    // Get all clinic IDs the staff member is associated with
+    if (staffProfile.clinicIds && staffProfile.clinicIds.length > 1) {
+      const otherClinicIds = staffProfile.clinicIds.filter(
+        (id: string) => id !== session.user.clinicId
+      );
+
+      if (otherClinicIds.length > 0) {
+        const crossLocationShift = await db.staffShift.findFirst({
+          where: {
+            staffProfileId,
+            clinicId: { in: otherClinicIds },
+            shiftDate: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+            status: { notIn: ['CANCELLED'] },
+            OR: [
+              {
+                AND: [
+                  { startTime: { lte: data.startTime } },
+                  { endTime: { gt: data.startTime } },
+                ],
+              },
+              {
+                AND: [
+                  { startTime: { lt: data.endTime } },
+                  { endTime: { gte: data.endTime } },
+                ],
+              },
+              {
+                AND: [
+                  { startTime: { gte: data.startTime } },
+                  { endTime: { lte: data.endTime } },
+                ],
+              },
+            ],
+          },
+        });
+
+        if (crossLocationShift) {
+          // Get the clinic name for the warning message
+          const otherClinic = await db.clinic.findUnique({
+            where: { id: crossLocationShift.clinicId },
+            select: { name: true },
+          });
+          crossLocationWarning = `Warning: Staff member has an overlapping shift at ${otherClinic?.name || 'another location'}`;
+        }
+      }
+    }
+
     // Calculate scheduled hours
     const startTime = new Date(data.startTime);
     const endTime = new Date(data.endTime);
@@ -246,7 +300,11 @@ export const POST = withAuth<{ id: string }>(
     });
 
     return NextResponse.json(
-      { success: true, data: shift },
+      {
+        success: true,
+        data: shift,
+        ...(crossLocationWarning && { warnings: [crossLocationWarning] }),
+      },
       { status: 201 }
     );
   },

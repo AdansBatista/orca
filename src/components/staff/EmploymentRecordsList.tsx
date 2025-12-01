@@ -20,6 +20,7 @@ interface EmploymentRecordsListProps {
   staffProfileId: string;
   records: EmploymentRecord[];
   canEdit: boolean;
+  canViewCompensation?: boolean;
   onUpdate: () => void;
 }
 
@@ -63,7 +64,40 @@ function formatChange(previous: string | null | undefined, next: string | null |
   return `${prevLabel} → ${nextLabel}`;
 }
 
-export function EmploymentRecordsList({ staffProfileId, records, canEdit, onUpdate }: EmploymentRecordsListProps) {
+function formatCurrency(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return '-';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+function formatCompensationChange(
+  previousSalary: number | null | undefined,
+  newSalary: number | null | undefined,
+  previousHourly: number | null | undefined,
+  newHourly: number | null | undefined
+): string[] {
+  const changes: string[] = [];
+
+  if (previousSalary !== null || newSalary !== null) {
+    if (previousSalary !== newSalary) {
+      changes.push(`Salary: ${formatCurrency(previousSalary)} → ${formatCurrency(newSalary)}`);
+    }
+  }
+
+  if (previousHourly !== null || newHourly !== null) {
+    if (previousHourly !== newHourly) {
+      changes.push(`Hourly: ${formatCurrency(previousHourly)} → ${formatCurrency(newHourly)}/hr`);
+    }
+  }
+
+  return changes;
+}
+
+export function EmploymentRecordsList({ staffProfileId, records, canEdit, canViewCompensation = false, onUpdate }: EmploymentRecordsListProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleSuccess = () => {
@@ -91,6 +125,7 @@ export function EmploymentRecordsList({ staffProfileId, records, canEdit, onUpda
                 staffProfileId={staffProfileId}
                 onSuccess={handleSuccess}
                 onCancel={() => setDialogOpen(false)}
+                canEditCompensation={canViewCompensation}
               />
             </DialogContent>
           </Dialog>
@@ -118,6 +153,17 @@ export function EmploymentRecordsList({ staffProfileId, records, canEdit, onUpda
               if (deptChange) changes.push(`Dept: ${deptChange}`);
               if (typeChange) changes.push(`Type: ${typeChange}`);
               if (statusChange) changes.push(`Status: ${statusChange}`);
+
+              // Add compensation changes if user has permission to view them
+              if (canViewCompensation) {
+                const compensationChanges = formatCompensationChange(
+                  record.previousSalary as number | null | undefined,
+                  record.newSalary as number | null | undefined,
+                  record.previousHourlyRate as number | null | undefined,
+                  record.newHourlyRate as number | null | undefined
+                );
+                changes.push(...compensationChanges);
+              }
 
               return (
                 <div
