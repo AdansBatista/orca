@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Home,
   Users,
   Calendar,
@@ -31,6 +32,7 @@ import {
   Shield,
   TrendingUp,
   LayoutTemplate,
+  GraduationCap,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -54,6 +56,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 // Sidebar Context
 interface SidebarContextValue {
@@ -103,6 +110,7 @@ export interface NavItem {
   icon: LucideIcon;
   badge?: string | number;
   active?: boolean;
+  children?: NavItem[];
 }
 
 export interface NavGroup {
@@ -123,11 +131,19 @@ const defaultNavGroups: NavGroup[] = [
   {
     label: "Management",
     items: [
-      { label: "Staff", href: "/staff", icon: UserCog },
-      { label: "Schedules", href: "/staff/schedules", icon: CalendarClock },
-      { label: "Time Off", href: "/staff/time-off", icon: CalendarOff },
-      { label: "Performance", href: "/staff/performance", icon: TrendingUp },
-      { label: "Roles", href: "/staff/roles", icon: Shield },
+      {
+        label: "Staff",
+        href: "/staff",
+        icon: UserCog,
+        children: [
+          { label: "Directory", href: "/staff", icon: Users },
+          { label: "Schedules", href: "/staff/schedules", icon: CalendarClock },
+          { label: "Time Off", href: "/staff/time-off", icon: CalendarOff },
+          { label: "Performance", href: "/staff/performance", icon: TrendingUp },
+          { label: "Training", href: "/staff/training", icon: GraduationCap },
+          { label: "Roles", href: "/staff/roles", icon: Shield },
+        ],
+      },
       { label: "Billing", href: "/billing", icon: DollarSign },
       { label: "Reports", href: "/reports", icon: BarChart3 },
       { label: "Documents", href: "/documents", icon: FileText },
@@ -236,14 +252,22 @@ export function Sidebar({
 
             {/* Group Items */}
             <div className="space-y-1 px-2">
-              {group.items.map((item) => (
-                <NavItemComponent
-                  key={item.href}
-                  item={item}
-                  isCollapsed={isCollapsed}
-                />
-              ))}
-              
+              {group.items.map((item) =>
+                item.children ? (
+                  <CollapsibleNavItem
+                    key={item.href}
+                    item={item}
+                    isCollapsed={isCollapsed}
+                  />
+                ) : (
+                  <NavItemComponent
+                    key={item.href}
+                    item={item}
+                    isCollapsed={isCollapsed}
+                  />
+                )
+              )}
+
               {/* Add PHI Fog Toggle after System group */}
               {group.label === "System" && (
                 <PhiFogToggleButton isCollapsed={isCollapsed} />
@@ -424,9 +448,122 @@ function UserProfileFooter({ isCollapsed }: { isCollapsed: boolean }) {
 interface NavItemComponentProps {
   item: NavItem;
   isCollapsed: boolean;
+  isNested?: boolean;
 }
 
-function NavItemComponent({ item, isCollapsed }: NavItemComponentProps) {
+/**
+ * Collapsible navigation item for items with children
+ */
+function CollapsibleNavItem({ item, isCollapsed }: NavItemComponentProps) {
+  const pathname = usePathname();
+  const Icon = item.icon;
+
+  // Check if any child is active
+  const isChildActive = item.children?.some((child) => {
+    if (pathname === child.href) return true;
+    if (child.href === "/staff") {
+      return pathname === "/staff" || /^\/staff\/[a-f0-9-]+/.test(pathname);
+    }
+    return pathname.startsWith(child.href + "/");
+  });
+
+  // Auto-expand if a child is active
+  const [isOpen, setIsOpen] = React.useState(isChildActive ?? false);
+
+  // Update open state when navigation changes
+  React.useEffect(() => {
+    if (isChildActive) {
+      setIsOpen(true);
+    }
+  }, [isChildActive]);
+
+  // When sidebar is collapsed, show a dropdown menu instead
+  if (isCollapsed) {
+    return (
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex items-center justify-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-colors w-full",
+                  "hover:bg-primary-100 hover:text-primary-700",
+                  "dark:hover:bg-primary-900/20 dark:hover:text-primary-400",
+                  isChildActive && "bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400",
+                  !isChildActive && "text-muted-foreground"
+                )}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right">{item.label}</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent side="right" align="start" className="w-48">
+          <DropdownMenuLabel>{item.label}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {item.children?.map((child) => {
+            const ChildIcon = child.icon;
+            const isActive = pathname === child.href ||
+              (child.href === "/staff"
+                ? pathname === "/staff" || /^\/staff\/[a-f0-9-]+/.test(pathname)
+                : pathname.startsWith(child.href + "/"));
+            return (
+              <DropdownMenuItem key={child.href} asChild>
+                <Link
+                  href={child.href}
+                  className={cn(isActive && "bg-primary-100 text-primary-700")}
+                >
+                  <ChildIcon className="mr-2 h-4 w-4" />
+                  {child.label}
+                </Link>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <button
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full",
+            "hover:bg-primary-100 hover:text-primary-700",
+            "dark:hover:bg-primary-900/20 dark:hover:text-primary-400",
+            isChildActive && "text-primary-700 dark:text-primary-400",
+            !isChildActive && "text-muted-foreground"
+          )}
+        >
+          <Icon className="h-5 w-5 shrink-0" />
+          <span className="flex-1 text-left">{item.label}</span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform duration-200",
+              isOpen && "rotate-180"
+            )}
+          />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+        <div className="ml-4 mt-1 space-y-1 border-l border-border/50 pl-2">
+          {item.children?.map((child) => (
+            <NavItemComponent
+              key={child.href}
+              item={child}
+              isCollapsed={false}
+              isNested
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function NavItemComponent({ item, isCollapsed, isNested }: NavItemComponentProps) {
   const pathname = usePathname();
   const Icon = item.icon;
 
@@ -445,15 +582,16 @@ function NavItemComponent({ item, isCollapsed }: NavItemComponentProps) {
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+        "flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
         "hover:bg-primary-100 hover:text-primary-700",
         "dark:hover:bg-primary-900/20 dark:hover:text-primary-400",
         isActive && "bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400",
         !isActive && "text-muted-foreground",
-        isCollapsed && "justify-center px-2"
+        isCollapsed && "justify-center px-2",
+        isNested ? "px-2 py-2 gap-2" : "px-3 py-2.5"
       )}
     >
-      <Icon className="h-5 w-5 shrink-0" />
+      <Icon className={cn("shrink-0", isNested ? "h-4 w-4" : "h-5 w-5")} />
       {!isCollapsed && (
         <>
           <span className="flex-1">{item.label}</span>
