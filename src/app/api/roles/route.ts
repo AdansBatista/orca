@@ -62,12 +62,19 @@ export const GET = withAuth(
     // Get paginated results
     const items = await db.role.findMany({
       where,
-      orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
+      orderBy: [{ isSystem: 'desc' }, { level: 'desc' }, { name: 'asc' }],
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
         _count: {
           select: { assignments: true },
+        },
+        parentRole: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
         },
       },
     });
@@ -89,6 +96,30 @@ export const GET = withAuth(
   },
   { permissions: ['roles:view', 'roles:edit', 'roles:full'] }
 );
+
+/**
+ * Helper to record role change history
+ */
+async function recordRoleChange(
+  roleId: string,
+  changeType: string,
+  changeData: Record<string, unknown>,
+  session: { user: { id: string; firstName?: string; lastName?: string } },
+  description?: string
+) {
+  await db.roleChangeHistory.create({
+    data: {
+      roleId,
+      changeType,
+      changeData,
+      description,
+      changedById: session.user.id,
+      changedByName: session.user.firstName && session.user.lastName
+        ? `${session.user.firstName} ${session.user.lastName}`
+        : undefined,
+    },
+  });
+}
 
 /**
  * POST /api/roles
@@ -134,6 +165,26 @@ export const POST = withAuth(
       );
     }
 
+    // Validate parent role if provided
+    if (data.parentRoleId) {
+      const parentRole = await db.role.findUnique({
+        where: { id: data.parentRoleId },
+      });
+
+      if (!parentRole) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'INVALID_PARENT_ROLE',
+              message: 'Parent role not found',
+            },
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create the role (custom roles are never system roles)
     const role = await db.role.create({
       data: {
@@ -142,8 +193,19 @@ export const POST = withAuth(
         description: data.description,
         permissions: data.permissions,
         isSystem: false, // Custom roles are never system roles
+        level: data.level ?? 0,
+        parentRoleId: data.parentRoleId ?? null,
       },
     });
+
+    // Record role change history
+    await recordRoleChange(
+      role.id,
+      'CREATE',
+      { role },
+      session,
+      `Created role "${role.name}"`
+    );
 
     // Audit log
     const { ipAddress, userAgent } = getRequestMeta(req);
@@ -155,6 +217,8 @@ export const POST = withAuth(
         name: role.name,
         code: role.code,
         permissionCount: role.permissions.length,
+        level: role.level,
+        parentRoleId: role.parentRoleId,
       },
       ipAddress,
       userAgent,

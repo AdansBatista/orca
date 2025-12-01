@@ -127,10 +127,45 @@ model Role {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
-  assignments RoleAssignment[]
+  // Hierarchy fields
+  level        Int      @default(0)    // 0 = base, higher = more senior (e.g., 10=staff, 20=manager, 30=admin)
+  parentRoleId String?  @db.ObjectId   // Parent role for inheritance
+  parentRole   Role?    @relation("RoleHierarchy", fields: [parentRoleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  childRoles   Role[]   @relation("RoleHierarchy")
 
+  // Relations
+  assignments  RoleAssignment[]
+  changeHistory RoleChangeHistory[]
+
+  @@index([level])
+  @@index([parentRoleId])
   @@map("roles")
+}
+
+/// RoleChangeHistory - Track changes to roles for audit and compliance
+model RoleChangeHistory {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  roleId       String   @db.ObjectId
+
+  // Change details
+  changeType   String   // CREATE, UPDATE, DELETE, PERMISSIONS_ADDED, PERMISSIONS_REMOVED
+  changeData   Json     // Stores before/after state or specific changes
+  description  String?  // Human-readable description of the change
+
+  // Who made the change
+  changedById  String   @db.ObjectId
+  changedByName String?
+
+  // Timestamps
+  changedAt    DateTime @default(now())
+
+  // Relations
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([roleId])
+  @@index([changedAt])
+  @@index([changeType])
+  @@map("role_change_history")
 }
 
 /// RoleAssignment - Links users to roles within specific clinics
@@ -282,6 +317,14 @@ model StaffProfile {
   availability     StaffAvailability[]
   overtimeLogs     OvertimeLog[]
   ptoUsage         PTOUsage[]
+
+  // Performance & Training Relations
+  goals            StaffGoal[]
+  performanceReviews PerformanceReview[]
+  trainingRecords  TrainingRecord[]
+  ceCredits        CECredit[]
+  recognitions     Recognition[]
+  performanceMetrics PerformanceMetric[]
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -1127,4 +1170,352 @@ model PTOUsage {
   @@index([staffProfileId])
   @@index([year])
   @@map("pto_usage")
+}
+
+// =============================================================================
+// ROLE TEMPLATES - Industry-standard role templates
+// =============================================================================
+
+/// RoleTemplate - Predefined role templates for common healthcare roles
+model RoleTemplate {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Template Details
+  name             String       // e.g., "Front Desk Staff", "Clinical Assistant"
+  code             String       @unique // e.g., "template_front_desk"
+  description      String?
+  category         String       // e.g., "Administrative", "Clinical", "Management"
+
+  // Permissions
+  permissions      String[]     // Default permissions for this template
+
+  // Industry standard indicator
+  isIndustryStandard Boolean    @default(false) // True for Orca-provided templates
+  sourceVersion    String?      // Version of Orca that provided this template
+
+  // Usage tracking
+  usageCount       Int          @default(0) // How many times this template was used
+
+  // Status
+  isActive         Boolean      @default(true)
+
+  // Timestamps
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+  @@map("role_templates")
+}
+
+// =============================================================================
+// PERFORMANCE & TRAINING - Staff performance and training tracking
+// =============================================================================
+
+/// PerformanceMetric - Track staff performance metrics
+model PerformanceMetric {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String       @db.ObjectId
+  staffProfile     StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  // Metric Details
+  metricType       String       // e.g., "patient_satisfaction", "productivity", "attendance"
+  metricName       String
+  value            Float
+  unit             String?      // e.g., "percent", "count", "rating"
+
+  // Period
+  periodStart      DateTime     @db.Date
+  periodEnd        DateTime     @db.Date
+
+  // Target (optional)
+  targetValue      Float?
+  targetMet        Boolean?
+
+  // Notes
+  notes            String?
+  calculatedBy     String?      // "manual", "system", "integration"
+
+  // Timestamps
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  createdBy        String?      @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String       @db.ObjectId
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([metricType])
+  @@index([periodStart])
+  @@map("performance_metrics")
+}
+
+/// StaffGoal - Goal setting and tracking for staff
+model StaffGoal {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String       @db.ObjectId
+  staffProfile     StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  // Goal Details
+  title            String
+  description      String?
+  category         String?      // e.g., "professional_development", "performance", "certification"
+
+  // Timeline
+  startDate        DateTime     @db.Date
+  targetDate       DateTime     @db.Date
+  completedDate    DateTime?    @db.Date
+
+  // Status and Progress
+  status           GoalStatus   @default(NOT_STARTED)
+  progress         Int          @default(0) // 0-100 percent
+  priority         Int          @default(2) // 1=low, 2=medium, 3=high
+
+  // Milestones (stored as JSON)
+  milestones       Json?        // Array of milestone objects
+
+  // Notes
+  notes            String?
+  reviewNotes      String?
+
+  // Timestamps
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  createdBy        String?      @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String       @db.ObjectId
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([status])
+  @@index([targetDate])
+  @@map("staff_goals")
+}
+
+/// PerformanceReview - Performance review cycles
+model PerformanceReview {
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String        @db.ObjectId
+  staffProfile     StaffProfile  @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  // Review Details
+  reviewType       ReviewType
+  reviewPeriodStart DateTime     @db.Date
+  reviewPeriodEnd  DateTime      @db.Date
+  reviewDate       DateTime?     @db.Date
+
+  // Status
+  status           ReviewStatus  @default(SCHEDULED)
+
+  // Reviewer
+  reviewerId       String?       @db.ObjectId
+  reviewerName     String?
+
+  // Ratings (stored as JSON for flexibility)
+  ratings          Json?         // e.g., { "quality": 4, "teamwork": 5, ... }
+  overallRating    Float?        // 1-5 scale
+
+  // Feedback
+  strengthsNotes   String?
+  improvementNotes String?
+  employeeComments String?
+
+  // Goals from this review
+  newGoals         Json?         // Goals set during review
+
+  // Timestamps
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  completedAt      DateTime?
+
+  // Multi-clinic isolation
+  clinicId         String        @db.ObjectId
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([status])
+  @@index([reviewDate])
+  @@map("performance_reviews")
+}
+
+/// TrainingRecord - Track staff training and courses
+model TrainingRecord {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String          @db.ObjectId
+  staffProfile     StaffProfile    @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  // Training Details
+  name             String
+  description      String?
+  category         String          // e.g., "compliance", "clinical", "software", "safety"
+  provider         String?         // Training provider/vendor
+
+  // Duration
+  durationHours    Float?
+  credits          Float?          // CE credits if applicable
+
+  // Timeline
+  assignedDate     DateTime?       @db.Date
+  dueDate          DateTime?       @db.Date
+  startedDate      DateTime?       @db.Date
+  completedDate    DateTime?       @db.Date
+  expirationDate   DateTime?       @db.Date
+
+  // Status
+  status           TrainingStatus  @default(ASSIGNED)
+  score            Float?          // Test score if applicable
+  passed           Boolean?
+
+  // Certificate/Documentation
+  certificateUrl   String?
+
+  // Notes
+  notes            String?
+
+  // Timestamps
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  createdBy        String?         @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String          @db.ObjectId
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([expirationDate])
+  @@map("training_records")
+}
+
+/// CECredit - Continuing Education credit tracking
+model CECredit {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String       @db.ObjectId
+  staffProfile     StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  // Credit Details
+  courseName       String
+  provider         String
+  category         String       // e.g., "general", "specialty", "ethics"
+  credits          Float
+  creditType       String?      // e.g., "hours", "units"
+
+  // Dates
+  completionDate   DateTime     @db.Date
+  reportingPeriodStart DateTime? @db.Date
+  reportingPeriodEnd   DateTime? @db.Date
+
+  // Verification
+  certificateUrl   String?
+  verificationCode String?
+  isVerified       Boolean      @default(false)
+  verifiedAt       DateTime?
+  verifiedBy       String?      @db.ObjectId
+
+  // Notes
+  notes            String?
+
+  // Timestamps
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Multi-clinic isolation
+  clinicId         String       @db.ObjectId
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([completionDate])
+  @@index([category])
+  @@map("ce_credits")
+}
+
+/// Recognition - Staff recognition and awards
+model Recognition {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String           @db.ObjectId
+  staffProfile     StaffProfile     @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  // Recognition Details
+  type             RecognitionType
+  title            String
+  description      String?
+
+  // Who gave the recognition
+  givenById        String?          @db.ObjectId
+  givenByName      String?
+  isAnonymous      Boolean          @default(false)
+
+  // Award details (if applicable)
+  awardValue       Float?           // Monetary value if applicable
+  awardDescription String?
+
+  // Date
+  recognitionDate  DateTime         @default(now())
+
+  // Visibility
+  isPublic         Boolean          @default(true) // Show on profile
+
+  // Timestamps
+  createdAt        DateTime         @default(now())
+
+  // Multi-clinic isolation
+  clinicId         String           @db.ObjectId
+
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([type])
+  @@index([recognitionDate])
+  @@map("recognitions")
+}
+
+// =============================================================================
+// PERFORMANCE & TRAINING ENUMS
+// =============================================================================
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ReviewType {
+  ANNUAL
+  SEMI_ANNUAL
+  QUARTERLY
+  PROBATIONARY
+  PERFORMANCE_IMPROVEMENT
+  PROMOTION
+  SPECIAL
+}
+
+enum ReviewStatus {
+  SCHEDULED
+  IN_PROGRESS
+  PENDING_APPROVAL
+  COMPLETED
+  CANCELLED
+}
+
+enum TrainingStatus {
+  ASSIGNED
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  WAIVED
+}
+
+enum RecognitionType {
+  KUDOS
+  EMPLOYEE_OF_MONTH
+  YEARS_OF_SERVICE
+  ACHIEVEMENT
+  PEER_RECOGNITION
+  PATIENT_COMPLIMENT
+  OTHER
 }

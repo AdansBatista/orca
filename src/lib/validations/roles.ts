@@ -27,6 +27,9 @@ export const createRoleSchema = z.object({
     .nullable(),
   permissions: z.array(z.string()).default([]),
   isSystem: z.boolean().default(false),
+  // Hierarchy fields
+  level: z.number().int().min(0).max(100).default(0),
+  parentRoleId: z.string().nullable().optional(),
 });
 
 /**
@@ -44,6 +47,9 @@ export const updateRoleSchema = z.object({
     .optional()
     .nullable(),
   permissions: z.array(z.string()).optional(),
+  // Hierarchy fields
+  level: z.number().int().min(0).max(100).optional(),
+  parentRoleId: z.string().nullable().optional(),
 });
 
 /**
@@ -94,6 +100,52 @@ export const updateRoleAssignmentSchema = z.object({
 });
 
 // =============================================================================
+// Role Export/Import Schemas
+// =============================================================================
+
+/**
+ * Schema for exporting roles
+ */
+export const exportRolesSchema = z.object({
+  roleIds: z.array(z.string()).optional(), // If empty, exports all non-system roles
+  includeSystem: z.boolean().default(false),
+  format: z.enum(['json', 'csv']).default('json'),
+});
+
+/**
+ * Exported role data structure
+ */
+export const exportedRoleSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  permissions: z.array(z.string()),
+  level: z.number().default(0),
+  parentRoleCode: z.string().nullable().optional(), // Uses code instead of ID for portability
+});
+
+/**
+ * Schema for importing roles
+ */
+export const importRolesSchema = z.object({
+  roles: z.array(exportedRoleSchema),
+  overwriteExisting: z.boolean().default(false), // If true, update existing roles with same code
+  skipExisting: z.boolean().default(true), // If true, skip roles that already exist
+});
+
+/**
+ * Schema for role change history query
+ */
+export const roleChangeHistoryQuerySchema = z.object({
+  roleId: z.string().optional(),
+  changeType: z.string().optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(100).default(25),
+});
+
+// =============================================================================
 // Type Exports
 // =============================================================================
 
@@ -103,3 +155,7 @@ export type RoleQuery = z.infer<typeof roleQuerySchema>;
 export type UpdateRolePermissionsInput = z.infer<typeof updateRolePermissionsSchema>;
 export type CreateRoleAssignmentInput = z.infer<typeof createRoleAssignmentSchema>;
 export type UpdateRoleAssignmentInput = z.infer<typeof updateRoleAssignmentSchema>;
+export type ExportRolesInput = z.infer<typeof exportRolesSchema>;
+export type ExportedRole = z.infer<typeof exportedRoleSchema>;
+export type ImportRolesInput = z.infer<typeof importRolesSchema>;
+export type RoleChangeHistoryQuery = z.infer<typeof roleChangeHistoryQuerySchema>;

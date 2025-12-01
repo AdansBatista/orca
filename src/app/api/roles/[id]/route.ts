@@ -32,6 +32,22 @@ export const GET = withAuth<{ id: string }>(
             },
           },
         },
+        parentRole: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            level: true,
+          },
+        },
+        childRoles: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            level: true,
+          },
+        },
       },
     });
 
@@ -131,12 +147,15 @@ export const PUT = withAuth<{ id: string }>(
     // System roles have limited editability (only name and description)
     const data = result.data;
     const updateData: Record<string, unknown> = {};
+    const changes: string[] = [];
 
-    if (data.name !== undefined) {
+    if (data.name !== undefined && data.name !== existingRole.name) {
       updateData.name = data.name;
+      changes.push('name');
     }
-    if (data.description !== undefined) {
+    if (data.description !== undefined && data.description !== existingRole.description) {
       updateData.description = data.description;
+      changes.push('description');
     }
 
     // Only allow permission updates for non-system roles
@@ -153,13 +172,125 @@ export const PUT = withAuth<{ id: string }>(
           { status: 403 }
         );
       }
+
+      // Track permission changes
+      const addedPerms = data.permissions.filter((p: string) => !existingRole.permissions.includes(p));
+      const removedPerms = existingRole.permissions.filter((p: string) => !data.permissions.includes(p));
+
       updateData.permissions = data.permissions;
+      if (addedPerms.length > 0 || removedPerms.length > 0) {
+        changes.push('permissions');
+      }
+    }
+
+    // Handle hierarchy fields for non-system roles
+    if (!existingRole.isSystem) {
+      if (data.level !== undefined && data.level !== existingRole.level) {
+        updateData.level = data.level;
+        changes.push('level');
+      }
+
+      if (data.parentRoleId !== undefined) {
+        // Validate parent role if provided
+        if (data.parentRoleId !== null) {
+          // Can't set self as parent
+          if (data.parentRoleId === id) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: {
+                  code: 'INVALID_PARENT_ROLE',
+                  message: 'A role cannot be its own parent',
+                },
+              },
+              { status: 400 }
+            );
+          }
+
+          const parentRole = await db.role.findUnique({
+            where: { id: data.parentRoleId },
+          });
+
+          if (!parentRole) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: {
+                  code: 'INVALID_PARENT_ROLE',
+                  message: 'Parent role not found',
+                },
+              },
+              { status: 400 }
+            );
+          }
+
+          // Check for circular reference
+          let currentParent = parentRole;
+          while (currentParent.parentRoleId) {
+            if (currentParent.parentRoleId === id) {
+              return NextResponse.json(
+                {
+                  success: false,
+                  error: {
+                    code: 'CIRCULAR_HIERARCHY',
+                    message: 'This would create a circular hierarchy',
+                  },
+                },
+                { status: 400 }
+              );
+            }
+            const nextParent = await db.role.findUnique({
+              where: { id: currentParent.parentRoleId },
+            });
+            if (!nextParent) break;
+            currentParent = nextParent;
+          }
+        }
+
+        if (data.parentRoleId !== existingRole.parentRoleId) {
+          updateData.parentRoleId = data.parentRoleId;
+          changes.push('parentRoleId');
+        }
+      }
+    }
+
+    // Only update if there are changes
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ success: true, data: existingRole });
     }
 
     // Update the role
     const role = await db.role.update({
       where: { id },
       data: updateData,
+    });
+
+    // Record role change history
+    await db.roleChangeHistory.create({
+      data: {
+        roleId: id,
+        changeType: 'UPDATE',
+        changeData: {
+          before: {
+            name: existingRole.name,
+            description: existingRole.description,
+            permissions: existingRole.permissions,
+            level: existingRole.level,
+            parentRoleId: existingRole.parentRoleId,
+          },
+          after: {
+            name: role.name,
+            description: role.description,
+            permissions: role.permissions,
+            level: role.level,
+            parentRoleId: role.parentRoleId,
+          },
+          changes,
+        },
+        description: `Updated role "${role.name}": ${changes.join(', ')}`,
+        changedById: session.user.id,
+        changedByName: `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim() || undefined,
+      },
     });
 
     // Audit log
@@ -171,7 +302,7 @@ export const PUT = withAuth<{ id: string }>(
       details: {
         name: role.name,
         code: role.code,
-        changes: Object.keys(updateData),
+        changes,
       },
       ipAddress,
       userAgent,
@@ -195,7 +326,7 @@ export const DELETE = withAuth<{ id: string }>(
       where: { id },
       include: {
         _count: {
-          select: { assignments: true },
+          select: { assignments: true, childRoles: true },
         },
       },
     });
@@ -240,6 +371,41 @@ export const DELETE = withAuth<{ id: string }>(
         { status: 409 }
       );
     }
+
+    // Cannot delete roles with child roles
+    if (existingRole._count.childRoles > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'CONFLICT',
+            message: `Cannot delete role with ${existingRole._count.childRoles} child roles. Update or remove child roles first.`,
+          },
+        },
+        { status: 409 }
+      );
+    }
+
+    // Record deletion in history before deleting
+    await db.roleChangeHistory.create({
+      data: {
+        roleId: id,
+        changeType: 'DELETE',
+        changeData: {
+          deletedRole: {
+            name: existingRole.name,
+            code: existingRole.code,
+            description: existingRole.description,
+            permissions: existingRole.permissions,
+            level: existingRole.level,
+            parentRoleId: existingRole.parentRoleId,
+          },
+        },
+        description: `Deleted role "${existingRole.name}" (${existingRole.code})`,
+        changedById: session.user.id,
+        changedByName: `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim() || undefined,
+      },
+    });
 
     // Delete the role
     await db.role.delete({

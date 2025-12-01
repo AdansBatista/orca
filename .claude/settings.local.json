@@ -10,7 +10,9 @@
       "Bash(done)",
       "Bash(find:*)",
       "Bash(npx prisma generate:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run db:seed:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

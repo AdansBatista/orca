@@ -38,7 +38,9 @@ export type AuditAction =
   | 'READ'
   | 'UPDATE'
   | 'DELETE'
-  | 'EXPORT';
+  | 'EXPORT'
+  | 'APPROVE'
+  | 'REJECT';
 
 /**
  * Role hierarchy for permission checking
