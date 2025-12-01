@@ -174,8 +174,9 @@ export const PUT = withAuth<{ id: string }>(
       }
 
       // Track permission changes
-      const addedPerms = data.permissions.filter((p: string) => !existingRole.permissions.includes(p));
-      const removedPerms = existingRole.permissions.filter((p: string) => !data.permissions.includes(p));
+      const newPermissions = data.permissions;
+      const addedPerms = newPermissions.filter((p: string) => !existingRole.permissions.includes(p));
+      const removedPerms = existingRole.permissions.filter((p: string) => !newPermissions.includes(p));
 
       updateData.permissions = data.permissions;
       if (addedPerms.length > 0 || removedPerms.length > 0) {

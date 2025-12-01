@@ -111,7 +111,7 @@ async function recordRoleChange(
     data: {
       roleId,
       changeType,
-      changeData,
+      changeData: changeData as Record<string, string | number | boolean | null>,
       description,
       changedById: session.user.id,
       changedByName: session.user.firstName && session.user.lastName

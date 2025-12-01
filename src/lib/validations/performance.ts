@@ -95,7 +95,7 @@ export const updatePerformanceReviewSchema = z.object({
   status: z.enum(['SCHEDULED', 'IN_PROGRESS', 'PENDING_APPROVAL', 'COMPLETED', 'CANCELLED']).optional(),
   reviewerId: z.string().optional().nullable(),
   reviewerName: z.string().max(200).optional().nullable(),
-  ratings: z.record(z.number()).optional().nullable(),
+  ratings: z.record(z.string(), z.number()).optional().nullable(),
   overallRating: z.number().min(1).max(5).optional().nullable(),
   strengthsNotes: z.string().max(4000).optional().nullable(),
   improvementNotes: z.string().max(4000).optional().nullable(),

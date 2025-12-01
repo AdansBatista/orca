@@ -607,7 +607,7 @@ export default function RoleTemplatesPage() {
                   rows={3}
                 />
               </FormField>
-              <FormField label="Permissions" hint="Comma-separated permission codes">
+              <FormField label="Permissions" description="Comma-separated permission codes">
                 <Textarea
                   value={formData.permissions.join(', ')}
                   onChange={(e) =>

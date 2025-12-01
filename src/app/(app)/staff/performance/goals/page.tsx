@@ -296,13 +296,13 @@ export default function GoalsPage() {
                 <Target className="h-5 w-5 text-primary-500" />
               </div>
             </StatCard>
-            <StatCard accentColor="info">
+            <StatCard accentColor="primary">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">In Progress</p>
                   <p className="text-lg font-bold">{inProgressCount}</p>
                 </div>
-                <Target className="h-5 w-5 text-info-500" />
+                <Target className="h-5 w-5 text-primary-500" />
               </div>
             </StatCard>
             <StatCard accentColor="success">

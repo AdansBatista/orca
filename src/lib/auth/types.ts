@@ -39,6 +39,7 @@ export type AuditAction =
   | 'UPDATE'
   | 'DELETE'
   | 'EXPORT'
+  | 'IMPORT'
   | 'APPROVE'
   | 'REJECT';
 

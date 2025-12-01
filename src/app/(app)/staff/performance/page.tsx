@@ -260,14 +260,14 @@ export default function PerformanceDashboardPage() {
                   <Calendar className="h-5 w-5 text-warning-500" />
                 </div>
               </StatCard>
-              <StatCard accentColor="destructive">
+              <StatCard accentColor="error">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground">Overdue Training</p>
                     <p className="text-lg font-bold">{stats.training.overdue}</p>
                     <p className="text-xs text-muted-foreground">needs attention</p>
                   </div>
-                  <BookOpen className="h-5 w-5 text-destructive-500" />
+                  <BookOpen className="h-5 w-5 text-error-500" />
                 </div>
               </StatCard>
               <StatCard accentColor="accent">

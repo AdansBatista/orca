@@ -261,8 +261,8 @@ export async function seedPerformance(ctx: SeedContext): Promise<void> {
         const dueDate = addDays(assignedAt, 30);
         const isPastDue = dueDate < today;
         const status = isPastDue
-          ? (Math.random() < 0.8 ? 'COMPLETED' : 'OVERDUE')
-          : randomItem(['ASSIGNED', 'IN_PROGRESS', 'COMPLETED']);
+          ? (Math.random() < 0.8 ? 'COMPLETED' as const : 'OVERDUE' as const)
+          : randomItem(['ASSIGNED', 'IN_PROGRESS', 'COMPLETED'] as const);
 
         await db.trainingRecord.create({
           data: {
