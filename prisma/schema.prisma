@@ -1519,3 +1519,408 @@ enum RecognitionType {
   PATIENT_COMPLIMENT
   OTHER
 }
+
+// =============================================================================
+// RESOURCES MANAGEMENT AREA - Equipment, Rooms, Inventory, Sterilization
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Supplier - Shared model for equipment vendors and inventory suppliers
+// -----------------------------------------------------------------------------
+
+/// Supplier - Vendor/supplier for equipment and inventory
+model Supplier {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+
+  // Identification
+  name            String
+  code            String         // Unique supplier code within clinic
+  accountNumber   String?        // Account number with supplier
+
+  // Contact Information
+  contactName     String?
+  email           String?
+  phone           String?
+  fax             String?
+  website         String?
+
+  // Address
+  address         String?
+  city            String?
+  state           String?
+  postalCode      String?
+  country         String?
+
+  // Order Settings
+  minimumOrder    Float?         // Minimum order amount
+  freeShippingThreshold Float?   // Order amount for free shipping
+  defaultLeadTimeDays Int        @default(7)
+  orderMethod     SupplierOrderMethod @default(EMAIL)
+
+  // Payment
+  paymentTerms    String?        // e.g., "Net 30", "Due on Receipt"
+  taxExempt       Boolean        @default(false)
+
+  // Performance Tracking
+  rating          Int?           // 1-5 stars
+  onTimeDeliveryRate Float?      // Percentage of on-time deliveries
+
+  // Status
+  status          SupplierStatus @default(ACTIVE)
+  isPreferred     Boolean        @default(false)
+
+  // Notes
+  notes           String?
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?      // Soft delete
+  createdBy       String?        @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  equipment       Equipment[]
+  maintenanceRecords MaintenanceRecord[]
+  repairRecords   RepairRecord[]
+
+  @@unique([clinicId, code])
+  @@index([clinicId])
+  @@index([status])
+  @@index([name])
+  @@map("suppliers")
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+  ON_HOLD
+  BLOCKED
+}
+
+enum SupplierOrderMethod {
+  EMAIL
+  PORTAL
+  PHONE
+  FAX
+  EDI
+}
+
+// -----------------------------------------------------------------------------
+// Equipment Management - Equipment catalog, types, maintenance, repairs
+// -----------------------------------------------------------------------------
+
+/// EquipmentType - Categories and types of equipment with default settings
+model EquipmentType {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String?        @db.ObjectId  // null for system-wide types
+
+  // Type Information
+  name            String         // e.g., "Intraoral Scanner", "CBCT Machine"
+  code            String         // e.g., "INTRAORAL_SCANNER", unique per clinic
+  category        EquipmentCategory
+  description     String?
+
+  // Default Maintenance Settings
+  defaultMaintenanceIntervalDays Int?
+  maintenanceChecklist String[]  // Default checklist items
+
+  // Default Depreciation Settings
+  defaultUsefulLifeMonths Int?
+  defaultDepreciationMethod DepreciationMethod?
+
+  // Status
+  isSystem        Boolean        @default(false) // System types cannot be deleted
+  isActive        Boolean        @default(true)
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?        @db.ObjectId
+
+  // Relations
+  equipment       Equipment[]
+
+  @@unique([clinicId, code])
+  @@index([clinicId])
+  @@index([category])
+  @@index([isActive])
+  @@map("equipment_types")
+}
+
+/// Equipment - Main equipment records
+model Equipment {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+
+  // Identification
+  name            String         // e.g., "iTero Element 5D Scanner"
+  equipmentNumber String         // Unique equipment ID (e.g., "EQ-2024-001")
+  serialNumber    String?        // Manufacturer serial number
+  modelNumber     String?        // Model number
+  barcode         String?        // Barcode/QR code value
+
+  // Classification
+  typeId          String         @db.ObjectId
+  category        EquipmentCategory
+  manufacturer    String?
+
+  // Location
+  roomId          String?        @db.ObjectId  // Assigned room (optional)
+  locationNotes   String?        // Additional location details
+
+  // Status
+  status          EquipmentStatus @default(ACTIVE)
+  condition       EquipmentCondition @default(GOOD)
+
+  // Purchase Information
+  purchaseDate    DateTime?
+  purchasePrice   Float?
+  vendorId        String?        @db.ObjectId
+  purchaseOrderNumber String?
+
+  // Warranty Information
+  warrantyStartDate DateTime?
+  warrantyExpiry  DateTime?
+  warrantyTerms   String?        // Coverage description
+  warrantyNotes   String?
+  hasExtendedWarranty Boolean    @default(false)
+  extendedWarrantyExpiry DateTime?
+
+  // Depreciation Settings
+  usefulLifeMonths Int?
+  salvageValue    Float?
+  depreciationMethod DepreciationMethod @default(STRAIGHT_LINE)
+  accumulatedDepreciation Float  @default(0)
+  currentBookValue Float?
+  monthlyDepreciation Float?
+  isFullyDepreciated Boolean     @default(false)
+  fullyDepreciatedDate DateTime?
+
+  // Maintenance Settings
+  maintenanceIntervalDays Int?
+  lastMaintenanceDate DateTime?
+  nextMaintenanceDate DateTime?
+
+  // Documents & Media
+  manualUrl       String?        // Link to equipment manual
+  photos          String[]       // Photo URLs
+  specifications  Json?          // Technical specifications
+
+  // Notes
+  notes           String?
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?      // Soft delete
+  createdBy       String?        @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  type            EquipmentType  @relation(fields: [typeId], references: [id])
+  vendor          Supplier?      @relation(fields: [vendorId], references: [id])
+  maintenanceRecords MaintenanceRecord[]
+  repairRecords   RepairRecord[]
+
+  @@unique([clinicId, equipmentNumber])
+  @@index([clinicId])
+  @@index([typeId])
+  @@index([category])
+  @@index([status])
+  @@index([roomId])
+  @@index([serialNumber])
+  @@index([barcode])
+  @@index([nextMaintenanceDate])
+  @@map("equipment")
+}
+
+enum EquipmentCategory {
+  DIAGNOSTIC      // Scanners, X-ray, CBCT
+  TREATMENT       // Curing lights, bracket tools
+  DIGITAL         // 3D printers, milling machines
+  CHAIR           // Dental chairs, delivery units
+  STERILIZATION   // Autoclaves, cleaners
+  SAFETY          // AEDs, fire extinguishers
+  OTHER
+}
+
+enum EquipmentStatus {
+  ACTIVE          // In normal operation
+  IN_REPAIR       // Currently being repaired
+  OUT_OF_SERVICE  // Temporarily unavailable
+  RETIRED         // No longer in use but retained
+  DISPOSED        // Removed from inventory
+}
+
+enum EquipmentCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+}
+
+enum DepreciationMethod {
+  STRAIGHT_LINE      // (Cost - Salvage) / Useful Life
+  DECLINING_BALANCE  // Double declining balance
+  NONE               // No depreciation (minor items)
+}
+
+// -----------------------------------------------------------------------------
+// Maintenance Records - Scheduled and completed maintenance activities
+// -----------------------------------------------------------------------------
+
+/// MaintenanceRecord - Maintenance activities for equipment
+model MaintenanceRecord {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  equipmentId     String         @db.ObjectId
+
+  // Maintenance Details
+  maintenanceType MaintenanceType
+  scheduledDate   DateTime?      // When maintenance was/is scheduled
+  completedDate   DateTime?      // When actually completed
+  status          MaintenanceStatus @default(SCHEDULED)
+
+  // Work Performed
+  description     String?        // Description of work to be done/done
+  checklist       Json?          // Completed checklist items with status
+  notes           String?        // Additional notes
+
+  // Performer Information
+  performedBy     String?        // Internal staff name or "Vendor"
+  performedById   String?        @db.ObjectId  // Staff ID if internal
+  vendorId        String?        @db.ObjectId  // Vendor if external
+  technicianName  String?        // Technician name (for vendor service)
+
+  // Costs
+  laborCost       Float?
+  partsCost       Float?
+  totalCost       Float?
+
+  // Next Maintenance
+  nextMaintenanceDate DateTime?
+
+  // Documents
+  attachments     String[]       // URLs to attached documents
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?        @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  equipment       Equipment      @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  vendor          Supplier?      @relation(fields: [vendorId], references: [id])
+
+  @@index([clinicId])
+  @@index([equipmentId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([maintenanceType])
+  @@map("maintenance_records")
+}
+
+enum MaintenanceType {
+  PREVENTIVE      // Routine preventive maintenance
+  CALIBRATION     // Equipment calibration
+  INSPECTION      // Safety/compliance inspection
+  CLEANING        // Deep cleaning
+  CERTIFICATION   // Annual certification/validation
+  OTHER
+}
+
+enum MaintenanceStatus {
+  SCHEDULED       // Scheduled but not started
+  IN_PROGRESS     // Currently being performed
+  COMPLETED       // Successfully completed
+  CANCELLED       // Cancelled
+  OVERDUE         // Past scheduled date, not completed
+}
+
+// -----------------------------------------------------------------------------
+// Repair Records - Equipment repairs and service calls
+// -----------------------------------------------------------------------------
+
+/// RepairRecord - Repair and service history for equipment
+model RepairRecord {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  equipmentId     String         @db.ObjectId
+
+  // Issue Details
+  reportedDate    DateTime       @default(now())
+  reportedById    String         @db.ObjectId  // Staff who reported
+  issueDescription String        // Description of the problem
+  severity        RepairSeverity @default(MEDIUM)
+
+  // Status Tracking
+  status          RepairStatus   @default(REPORTED)
+  scheduledDate   DateTime?      // When repair is scheduled
+  completedDate   DateTime?      // When repair was completed
+
+  // Diagnosis & Resolution
+  diagnosis       String?        // What was found to be wrong
+  workPerformed   String?        // Description of repair work
+  partsReplaced   String[]       // List of parts replaced
+  resolutionNotes String?        // Additional resolution notes
+
+  // Vendor/Service Information
+  vendorId        String?        @db.ObjectId
+  technicianName  String?
+  serviceTicketNumber String?    // Vendor's ticket/case number
+
+  // Costs
+  laborCost       Float?
+  partsCost       Float?
+  travelCost      Float?
+  totalCost       Float?
+
+  // Warranty Coverage
+  coveredByWarranty Boolean      @default(false)
+  warrantyClaimNumber String?
+
+  // Downtime Tracking
+  equipmentDownStart DateTime?   // When equipment became unavailable
+  equipmentDownEnd DateTime?     // When equipment returned to service
+
+  // Documents
+  attachments     String[]       // URLs to attached documents/photos
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?        @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  equipment       Equipment      @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  vendor          Supplier?      @relation(fields: [vendorId], references: [id])
+
+  @@index([clinicId])
+  @@index([equipmentId])
+  @@index([status])
+  @@index([reportedDate])
+  @@index([severity])
+  @@map("repair_records")
+}
+
+enum RepairSeverity {
+  LOW             // Minor issue, can wait
+  MEDIUM          // Should be addressed soon
+  HIGH            // Urgent, affects operations
+  CRITICAL        // Equipment unusable, immediate action
+}
+
+enum RepairStatus {
+  REPORTED        // Issue reported, not yet reviewed
+  DIAGNOSED       // Problem identified
+  AWAITING_PARTS  // Waiting for replacement parts
+  SCHEDULED       // Repair scheduled
+  IN_PROGRESS     // Repair underway
+  COMPLETED       // Repair finished
+  CANNOT_REPAIR   // Equipment cannot be repaired
+  CANCELLED       // Repair cancelled
+}

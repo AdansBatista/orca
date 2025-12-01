@@ -6,6 +6,7 @@ import { seedRoles, seedUsers, clearAuth } from './auth.seed';
 import { seedStaff, clearStaff } from './staff.seed';
 import { seedScheduling, clearScheduling } from './scheduling.seed';
 import { seedPerformance, clearPerformance } from './performance.seed';
+import { seedResources, clearResources } from './resources.seed';
 
 /**
  * Registry of all seedable areas with their dependencies.
@@ -75,14 +76,14 @@ export const areaRegistry: SeedArea[] = [
     seed: seedPerformance,
     clear: clearPerformance,
   },
-  // Resources area will be added when Prisma models are created
-  // {
-  //   id: 'resources',
-  //   name: 'Resources',
-  //   phase: 1,
-  //   dependencies: ['core'],
-  //   seed: seedResources,
-  // },
+  {
+    id: 'resources',
+    name: 'Resources (Equipment)',
+    phase: 1,
+    dependencies: ['core', 'auth:users'],
+    seed: seedResources,
+    clear: clearResources,
+  },
 
   // ============================================================================
   // PHASE 2: Core Operations

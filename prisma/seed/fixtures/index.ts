@@ -20,3 +20,16 @@ export {
   INSURANCE_PROVIDERS,
   REFERRAL_SOURCES,
 } from './ortho-data.fixture';
+
+export {
+  EQUIPMENT_TYPES,
+  SUPPLIERS,
+  SAMPLE_EQUIPMENT,
+  MAINTENANCE_SCHEDULES,
+  DEPRECIATION_SETTINGS,
+  type EquipmentTypeFixture,
+  type SupplierFixture,
+  type SampleEquipment,
+  type MaintenanceScheduleTemplate,
+  type DepreciationSetting,
+} from './equipment.fixture';

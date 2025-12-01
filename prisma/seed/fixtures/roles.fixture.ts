@@ -118,6 +118,10 @@ export const CUSTOM_ROLES = [
       'communications:*',
       'leads:*',
       'inventory:*',
+      // Resources Management (full access for operations)
+      'equipment:*',
+      'suppliers:*',
+      'maintenance:*',
     ],
   },
   {

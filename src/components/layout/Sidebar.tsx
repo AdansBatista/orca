@@ -33,6 +33,9 @@ import {
   TrendingUp,
   LayoutTemplate,
   GraduationCap,
+  Package,
+  Wrench,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -142,6 +145,16 @@ const defaultNavGroups: NavGroup[] = [
           { label: "Performance", href: "/staff/performance", icon: TrendingUp },
           { label: "Training", href: "/staff/training", icon: GraduationCap },
           { label: "Roles", href: "/staff/roles", icon: Shield },
+        ],
+      },
+      {
+        label: "Resources",
+        href: "/resources",
+        icon: Package,
+        children: [
+          { label: "Equipment", href: "/resources/equipment", icon: Package },
+          { label: "Maintenance", href: "/resources/maintenance", icon: Wrench },
+          { label: "Suppliers", href: "/resources/suppliers", icon: Truck },
         ],
       },
       { label: "Billing", href: "/billing", icon: DollarSign },

@@ -171,6 +171,38 @@ await db.auditLog.create({
 
 ---
 
+## MongoDB/Prisma Soft Delete
+
+### deletedAt Must Be Explicitly Set to null
+
+**Problem:** When seeding data, optional `DateTime?` fields like `deletedAt` may not be properly set to `null`, causing queries with `deletedAt: null` filter to return no results.
+
+**Symptom:** Seed data exists in database but API returns empty results. Debug shows `activeEquipment: 0` while `totalEquipment: 15`.
+
+**Solution:** Always explicitly set `deletedAt: null` when creating records that use soft-delete:
+
+```typescript
+// ✅ CORRECT - Explicitly set deletedAt
+await db.equipment.create({
+  data: {
+    name: 'Equipment',
+    // ... other fields
+    deletedAt: null, // Must be explicit for MongoDB
+  },
+});
+
+// ❌ WRONG - Omitting deletedAt may cause filter issues
+await db.equipment.create({
+  data: {
+    name: 'Equipment',
+    // ... other fields
+    // deletedAt not set - may not be null!
+  },
+});
+```
+
+---
+
 ## Seed Infrastructure
 
 ### IdTracker Interface Missing Methods
