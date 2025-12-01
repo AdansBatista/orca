@@ -36,6 +36,8 @@ import {
   Package,
   Wrench,
   Truck,
+  DoorOpen,
+  FlaskConical,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -153,6 +155,8 @@ const defaultNavGroups: NavGroup[] = [
         icon: Package,
         children: [
           { label: "Equipment", href: "/resources/equipment", icon: Package },
+          { label: "Rooms", href: "/resources/rooms", icon: DoorOpen },
+          { label: "Sterilization", href: "/resources/sterilization", icon: FlaskConical },
           { label: "Maintenance", href: "/resources/maintenance", icon: Wrench },
           { label: "Suppliers", href: "/resources/suppliers", icon: Truck },
         ],

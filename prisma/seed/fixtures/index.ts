@@ -33,3 +33,25 @@ export {
   type MaintenanceScheduleTemplate,
   type DepreciationSetting,
 } from './equipment.fixture';
+
+export {
+  SAMPLE_ROOMS,
+  SAMPLE_CHAIRS,
+  ROOM_CAPABILITIES,
+} from './rooms.fixture';
+
+export {
+  SAMPLE_INSTRUMENT_SETS,
+  CYCLE_PARAMETERS,
+  BI_BRANDS,
+  BI_READER_TYPES,
+  COMPLIANCE_LOG_TEMPLATES,
+  CHEMICAL_INDICATOR_INFO,
+  generateBILotNumber,
+  getCycleParameters,
+  getRandomBIBrand,
+  getRandomBIReader,
+  type InstrumentSetFixture,
+  type CycleParameters,
+  type ComplianceLogTemplate,
+} from './sterilization.fixture';

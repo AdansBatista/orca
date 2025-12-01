@@ -1924,3 +1924,525 @@ enum RepairStatus {
   CANNOT_REPAIR   // Equipment cannot be repaired
   CANCELLED       // Repair cancelled
 }
+
+// -----------------------------------------------------------------------------
+// Room/Chair Management - Operatories, treatment chairs, and equipment assignments
+// -----------------------------------------------------------------------------
+
+/// Room - Treatment rooms/operatories in the clinic
+model Room {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+
+  // Identification
+  name            String         // e.g., "Operatory 1", "Consultation Room A"
+  roomNumber      String         // Unique within clinic (e.g., "OP-1", "CONSULT-A")
+
+  // Classification
+  roomType        RoomType
+
+  // Physical details
+  floor           String?        // e.g., "1st Floor", "Basement"
+  wing            String?        // e.g., "East Wing", "Main"
+  squareFeet      Int?
+  capacity        Int            @default(1) // Max patients/occupants
+
+  // Status
+  status          RoomStatus     @default(ACTIVE)
+  isAvailable     Boolean        @default(true)
+
+  // Capabilities - what procedures can be performed here
+  capabilities    String[]       // e.g., ["ORTHO", "X_RAY", "SCANNING", "CONSULTATION"]
+
+  // Configuration notes
+  setupNotes      String?        // Setup instructions for this room
+  notes           String?        // General notes
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?      // Soft delete
+  createdBy       String?        @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  chairs          TreatmentChair[]
+  roomEquipment   RoomEquipment[]
+
+  @@unique([clinicId, roomNumber])
+  @@index([clinicId])
+  @@index([roomType])
+  @@index([status])
+  @@map("rooms")
+}
+
+enum RoomType {
+  OPERATORY       // Treatment operatory with chair
+  CONSULTATION    // Consultation/exam room
+  X_RAY           // X-ray/imaging room
+  STERILIZATION   // Sterilization area
+  LAB             // In-house lab
+  STORAGE         // Storage room
+  RECEPTION       // Reception/waiting area
+  OFFICE          // Office/admin space
+}
+
+enum RoomStatus {
+  ACTIVE          // In normal operation
+  MAINTENANCE     // Under maintenance
+  CLOSED          // Temporarily closed
+  RENOVATION      // Under renovation
+}
+
+/// TreatmentChair - Dental/treatment chairs within rooms
+model TreatmentChair {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  roomId          String         @db.ObjectId
+
+  // Identification
+  name            String         // e.g., "Chair 1", "Primary Chair"
+  chairNumber     String         // Unique within clinic (e.g., "CH-001")
+
+  // Equipment details
+  manufacturer    String?
+  modelNumber     String?
+  serialNumber    String?
+
+  // Status
+  status          ChairStatus    @default(ACTIVE)
+  condition       EquipmentCondition @default(GOOD)
+
+  // Features and capabilities
+  features        String[]       // e.g., ["PROGRAMMABLE", "HEATED", "MASSAGE"]
+  hasDeliveryUnit Boolean        @default(true)
+  hasSuction      Boolean        @default(true)
+  hasLight        Boolean        @default(true)
+
+  // Purchase/warranty info
+  purchaseDate    DateTime?
+  warrantyExpiry  DateTime?
+
+  // Maintenance
+  lastMaintenanceDate DateTime?
+  nextMaintenanceDate DateTime?
+
+  // Notes
+  notes           String?
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?      // Soft delete
+  createdBy       String?        @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  room            Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, chairNumber])
+  @@index([clinicId])
+  @@index([roomId])
+  @@index([status])
+  @@map("treatment_chairs")
+}
+
+enum ChairStatus {
+  ACTIVE          // In normal operation
+  IN_REPAIR       // Currently being repaired
+  OUT_OF_SERVICE  // Temporarily unavailable
+  RETIRED         // No longer in use
+}
+
+/// RoomEquipment - Equipment assigned to rooms (many-to-many with history)
+model RoomEquipment {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  roomId          String         @db.ObjectId
+  equipmentId     String         @db.ObjectId
+
+  // Assignment details
+  assignedDate    DateTime       @default(now())
+  unassignedDate  DateTime?      // null = currently assigned
+  isPermanent     Boolean        @default(true)  // Permanent vs temporary assignment
+
+  // Position/location within room
+  position        String?        // e.g., "Left wall", "Near window"
+
+  // Notes
+  notes           String?
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?        @db.ObjectId
+
+  // Relations
+  room            Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([roomId])
+  @@index([equipmentId])
+  @@index([unassignedDate])
+  @@map("room_equipment")
+}
+
+// -----------------------------------------------------------------------------
+// Sterilization & Compliance - Cycle tracking, indicators, compliance logs
+// -----------------------------------------------------------------------------
+
+/// SterilizationCycle - Individual autoclave/sterilizer run records
+model SterilizationCycle {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+
+  // Equipment - link to sterilization equipment (autoclave, etc.)
+  equipmentId     String               @db.ObjectId
+
+  // Cycle identification
+  cycleNumber     String               // Unique cycle number (e.g., "CYC-2024-001")
+
+  // Cycle details
+  cycleType       SterilizationCycleType
+  startTime       DateTime
+  endTime         DateTime?
+
+  // Process parameters
+  temperature     Float?               // Temperature in Celsius
+  pressure        Float?               // Pressure in PSI
+  exposureTime    Int?                 // Exposure time in minutes
+  dryingTime      Int?                 // Drying time in minutes
+
+  // Results
+  status          CycleStatus          @default(IN_PROGRESS)
+  mechanicalPass  Boolean?             // Mechanical indicator result
+  chemicalPass    Boolean?             // Chemical indicator result
+  biologicalPass  Boolean?             // Biological indicator result (spore test)
+
+  // Operator info
+  operatorId      String               @db.ObjectId
+  verifiedById    String?              @db.ObjectId
+  verifiedAt      DateTime?
+
+  // Notes
+  notes           String?
+  failureReason   String?              // If cycle failed
+
+  // Timestamps & Audit
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  createdBy       String?              @db.ObjectId
+  updatedBy       String?              @db.ObjectId
+
+  // Relations
+  loads           SterilizationLoad[]
+  biologicalIndicators BiologicalIndicator[]
+  chemicalIndicators   ChemicalIndicator[]
+
+  @@unique([clinicId, cycleNumber])
+  @@index([clinicId])
+  @@index([equipmentId])
+  @@index([status])
+  @@index([startTime])
+  @@index([operatorId])
+  @@map("sterilization_cycles")
+}
+
+enum SterilizationCycleType {
+  STEAM_GRAVITY    // Gravity steam sterilization (standard)
+  STEAM_PREVACUUM  // Pre-vacuum steam sterilization
+  STEAM_FLASH      // Flash/immediate use sterilization
+  CHEMICAL         // Chemical sterilization (e.g., ethylene oxide)
+  DRY_HEAT         // Dry heat sterilization
+  VALIDATION       // Validation/test cycle
+}
+
+enum CycleStatus {
+  IN_PROGRESS      // Cycle currently running
+  COMPLETED        // Cycle completed successfully
+  FAILED           // Cycle failed (parameters not met)
+  ABORTED          // Cycle aborted by operator
+  VOID             // Cycle voided (record-keeping error)
+}
+
+/// SterilizationLoad - Items processed in each cycle
+model SterilizationLoad {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+  cycleId         String               @db.ObjectId
+
+  // Load identification
+  loadNumber      Int                  // Position/number in load (1, 2, 3, etc.)
+
+  // Item details
+  itemType        LoadItemType
+  itemDescription String               // Description of item(s)
+  quantity        Int                  @default(1)
+
+  // Instrument pack/set tracking (if applicable)
+  instrumentSetId String?              @db.ObjectId
+  packBarcode     String?              // Pack/pouch barcode
+
+  // Position in sterilizer
+  position        String?              // e.g., "Top rack", "Middle shelf"
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  // Relations
+  cycle           SterilizationCycle   @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([cycleId])
+  @@index([instrumentSetId])
+  @@index([packBarcode])
+  @@map("sterilization_loads")
+}
+
+enum LoadItemType {
+  INSTRUMENT_PACK  // Wrapped instrument set/pack
+  INSTRUMENT_SET   // Unwrapped instrument set
+  HANDPIECE        // Dental handpiece
+  BUR_BLOCK        // Bur block/holder
+  IMPLANT_KIT      // Implant surgical kit
+  ORTHODONTIC_TRAY // Orthodontic instrument tray
+  LOOSE_ITEMS      // Individual loose instruments
+  OTHER
+}
+
+/// BiologicalIndicator - Spore test results for cycle validation
+model BiologicalIndicator {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+  cycleId         String?              @db.ObjectId  // Can be independent test
+
+  // Indicator identification
+  lotNumber       String               // Manufacturer lot number
+  brand           String?              // e.g., "3M Attest", "Mesa Labs"
+
+  // Testing info
+  testDate        DateTime             // When test was started
+  readDate        DateTime?            // When result was read
+  incubationHours Int?                 // Hours incubated
+
+  // Results
+  result          BiologicalTestResult @default(PENDING)
+  controlPassed   Boolean?             // Control vial passed (grew)
+
+  // Reader info (if using rapid reader)
+  readerType      String?              // e.g., "3M Attest 490", "Manual incubator"
+  readerId        String?              // Reader serial/ID
+
+  // Performed by
+  performedById   String               @db.ObjectId
+  readById        String?              @db.ObjectId
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  // Relations
+  cycle           SterilizationCycle?  @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+
+  @@index([clinicId])
+  @@index([cycleId])
+  @@index([testDate])
+  @@index([result])
+  @@index([lotNumber])
+  @@map("biological_indicators")
+}
+
+enum BiologicalTestResult {
+  PENDING          // Incubating, awaiting results
+  PASSED           // Negative (no growth) - sterilization effective
+  FAILED           // Positive (growth) - sterilization NOT effective
+  INCONCLUSIVE     // Control failed or invalid result
+}
+
+/// ChemicalIndicator - Chemical indicator strip/tape results
+model ChemicalIndicator {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+  cycleId         String               @db.ObjectId
+
+  // Indicator type
+  indicatorClass  ChemicalIndicatorClass
+  indicatorType   String?              // Brand/type description
+
+  // Location in load
+  loadPosition    String?              // Where indicator was placed
+
+  // Results
+  result          ChemicalIndicatorResult
+  colorChange     String?              // Description of color change
+
+  // Performed by
+  performedById   String               @db.ObjectId
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  // Relations
+  cycle           SterilizationCycle   @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([cycleId])
+  @@index([result])
+  @@map("chemical_indicators")
+}
+
+enum ChemicalIndicatorClass {
+  CLASS_1          // Process indicators (autoclave tape) - exposure only
+  CLASS_2          // Bowie-Dick test indicators (air removal)
+  CLASS_3          // Single-parameter indicators
+  CLASS_4          // Multi-parameter indicators
+  CLASS_5          // Integrating indicators (simulate BI)
+  CLASS_6          // Emulating indicators (specific cycle)
+}
+
+enum ChemicalIndicatorResult {
+  PASSED           // Color change complete/acceptable
+  FAILED           // Color change incomplete/unacceptable
+  INCONCLUSIVE     // Unable to determine
+}
+
+/// InstrumentSet - Reusable instrument packs/sets for tracking
+model InstrumentSet {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+
+  // Identification
+  name            String               // e.g., "Ortho Bonding Set A"
+  setNumber       String               // Unique set ID (e.g., "SET-001")
+  barcode         String?              // Barcode for scanning
+
+  // Contents
+  description     String?              // Contents description
+  instrumentCount Int                  // Number of instruments in set
+
+  // Category
+  category        InstrumentSetCategory
+
+  // Status
+  status          InstrumentSetStatus  @default(AVAILABLE)
+  currentLocation String?              // Current location/room
+
+  // Tracking
+  lastSterilizedAt DateTime?
+  lastUsedAt      DateTime?
+  useCount        Int                  @default(0)
+  sterilizationCount Int               @default(0)
+
+  // Lifecycle
+  assemblyDate    DateTime?            // When set was assembled
+  expirationDays  Int?                 // How many days after sterilization set expires
+  maxUses         Int?                 // Maximum uses before replacement
+
+  // Notes
+  notes           String?
+
+  // Timestamps & Audit
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  deletedAt       DateTime?            // Soft delete
+  createdBy       String?              @db.ObjectId
+  updatedBy       String?              @db.ObjectId
+
+  @@unique([clinicId, setNumber])
+  @@index([clinicId])
+  @@index([status])
+  @@index([category])
+  @@index([barcode])
+  @@map("instrument_sets")
+}
+
+enum InstrumentSetCategory {
+  ORTHODONTIC      // Ortho-specific instruments
+  BONDING          // Bracket bonding instruments
+  DEBONDING        // Bracket removal instruments
+  ADJUSTMENT       // Wire adjustment tools
+  IMPRESSION       // Impression instruments
+  SURGICAL         // Minor surgical instruments
+  GENERAL          // General dental instruments
+  HYGIENE          // Hygiene instruments
+  OTHER
+}
+
+enum InstrumentSetStatus {
+  AVAILABLE        // Sterile and ready for use
+  IN_USE           // Currently being used
+  DIRTY            // Used, awaiting sterilization
+  PROCESSING       // In sterilization process
+  QUARANTINE       // Awaiting biological indicator results
+  MAINTENANCE      // Under repair/inspection
+  RETIRED          // No longer in service
+}
+
+/// ComplianceLog - Regulatory compliance documentation
+model ComplianceLog {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+
+  // Log identification
+  logType         ComplianceLogType
+  logDate         DateTime             @default(now())
+
+  // Reference (what this log is about)
+  referenceType   String?              // e.g., "SterilizationCycle", "BiologicalIndicator"
+  referenceId     String?              @db.ObjectId
+
+  // Details
+  title           String
+  description     String?
+  action          String?              // What action was taken
+  outcome         String?              // Result/outcome
+
+  // Compliance status
+  isCompliant     Boolean              @default(true)
+  deficiencyFound Boolean              @default(false)
+  correctiveAction String?             // Corrective action taken
+
+  // Performed by
+  performedById   String               @db.ObjectId
+  reviewedById    String?              @db.ObjectId
+  reviewedAt      DateTime?
+
+  // Attachments
+  attachments     String[]             // URLs to attached documents
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([clinicId])
+  @@index([logType])
+  @@index([logDate])
+  @@index([isCompliant])
+  @@map("compliance_logs")
+}
+
+enum ComplianceLogType {
+  WEEKLY_BI_TEST   // Weekly biological indicator test
+  MONTHLY_AUDIT    // Monthly sterilization audit
+  EQUIPMENT_VALIDATION // Sterilizer validation/certification
+  INCIDENT_REPORT  // Sterilization failure or incident
+  CORRECTIVE_ACTION // Corrective action documentation
+  TRAINING_RECORD  // Staff training documentation
+  INSPECTION       // External inspection record
+  POLICY_REVIEW    // Policy/procedure review
+  OTHER
+}

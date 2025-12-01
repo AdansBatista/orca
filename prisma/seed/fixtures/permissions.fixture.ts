@@ -23,6 +23,8 @@ export const PERMISSION_RESOURCES = [
   'equipment',
   'suppliers',
   'maintenance',
+  'rooms',
+  'sterilization',
 ] as const;
 
 export const PERMISSION_ACTIONS = [
@@ -62,6 +64,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'equipment:*',
     'suppliers:*',
     'maintenance:*',
+    'rooms:*',
+    'sterilization:*',
   ],
 
   doctor: [
@@ -79,6 +83,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'suppliers:read',
     'maintenance:read',
     'maintenance:create',
+    'rooms:read',
+    'sterilization:read',
   ],
 
   clinical_staff: [
@@ -92,10 +98,14 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'lab:read',
     'inventory:read',
     'inventory:update',
-    // Resources Management (read access)
+    // Resources Management (read access + sterilization for clinical duties)
     'equipment:read',
     'suppliers:read',
     'maintenance:read',
+    'rooms:read',
+    'sterilization:read',
+    'sterilization:create',
+    'sterilization:update',
   ],
 
   front_desk: [
@@ -108,6 +118,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'billing:read',
     // Resources Management (read access for scheduling rooms/equipment)
     'equipment:read',
+    'rooms:read',
   ],
 
   billing: [
