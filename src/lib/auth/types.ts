@@ -70,8 +70,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'settings:full',
     'users:full',
     'staff:full',
+    'staff:compensation', // Access to view/edit compensation data
     'roles:full',
     'audit:view',
+    'schedule:full',
   ],
   doctor: [
     'patients:full',

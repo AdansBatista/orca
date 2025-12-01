@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -58,10 +58,72 @@ const providerTypeOptions = [
   { value: 'OTHER', label: 'Other' },
 ];
 
+interface StaffOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+  title: string | null;
+}
+
+interface ScheduleTemplateOption {
+  id: string;
+  name: string;
+  description: string | null;
+  employmentType: string | null;
+}
+
 export function StaffProfileForm({ initialData, staffId, mode }: StaffProfileFormProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [supervisorOptions, setSupervisorOptions] = useState<StaffOption[]>([]);
+  const [loadingSupervisors, setLoadingSupervisors] = useState(false);
+  const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplateOption[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Fetch potential supervisors (active staff members)
+  useEffect(() => {
+    const fetchSupervisors = async () => {
+      setLoadingSupervisors(true);
+      try {
+        const response = await fetch('/api/staff?status=ACTIVE&pageSize=100');
+        const result = await response.json();
+        if (result.success) {
+          // Filter out the current staff member (can't be their own supervisor)
+          const options = (result.data.items || []).filter(
+            (s: StaffOption) => s.id !== staffId
+          );
+          setSupervisorOptions(options);
+        }
+      } catch {
+        // Silent fail - supervisor selection is optional
+      } finally {
+        setLoadingSupervisors(false);
+      }
+    };
+
+    fetchSupervisors();
+  }, [staffId]);
+
+  // Fetch schedule templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const response = await fetch('/api/staff/schedule-templates?isActive=true&pageSize=100');
+        const result = await response.json();
+        if (result.success) {
+          setScheduleTemplates(result.data.items || []);
+        }
+      } catch {
+        // Silent fail - template selection is optional
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   const {
     register,
@@ -219,6 +281,53 @@ export function StaffProfileForm({ initialData, staffId, mode }: StaffProfileFor
 
           <FormField label="Department" error={errors.department?.message}>
             <Input {...register('department')} placeholder="e.g., Clinical" />
+          </FormField>
+
+          <FormField label="Supervisor" error={errors.supervisorId?.message}>
+            <Select
+              value={watch('supervisorId') || 'none'}
+              onValueChange={(v) => setValue('supervisorId', v === 'none' ? null : v)}
+              disabled={loadingSupervisors}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={loadingSupervisors ? 'Loading...' : 'Select supervisor...'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No supervisor</SelectItem>
+                {supervisorOptions.map((staff) => (
+                  <SelectItem key={staff.id} value={staff.id}>
+                    {staff.firstName} {staff.lastName}
+                    {staff.title && ` - ${staff.title}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          <FormField label="Default Schedule" error={errors.defaultScheduleTemplateId?.message}>
+            <Select
+              value={watch('defaultScheduleTemplateId') || 'none'}
+              onValueChange={(v) => setValue('defaultScheduleTemplateId', v === 'none' ? null : v)}
+              disabled={loadingTemplates}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={loadingTemplates ? 'Loading...' : 'Select schedule template...'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No default schedule</SelectItem>
+                {scheduleTemplates
+                  .filter((t) => !t.employmentType || t.employmentType === watch('employmentType'))
+                  .map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                      {template.description && ` - ${template.description}`}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Assign a weekly schedule pattern for shift generation
+            </p>
           </FormField>
         </CardContent>
       </Card>

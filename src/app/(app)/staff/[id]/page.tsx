@@ -15,15 +15,18 @@ import {
   MoreHorizontal,
   Trash2,
   AlertTriangle,
+  CalendarPlus,
 } from 'lucide-react';
 import type { StaffProfile, Credential, Certification, EmergencyContact, EmploymentRecord, StaffDocument } from '@prisma/client';
 
+import { useSession } from 'next-auth/react';
 import { PageHeader, PageContent, DashboardGrid } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { hasPermission } from '@/lib/auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +47,19 @@ import {
 import { PhiProtected } from '@/components/ui/phi-protected';
 import { getFakeName, getFakeEmail, getFakePhone, getFakeAddress } from '@/lib/fake-data';
 import { CredentialsList, CertificationsList, EmploymentRecordsList, DocumentsList } from '@/components/staff';
+import { GenerateScheduleDialog } from '@/components/staff/scheduling';
+
+type SupervisorInfo = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  title: string | null;
+};
+
+type ScheduleTemplateInfo = {
+  id: string;
+  name: string;
+};
 
 type StaffWithRelations = StaffProfile & {
   credentials: Credential[];
@@ -51,6 +67,8 @@ type StaffWithRelations = StaffProfile & {
   emergencyContacts: EmergencyContact[];
   employmentRecords: EmploymentRecord[];
   documents: StaffDocument[];
+  supervisor?: SupervisorInfo | null;
+  defaultScheduleTemplate?: ScheduleTemplateInfo | null;
 };
 
 const statusVariants: Record<string, 'success' | 'warning' | 'error' | 'info' | 'ghost'> = {
@@ -118,6 +136,7 @@ function LoadingSkeleton() {
 export default function StaffDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const staffId = params.id as string;
 
   const [staff, setStaff] = useState<StaffWithRelations | null>(null);
@@ -127,6 +146,12 @@ export default function StaffDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [generateScheduleOpen, setGenerateScheduleOpen] = useState(false);
+
+  // Check if user can view compensation data
+  const canViewCompensation = session?.user?.role
+    ? hasPermission(session.user.role, 'staff:compensation')
+    : false;
 
   const fetchStaff = useCallback(async () => {
     try {
@@ -162,7 +187,8 @@ export default function StaffDetailPage() {
       const response = await fetch(`/api/staff/${staffId}/documents`);
       const result = await response.json();
       if (result.success) {
-        setDocuments(result.data);
+        // API returns paginated format: { items: [...], total, page, ... }
+        setDocuments(result.data.items || []);
       }
     } catch {
       // Silent fail - documents are supplementary
@@ -265,6 +291,10 @@ export default function StaffDetailPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setGenerateScheduleOpen(true)}>
+              <CalendarPlus className="h-4 w-4 mr-2" />
+              Generate Schedule
+            </Button>
             <Link href={`/staff/${staffId}/edit`}>
               <Button variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
@@ -484,6 +514,21 @@ export default function StaffDetailPage() {
                       </div>
                     </div>
                   )}
+
+                  {staff.supervisor && (
+                    <div className="flex items-start gap-3">
+                      <UserCog className="h-4 w-4 mt-1 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">Supervisor</p>
+                        <p className="text-sm text-muted-foreground">
+                          <PhiProtected fakeData={getFakeName()}>
+                            {staff.supervisor.firstName} {staff.supervisor.lastName}
+                          </PhiProtected>
+                          {staff.supervisor.title && ` - ${staff.supervisor.title}`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </DashboardGrid.Half>
@@ -514,6 +559,7 @@ export default function StaffDetailPage() {
                 staffProfileId={staff.id}
                 records={employmentRecords}
                 canEdit={true}
+                canViewCompensation={canViewCompensation}
                 onUpdate={fetchEmploymentRecords}
               />
             </DashboardGrid.Half>
@@ -615,6 +661,16 @@ export default function StaffDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Generate Schedule Dialog */}
+      <GenerateScheduleDialog
+        staffProfileId={staff.id}
+        staffName={fullName}
+        defaultTemplateId={staff.defaultScheduleTemplateId}
+        defaultTemplateName={staff.defaultScheduleTemplate?.name}
+        open={generateScheduleOpen}
+        onOpenChange={setGenerateScheduleOpen}
+      />
     </>
   );
 }

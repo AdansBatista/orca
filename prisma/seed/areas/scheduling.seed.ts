@@ -502,6 +502,7 @@ export async function seedScheduling(ctx: SeedContext): Promise<void> {
 
 /**
  * Create schedule templates for a clinic
+ * Templates are linked to employment types for easy assignment
  */
 async function createScheduleTemplates(
   db: SeedContext['db'],
@@ -510,18 +511,22 @@ async function createScheduleTemplates(
 ) {
   const templates = [];
 
-  // Standard Week Template
-  const standardTemplate = await db.scheduleTemplate.create({
+  // ========================================================================
+  // Full-Time Templates
+  // ========================================================================
+
+  // Full-Time Standard (default for FULL_TIME)
+  const fullTimeStandard = await db.scheduleTemplate.create({
     data: {
       clinicId,
-      name: 'Standard Week',
-      description: 'Regular weekly schedule template for full-time staff',
+      name: 'Full-Time Standard',
+      description: 'Standard 40-hour week for full-time employees (Mon-Fri 8am-5pm)',
       templateType: 'STANDARD',
       periodType: 'WEEKLY',
+      employmentType: 'FULL_TIME',
       isActive: true,
       isDefault: true,
       shifts: [
-        // Monday - Friday, 8am - 5pm
         { dayOfWeek: 1, startTime: '08:00', endTime: '17:00', breakMinutes: 60, shiftType: 'REGULAR' },
         { dayOfWeek: 2, startTime: '08:00', endTime: '17:00', breakMinutes: 60, shiftType: 'REGULAR' },
         { dayOfWeek: 3, startTime: '08:00', endTime: '17:00', breakMinutes: 60, shiftType: 'REGULAR' },
@@ -531,16 +536,17 @@ async function createScheduleTemplates(
       createdBy,
     },
   });
-  templates.push(standardTemplate);
+  templates.push(fullTimeStandard);
 
-  // Extended Hours Template
-  const extendedTemplate = await db.scheduleTemplate.create({
+  // Full-Time Extended Hours
+  const fullTimeExtended = await db.scheduleTemplate.create({
     data: {
       clinicId,
-      name: 'Extended Hours',
-      description: 'Schedule for extended clinic hours including evenings',
+      name: 'Full-Time Extended',
+      description: 'Extended hours schedule for full-time employees (Mon-Fri 10am-7pm)',
       templateType: 'EXTENDED_HOURS',
       periodType: 'WEEKLY',
+      employmentType: 'FULL_TIME',
       isActive: true,
       isDefault: false,
       shifts: [
@@ -553,36 +559,93 @@ async function createScheduleTemplates(
       createdBy,
     },
   });
-  templates.push(extendedTemplate);
+  templates.push(fullTimeExtended);
 
-  // Part-Time Template
-  const partTimeTemplate = await db.scheduleTemplate.create({
+  // ========================================================================
+  // Part-Time Templates
+  // ========================================================================
+
+  // Part-Time Morning (default for PART_TIME)
+  const partTimeMorning = await db.scheduleTemplate.create({
     data: {
       clinicId,
       name: 'Part-Time Morning',
-      description: 'Morning schedule for part-time staff',
+      description: 'Morning schedule for part-time staff (Mon/Wed/Fri 8am-1pm)',
       templateType: 'STANDARD',
       periodType: 'WEEKLY',
+      employmentType: 'PART_TIME',
       isActive: true,
-      isDefault: false,
+      isDefault: true,
       shifts: [
         { dayOfWeek: 1, startTime: '08:00', endTime: '13:00', breakMinutes: 0, shiftType: 'REGULAR' },
-        { dayOfWeek: 2, startTime: '08:00', endTime: '13:00', breakMinutes: 0, shiftType: 'REGULAR' },
         { dayOfWeek: 3, startTime: '08:00', endTime: '13:00', breakMinutes: 0, shiftType: 'REGULAR' },
+        { dayOfWeek: 5, startTime: '08:00', endTime: '13:00', breakMinutes: 0, shiftType: 'REGULAR' },
       ],
       createdBy,
     },
   });
-  templates.push(partTimeTemplate);
+  templates.push(partTimeMorning);
 
-  // Saturday Only Template
-  const saturdayTemplate = await db.scheduleTemplate.create({
+  // Part-Time Afternoon
+  const partTimeAfternoon = await db.scheduleTemplate.create({
+    data: {
+      clinicId,
+      name: 'Part-Time Afternoon',
+      description: 'Afternoon schedule for part-time staff (Tue/Thu 1pm-6pm)',
+      templateType: 'STANDARD',
+      periodType: 'WEEKLY',
+      employmentType: 'PART_TIME',
+      isActive: true,
+      isDefault: false,
+      shifts: [
+        { dayOfWeek: 2, startTime: '13:00', endTime: '18:00', breakMinutes: 0, shiftType: 'REGULAR' },
+        { dayOfWeek: 4, startTime: '13:00', endTime: '18:00', breakMinutes: 0, shiftType: 'REGULAR' },
+      ],
+      createdBy,
+    },
+  });
+  templates.push(partTimeAfternoon);
+
+  // ========================================================================
+  // Temporary Staff Templates
+  // ========================================================================
+
+  // Temporary Standard (default for TEMP)
+  const tempStandard = await db.scheduleTemplate.create({
+    data: {
+      clinicId,
+      name: 'Temporary Standard',
+      description: 'Standard schedule for temporary employees (Mon-Fri 9am-5pm)',
+      templateType: 'STANDARD',
+      periodType: 'WEEKLY',
+      employmentType: 'TEMP',
+      isActive: true,
+      isDefault: true,
+      shifts: [
+        { dayOfWeek: 1, startTime: '09:00', endTime: '17:00', breakMinutes: 30, shiftType: 'REGULAR' },
+        { dayOfWeek: 2, startTime: '09:00', endTime: '17:00', breakMinutes: 30, shiftType: 'REGULAR' },
+        { dayOfWeek: 3, startTime: '09:00', endTime: '17:00', breakMinutes: 30, shiftType: 'REGULAR' },
+        { dayOfWeek: 4, startTime: '09:00', endTime: '17:00', breakMinutes: 30, shiftType: 'REGULAR' },
+        { dayOfWeek: 5, startTime: '09:00', endTime: '17:00', breakMinutes: 30, shiftType: 'REGULAR' },
+      ],
+      createdBy,
+    },
+  });
+  templates.push(tempStandard);
+
+  // ========================================================================
+  // Custom Templates (for any employment type)
+  // ========================================================================
+
+  // Saturday Coverage
+  const saturdayCoverage = await db.scheduleTemplate.create({
     data: {
       clinicId,
       name: 'Saturday Coverage',
-      description: 'Saturday-only schedule for weekend coverage',
+      description: 'Saturday-only schedule for weekend coverage (Sat 9am-2pm)',
       templateType: 'CUSTOM',
       periodType: 'WEEKLY',
+      employmentType: null, // Any employment type
       isActive: true,
       isDefault: false,
       shifts: [
@@ -591,16 +654,17 @@ async function createScheduleTemplates(
       createdBy,
     },
   });
-  templates.push(saturdayTemplate);
+  templates.push(saturdayCoverage);
 
-  // Holiday Template
-  const holidayTemplate = await db.scheduleTemplate.create({
+  // Holiday Week Template
+  const holidayWeek = await db.scheduleTemplate.create({
     data: {
       clinicId,
       name: 'Holiday Week',
-      description: 'Reduced schedule for holiday weeks',
+      description: 'Reduced schedule for holiday weeks (Mon-Wed 9am-3pm)',
       templateType: 'HOLIDAY',
       periodType: 'WEEKLY',
+      employmentType: null, // Any employment type
       isActive: true,
       isDefault: false,
       shifts: [
@@ -611,7 +675,29 @@ async function createScheduleTemplates(
       createdBy,
     },
   });
-  templates.push(holidayTemplate);
+  templates.push(holidayWeek);
+
+  // 4-Day Week Template
+  const fourDayWeek = await db.scheduleTemplate.create({
+    data: {
+      clinicId,
+      name: '4-Day Week (10hr)',
+      description: 'Four 10-hour days (Mon-Thu 7am-6pm)',
+      templateType: 'CUSTOM',
+      periodType: 'WEEKLY',
+      employmentType: 'FULL_TIME',
+      isActive: true,
+      isDefault: false,
+      shifts: [
+        { dayOfWeek: 1, startTime: '07:00', endTime: '18:00', breakMinutes: 60, shiftType: 'REGULAR' },
+        { dayOfWeek: 2, startTime: '07:00', endTime: '18:00', breakMinutes: 60, shiftType: 'REGULAR' },
+        { dayOfWeek: 3, startTime: '07:00', endTime: '18:00', breakMinutes: 60, shiftType: 'REGULAR' },
+        { dayOfWeek: 4, startTime: '07:00', endTime: '18:00', breakMinutes: 60, shiftType: 'REGULAR' },
+      ],
+      createdBy,
+    },
+  });
+  templates.push(fourDayWeek);
 
   return templates;
 }

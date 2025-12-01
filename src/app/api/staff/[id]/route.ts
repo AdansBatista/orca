@@ -33,6 +33,20 @@ export const GET = withAuth<{ id: string }>(
           orderBy: { effectiveDate: 'desc' },
           take: 10,
         },
+        supervisor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            title: true,
+          },
+        },
+        defaultScheduleTemplate: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 

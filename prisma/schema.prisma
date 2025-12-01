@@ -252,6 +252,10 @@ model StaffProfile {
   clinicIds        String[]        @db.ObjectId // Assigned clinics
   notes            String?
 
+  // Default Schedule Template
+  defaultScheduleTemplateId String?           @db.ObjectId
+  defaultScheduleTemplate   ScheduleTemplate? @relation("DefaultScheduleTemplate", fields: [defaultScheduleTemplateId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
   // Timestamps and Audit
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -261,6 +265,11 @@ model StaffProfile {
 
   // Multi-clinic isolation (primary clinic for data isolation)
   clinicId         String          @db.ObjectId
+
+  // Supervisor relationship
+  supervisorId     String?         @db.ObjectId
+  supervisor       StaffProfile?   @relation("SupervisorRelation", fields: [supervisorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  directReports    StaffProfile[]  @relation("SupervisorRelation")
 
   // Relations
   credentials      Credential[]
@@ -272,6 +281,7 @@ model StaffProfile {
   timeOffRequests  TimeOffRequest[]
   availability     StaffAvailability[]
   overtimeLogs     OvertimeLog[]
+  ptoUsage         PTOUsage[]
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -407,6 +417,18 @@ model EmploymentRecord {
   previousStatus   StaffStatus?
   newStatus        StaffStatus?
 
+  // Compensation (restricted - requires staff:compensation permission)
+  previousSalary     Float?
+  newSalary          Float?
+  previousHourlyRate Float?
+  newHourlyRate      Float?
+
+  // Supervisor tracking
+  supervisorId     String?        @db.ObjectId
+
+  // Document attachments (links to StaffDocument)
+  documentIds      String[]       @db.ObjectId
+
   // Additional details
   reason           String?        // Reason for change
   notes            String?
@@ -435,13 +457,23 @@ model StaffDocument {
 
   name             String              // Document name
   description      String?
-  category         String              // CONTRACT, ID, TAX, MEDICAL, BACKGROUND, OTHER
+  category         DocumentCategory    // CONTRACT, ID, TAX, MEDICAL, etc.
   fileUrl          String              // Storage URL
   fileName         String              // Original filename
   fileSize         Int?                // Size in bytes
   mimeType         String?
 
   accessLevel      DocumentAccessLevel @default(HR_ONLY)
+
+  // Expiration tracking
+  expirationDate   DateTime?           @db.Date
+  expirationStatus DocumentExpirationStatus @default(ACTIVE)
+  effectiveDate    DateTime?           @db.Date
+
+  // Version history
+  version          Int                 @default(1)
+  previousVersionId String?            @db.ObjectId
+  isCurrentVersion Boolean             @default(true)
 
   // Timestamps
   uploadedAt       DateTime            @default(now())
@@ -456,6 +488,9 @@ model StaffDocument {
   @@index([staffProfileId])
   @@index([clinicId])
   @@index([category])
+  @@index([expirationDate])
+  @@index([expirationStatus])
+  @@index([isCurrentVersion])
   @@map("staff_documents")
 }
 
@@ -553,6 +588,41 @@ enum DocumentAccessLevel {
   HR_ONLY
   MANAGEMENT
   CONFIDENTIAL
+}
+
+enum DocumentCategory {
+  CONTRACT
+  ID
+  TAX
+  MEDICAL
+  BACKGROUND
+  CERTIFICATION
+  PERFORMANCE
+  DISCIPLINARY
+  OTHER
+  // HR-specific document types
+  NDA
+  I9
+  W4
+  DIRECT_DEPOSIT
+  HANDBOOK_ACKNOWLEDGMENT
+  EMERGENCY_CONTACT_FORM
+  BENEFITS_ENROLLMENT
+  PIP
+  WRITTEN_WARNING
+  COMMENDATION
+}
+
+enum DocumentExpirationStatus {
+  ACTIVE           // No expiration or not yet approaching
+  EXPIRING_SOON    // Within 30 days of expiration
+  EXPIRED          // Past expiration date
+}
+
+enum BlackoutType {
+  BLOCKED          // Completely blocked - no requests allowed
+  RESTRICTED       // Requires approval from higher authority
+  WARNING          // Allowed but shows warning
 }
 
 // =============================================================================
@@ -676,6 +746,9 @@ model ScheduleTemplate {
   templateType     TemplateType     @default(STANDARD)
   periodType       TemplatePeriod   @default(WEEKLY)
 
+  // Employment Type Association (for filtering templates by staff employment type)
+  employmentType   EmploymentType?  // null = applies to any employment type
+
   // Scope (optional filters for when template applies)
   locationId       String?          @db.ObjectId  // null = all locations
   department       String?
@@ -700,9 +773,13 @@ model ScheduleTemplate {
   // Multi-clinic isolation
   clinicId         String           @db.ObjectId
 
+  // Relations
+  staffWithDefault StaffProfile[]   @relation("DefaultScheduleTemplate")
+
   @@index([clinicId])
   @@index([templateType])
   @@index([isActive])
+  @@index([employmentType])
   @@map("schedule_templates")
 }
 
@@ -977,4 +1054,77 @@ enum OvertimeStatus {
   APPROVED
   REJECTED
   PAID
+}
+
+// =============================================================================
+// BLACKOUT DATES & PTO TRACKING
+// =============================================================================
+
+/// BlackoutDate - Dates when time-off requests are blocked/restricted
+model BlackoutDate {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Blackout Details
+  name             String       // e.g., "Holiday Season", "Staff Training Week"
+  description      String?
+  startDate        DateTime     @db.Date
+  endDate          DateTime     @db.Date
+
+  // Scope
+  restrictionType  BlackoutType @default(BLOCKED)
+  affectedRoles    String[]     // Empty = all roles, otherwise specific roles
+  department       String?      // Optional department filter
+
+  // Recurrence (for annual holidays)
+  isRecurring      Boolean      @default(false)
+  recurrencePattern String?     // e.g., "YEARLY" for annual holidays
+
+  // Status
+  isActive         Boolean      @default(true)
+
+  // Timestamps and Audit
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  createdBy        String?      @db.ObjectId
+  updatedBy        String?      @db.ObjectId
+
+  // Multi-clinic isolation
+  clinicId         String       @db.ObjectId
+
+  @@index([clinicId])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([isActive])
+  @@map("blackout_dates")
+}
+
+/// PTOUsage - Track PTO usage per staff member per type per year (simple tracking, no limits)
+model PTOUsage {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  staffProfileId   String       @db.ObjectId
+
+  // Period tracking
+  year             Int          // Calendar year
+
+  // Usage by type (in hours for flexibility)
+  usageByType      Json         // { "VACATION": 40, "SICK": 8, ... }
+
+  // Summary
+  totalHoursUsed   Float        @default(0)
+
+  // Timestamps
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Multi-clinic isolation
+  clinicId         String       @db.ObjectId
+
+  // Relations
+  staffProfile     StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([staffProfileId, year])
+  @@index([clinicId])
+  @@index([staffProfileId])
+  @@index([year])
+  @@map("pto_usage")
 }

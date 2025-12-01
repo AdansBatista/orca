@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { EmploymentTypeEnum } from './staff';
 
 // =============================================================================
 // Scheduling Enums (matching Prisma schema)
@@ -93,6 +94,12 @@ export const OvertimeStatusEnum = z.enum([
   'PAID',
 ]);
 
+export const BlackoutTypeEnum = z.enum([
+  'BLOCKED',
+  'RESTRICTED',
+  'WARNING',
+]);
+
 // =============================================================================
 // Staff Shift Schemas
 // =============================================================================
@@ -115,6 +122,25 @@ export const createShiftSchema = z.object({
 }).refine(
   (data) => data.endTime > data.startTime,
   { message: 'End time must be after start time', path: ['endTime'] }
+).refine(
+  (data) => {
+    // Calculate shift duration in hours
+    const durationMs = data.endTime.getTime() - data.startTime.getTime();
+    const durationHours = durationMs / (1000 * 60 * 60);
+
+    // Shifts over 6 hours must have at least 30 minutes break
+    const BREAK_REQUIRED_AFTER_HOURS = 6;
+    const MINIMUM_BREAK_MINUTES = 30;
+
+    if (durationHours > BREAK_REQUIRED_AFTER_HOURS) {
+      return data.breakMinutes >= MINIMUM_BREAK_MINUTES;
+    }
+    return true;
+  },
+  {
+    message: 'Shifts over 6 hours must include at least 30 minutes of break time',
+    path: ['breakMinutes']
+  }
 );
 
 export const updateShiftSchema = createShiftSchema.partial().extend({
@@ -226,6 +252,7 @@ export const createScheduleTemplateSchema = z.object({
   description: z.string().max(1000).optional().nullable(),
   templateType: TemplateTypeEnum.default('STANDARD'),
   periodType: TemplatePeriodEnum.default('WEEKLY'),
+  employmentType: EmploymentTypeEnum.optional().nullable(), // null = any employment type
   locationId: z.string().optional().nullable(),
   department: z.string().max(100).optional().nullable(),
   isActive: z.boolean().default(true),
@@ -249,6 +276,7 @@ export const applyTemplateSchema = z.object({
 
 export const templateQuerySchema = z.object({
   templateType: optionalEnumWithAll(TemplateTypeEnum),
+  employmentType: optionalEnumWithAll(EmploymentTypeEnum),
   locationId: z.string().optional(),
   isActive: z.preprocess((val) => {
     if (val === '' || val === 'all' || val === null) return undefined;
@@ -407,6 +435,78 @@ export const approveOvertimeSchema = z.object({
 });
 
 // =============================================================================
+// Blackout Date Schemas
+// =============================================================================
+
+export const createBlackoutDateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(200),
+  description: z.string().max(1000).optional().nullable(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  restrictionType: BlackoutTypeEnum.default('BLOCKED'),
+  affectedRoles: z.array(z.string()).default([]),
+  department: z.string().max(100).optional().nullable(),
+  isRecurring: z.boolean().default(false),
+  recurrencePattern: z.string().max(50).optional().nullable(),
+  isActive: z.boolean().default(true),
+}).refine(
+  (data) => data.endDate >= data.startDate,
+  { message: 'End date must be on or after start date', path: ['endDate'] }
+);
+
+export const updateBlackoutDateSchema = createBlackoutDateSchema.partial().extend({
+  id: z.string(),
+});
+
+export const blackoutDateQuerySchema = z.object({
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  restrictionType: optionalEnumWithAll(BlackoutTypeEnum),
+  isActive: z.preprocess((val) => {
+    if (val === '' || val === 'all' || val === null) return undefined;
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return val;
+  }, z.boolean().optional()),
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(100).default(20),
+});
+
+// =============================================================================
+// PTO Usage Schemas
+// =============================================================================
+
+export const ptoUsageQuerySchema = z.object({
+  staffProfileId: z.string().optional(),
+  year: z.coerce.number().min(2020).max(2100).optional(),
+  requestType: optionalEnumWithAll(TimeOffTypeEnum),
+});
+
+// =============================================================================
+// Generate Schedule Schema
+// =============================================================================
+
+export const generateScheduleSchema = z.object({
+  staffProfileId: z.string().min(1, 'Staff profile is required'),
+  templateId: z.string().optional().nullable(), // If not provided, uses staff's defaultScheduleTemplateId
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  skipConflicts: z.boolean().default(true), // Skip days that already have shifts
+  locationId: z.string().optional().nullable(), // Override template location
+}).refine(
+  (data) => data.endDate >= data.startDate,
+  { message: 'End date must be on or after start date', path: ['endDate'] }
+).refine(
+  (data) => {
+    // Limit to max 8 weeks at a time
+    const diffMs = data.endDate.getTime() - data.startDate.getTime();
+    const diffWeeks = diffMs / (1000 * 60 * 60 * 24 * 7);
+    return diffWeeks <= 8;
+  },
+  { message: 'Schedule generation limited to 8 weeks at a time', path: ['endDate'] }
+);
+
+// =============================================================================
 // Type Exports
 // =============================================================================
 
@@ -439,3 +539,11 @@ export type UpdateShiftSwapStatusInput = z.infer<typeof updateShiftSwapStatusSch
 
 export type OvertimeQuery = z.infer<typeof overtimeQuerySchema>;
 export type ApproveOvertimeInput = z.infer<typeof approveOvertimeSchema>;
+
+export type CreateBlackoutDateInput = z.infer<typeof createBlackoutDateSchema>;
+export type UpdateBlackoutDateInput = z.infer<typeof updateBlackoutDateSchema>;
+export type BlackoutDateQuery = z.infer<typeof blackoutDateQuerySchema>;
+
+export type PTOUsageQuery = z.infer<typeof ptoUsageQuerySchema>;
+export type BulkCreateShiftsInput = z.infer<typeof bulkCreateShiftsSchema>;
+export type GenerateScheduleInput = z.infer<typeof generateScheduleSchema>;

@@ -3,3 +3,8 @@ export { ShiftForm } from './ShiftForm';
 export { TimeOffRequestCard } from './TimeOffRequestCard';
 export { TimeOffRequestForm } from './TimeOffRequestForm';
 export { ScheduleCalendar } from './ScheduleCalendar';
+export { ScheduleTemplateForm } from './ScheduleTemplateForm';
+export { ScheduleTemplateList } from './ScheduleTemplateList';
+export { BlackoutDateForm } from './BlackoutDateForm';
+export { BlackoutDateList } from './BlackoutDateList';
+export { GenerateScheduleDialog } from './GenerateScheduleDialog';

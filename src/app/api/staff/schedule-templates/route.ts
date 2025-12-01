@@ -16,6 +16,7 @@ export const GET = withAuth(
     // Parse query parameters
     const rawParams = {
       templateType: searchParams.get('templateType') ?? undefined,
+      employmentType: searchParams.get('employmentType') ?? undefined,
       locationId: searchParams.get('locationId') ?? undefined,
       isActive: searchParams.get('isActive') ?? undefined,
       page: searchParams.get('page') ?? undefined,
@@ -38,7 +39,7 @@ export const GET = withAuth(
       );
     }
 
-    const { templateType, locationId, isActive, page, pageSize } = queryResult.data;
+    const { templateType, employmentType, locationId, isActive, page, pageSize } = queryResult.data;
 
     // Build where clause
     const where: Record<string, unknown> = {
@@ -46,6 +47,7 @@ export const GET = withAuth(
     };
 
     if (templateType) where.templateType = templateType;
+    if (employmentType) where.employmentType = employmentType;
     if (locationId) where.locationId = locationId;
     if (isActive !== undefined) where.isActive = isActive;
 

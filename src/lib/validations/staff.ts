@@ -112,6 +112,23 @@ export const DocumentCategoryEnum = z.enum([
   'PERFORMANCE',
   'DISCIPLINARY',
   'OTHER',
+  // HR-specific document types
+  'NDA',
+  'I9',
+  'W4',
+  'DIRECT_DEPOSIT',
+  'HANDBOOK_ACKNOWLEDGMENT',
+  'EMERGENCY_CONTACT_FORM',
+  'BENEFITS_ENROLLMENT',
+  'PIP',
+  'WRITTEN_WARNING',
+  'COMMENDATION',
+]);
+
+export const DocumentExpirationStatusEnum = z.enum([
+  'ACTIVE',
+  'EXPIRING_SOON',
+  'EXPIRED',
 ]);
 
 // =============================================================================
@@ -218,6 +235,8 @@ export const createStaffProfileSchema = z.object({
   // Work Preferences
   defaultClinicId: z.string().optional().nullable(),
   clinicIds: z.array(z.string()).optional(),
+  supervisorId: z.string().optional().nullable(),
+  defaultScheduleTemplateId: z.string().optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
 });
 
@@ -334,6 +353,18 @@ export const createEmploymentRecordSchema = z.object({
   previousStatus: StaffStatusEnum.optional().nullable(),
   newStatus: StaffStatusEnum.optional().nullable(),
 
+  // Compensation (requires staff:compensation permission)
+  previousSalary: z.number().positive().optional().nullable(),
+  newSalary: z.number().positive().optional().nullable(),
+  previousHourlyRate: z.number().positive().optional().nullable(),
+  newHourlyRate: z.number().positive().optional().nullable(),
+
+  // Supervisor tracking
+  supervisorId: z.string().optional().nullable(),
+
+  // Document attachments
+  documentIds: z.array(z.string()).optional(),
+
   // Additional details
   reason: z.string().max(500).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
@@ -358,10 +389,36 @@ export const createStaffDocumentSchema = z.object({
   fileSize: z.number().int().positive().optional().nullable(),
   mimeType: z.string().max(100).optional().nullable(),
   accessLevel: DocumentAccessLevelEnum.default('HR_ONLY'),
+  // Expiration tracking
+  expirationDate: z.coerce.date().optional().nullable(),
+  effectiveDate: z.coerce.date().optional().nullable(),
 });
 
 export const updateStaffDocumentSchema = createStaffDocumentSchema.partial().extend({
   id: z.string(),
+});
+
+// Replace document (creates new version)
+export const replaceDocumentSchema = z.object({
+  originalDocumentId: z.string(),
+  fileUrl: z.string().min(1, 'File URL is required'),
+  fileName: z.string().min(1, 'File name is required').max(255),
+  fileSize: z.number().int().positive().optional().nullable(),
+  mimeType: z.string().max(100).optional().nullable(),
+  expirationDate: z.coerce.date().optional().nullable(),
+  effectiveDate: z.coerce.date().optional().nullable(),
+  description: z.string().max(500).optional().nullable(),
+});
+
+// Query for documents with expiration filters
+export const documentQuerySchema = z.object({
+  staffProfileId: z.string().optional(),
+  category: z.preprocess((val) => (val === '' || val === 'all' ? undefined : val), DocumentCategoryEnum.optional()),
+  expirationStatus: z.preprocess((val) => (val === '' || val === 'all' ? undefined : val), DocumentExpirationStatusEnum.optional()),
+  expiringWithinDays: z.coerce.number().min(1).max(365).optional(),
+  includeVersionHistory: z.preprocess((val) => val === 'true', z.boolean().default(false)),
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(100).default(50),
 });
 
 // =============================================================================
@@ -381,3 +438,5 @@ export type CreateEmploymentRecordInput = z.infer<typeof createEmploymentRecordS
 export type UpdateEmploymentRecordInput = z.infer<typeof updateEmploymentRecordSchema>;
 export type CreateStaffDocumentInput = z.infer<typeof createStaffDocumentSchema>;
 export type UpdateStaffDocumentInput = z.infer<typeof updateStaffDocumentSchema>;
+export type ReplaceDocumentInput = z.infer<typeof replaceDocumentSchema>;
+export type DocumentQuery = z.infer<typeof documentQuerySchema>;

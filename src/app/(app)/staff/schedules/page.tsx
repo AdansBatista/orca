@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Filter } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Filter, LayoutTemplate, CalendarX } from 'lucide-react';
 import type { StaffShift, StaffProfile } from '@prisma/client';
 
 import { PageHeader, PageContent } from '@/components/layout';
@@ -119,10 +120,24 @@ export default function SchedulesPage() {
                 </Select>
               </div>
             </div>
-            <Button onClick={() => handleAddShift(new Date())}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Shift
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/staff/schedules/templates">
+                <Button variant="outline">
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  Templates
+                </Button>
+              </Link>
+              <Link href="/staff/schedules/blackout-dates">
+                <Button variant="outline">
+                  <CalendarX className="h-4 w-4 mr-2" />
+                  Blackout Dates
+                </Button>
+              </Link>
+              <Button onClick={() => handleAddShift(new Date())}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Shift
+              </Button>
+            </div>
           </div>
 
           {/* Calendar */}
