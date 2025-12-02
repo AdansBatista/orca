@@ -13,6 +13,9 @@ import {
   Activity,
   ClipboardCheck,
   RefreshCw,
+  Download,
+  FileText,
+  ShieldCheck,
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -105,7 +108,30 @@ interface PackageReport {
   }>;
 }
 
-type ReportType = 'summary' | 'compliance' | 'packages';
+interface ValidationReport {
+  summary: {
+    totalValidations: number;
+    passed: number;
+    failed: number;
+    conditional: number;
+    overdueSchedules: number;
+  };
+  validations: Array<{
+    date: string;
+    type: string;
+    equipment: string;
+    result: string;
+    performedBy: string;
+  }>;
+  overdueSchedules: Array<{
+    type: string;
+    equipment: string;
+    dueDate: string;
+    daysOverdue: number;
+  }>;
+}
+
+type ReportType = 'summary' | 'compliance' | 'packages' | 'validations';
 
 function ReportSkeleton() {
   return (
@@ -126,7 +152,9 @@ export default function SterilizationReportsPage() {
   const [summaryData, setSummaryData] = useState<SummaryReport | null>(null);
   const [complianceData, setComplianceData] = useState<ComplianceReport | null>(null);
   const [packageData, setPackageData] = useState<PackageReport | null>(null);
+  const [validationData, setValidationData] = useState<ValidationReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Date filters
@@ -163,6 +191,9 @@ export default function SterilizationReportsPage() {
         case 'packages':
           setPackageData(result.data);
           break;
+        case 'validations':
+          setValidationData(result.data);
+          break;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -179,6 +210,189 @@ export default function SterilizationReportsPage() {
     fetchReport(reportType);
   };
 
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({
+        type: reportType,
+        startDate,
+        endDate,
+      });
+
+      const response = await fetch(`/api/resources/sterilization/reports/pdf?${params}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Failed to generate report');
+      }
+
+      // Create printable HTML and open in new window
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${result.data.title}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+              h1 { color: #1a1a1a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
+              h2 { color: #374151; margin-top: 30px; }
+              .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+              .meta { color: #6b7280; font-size: 14px; }
+              .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0; }
+              .stat-box { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }
+              .stat-value { font-size: 24px; font-weight: bold; color: #1a1a1a; }
+              .stat-label { color: #6b7280; font-size: 12px; }
+              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+              th { background: #f9fafb; font-weight: 600; }
+              .pass { color: #059669; }
+              .fail { color: #dc2626; }
+              .warning { color: #d97706; }
+              @media print {
+                .no-print { display: none; }
+                body { padding: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div>
+                <h1>${result.data.title}</h1>
+                <p class="meta">${result.data.clinic}</p>
+              </div>
+              <div class="meta" style="text-align: right;">
+                <p>Period: ${format(new Date(result.data.period.startDate), 'MMM d, yyyy')} - ${format(new Date(result.data.period.endDate), 'MMM d, yyyy')}</p>
+                <p>Generated: ${format(new Date(result.data.generatedAt), 'MMM d, yyyy h:mm a')}</p>
+                <p>By: ${result.data.generatedBy}</p>
+              </div>
+            </div>
+
+            ${reportType === 'compliance' ? `
+              <h2>Summary</h2>
+              <div class="summary-grid">
+                <div class="stat-box">
+                  <div class="stat-value">${result.data.summary?.totalCycles || 0}</div>
+                  <div class="stat-label">Total Cycles</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value">${result.data.summary?.successRate || 0}%</div>
+                  <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value">${result.data.summary?.overallScore || 0}%</div>
+                  <div class="stat-label">Compliance Score</div>
+                </div>
+              </div>
+
+              <h2>Biological Indicators</h2>
+              <div class="summary-grid">
+                <div class="stat-box">
+                  <div class="stat-value">${result.data.biologicalIndicators?.total || 0}</div>
+                  <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value class="pass"">${result.data.biologicalIndicators?.passed || 0}</div>
+                  <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value ${(result.data.biologicalIndicators?.failed || 0) > 0 ? 'fail' : ''}">${result.data.biologicalIndicators?.failed || 0}</div>
+                  <div class="stat-label">Failed</div>
+                </div>
+              </div>
+
+              ${result.data.biologicalIndicators?.tests?.length > 0 ? `
+                <table>
+                  <thead>
+                    <tr><th>Date</th><th>Lot Number</th><th>Result</th></tr>
+                  </thead>
+                  <tbody>
+                    ${result.data.biologicalIndicators.tests.map((t: { date: string; lotNumber: string; result: string }) => `
+                      <tr>
+                        <td>${t.date}</td>
+                        <td>${t.lotNumber}</td>
+                        <td class="${t.result === 'PASSED' ? 'pass' : t.result === 'FAILED' ? 'fail' : ''}">${t.result}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              ` : ''}
+
+              ${result.data.failedCycles?.length > 0 ? `
+                <h2>Failed Cycles</h2>
+                <table>
+                  <thead>
+                    <tr><th>Cycle Number</th><th>Date</th><th>Reason</th></tr>
+                  </thead>
+                  <tbody>
+                    ${result.data.failedCycles.map((c: { cycleNumber: string; date: string; reason: string }) => `
+                      <tr>
+                        <td>${c.cycleNumber}</td>
+                        <td>${c.date}</td>
+                        <td>${c.reason}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              ` : '<p>No failed cycles in this period.</p>'}
+            ` : ''}
+
+            ${reportType === 'validations' ? `
+              <h2>Summary</h2>
+              <div class="summary-grid">
+                <div class="stat-box">
+                  <div class="stat-value">${result.data.summary?.totalValidations || 0}</div>
+                  <div class="stat-label">Total Validations</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value class="pass"">${result.data.summary?.passed || 0}</div>
+                  <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value ${(result.data.summary?.overdueSchedules || 0) > 0 ? 'warning' : ''}">${result.data.summary?.overdueSchedules || 0}</div>
+                  <div class="stat-label">Overdue</div>
+                </div>
+              </div>
+
+              ${result.data.validations?.length > 0 ? `
+                <h2>Validation Records</h2>
+                <table>
+                  <thead>
+                    <tr><th>Date</th><th>Type</th><th>Equipment</th><th>Result</th><th>Performed By</th></tr>
+                  </thead>
+                  <tbody>
+                    ${result.data.validations.map((v: { date: string; type: string; equipment: string; result: string; performedBy: string }) => `
+                      <tr>
+                        <td>${v.date}</td>
+                        <td>${v.type}</td>
+                        <td>${v.equipment}</td>
+                        <td class="${v.result === 'PASS' ? 'pass' : v.result === 'FAIL' ? 'fail' : 'warning'}">${v.result}</td>
+                        <td>${v.performedBy}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              ` : ''}
+            ` : ''}
+
+            <div class="no-print" style="margin-top: 40px; text-align: center;">
+              <button onclick="window.print()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                Print / Save as PDF
+              </button>
+            </div>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export report');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
@@ -191,10 +405,20 @@ export default function SterilizationReportsPage() {
           { label: 'Reports' },
         ]}
         actions={
-          <Button variant="outline" onClick={handleRefresh} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportPDF} disabled={loading || exporting}>
+              {exporting ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export PDF
+            </Button>
+            <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         }
       />
       <PageContent density="comfortable">
@@ -267,6 +491,10 @@ export default function SterilizationReportsPage() {
               <TabsTrigger value="packages">
                 <Package className="h-4 w-4 mr-2" />
                 Packages
+              </TabsTrigger>
+              <TabsTrigger value="validations">
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                Validations
               </TabsTrigger>
             </TabsList>
 
@@ -820,6 +1048,179 @@ export default function SterilizationReportsPage() {
                               <Badge variant="soft-primary">{count}</Badge>
                             </div>
                           ))}
+                        </CardContent>
+                      </Card>
+                    </DashboardGrid.OneThird>
+                  </DashboardGrid>
+                </div>
+              ) : null}
+            </TabsContent>
+
+            {/* Validations Report */}
+            <TabsContent value="validations" className="mt-6">
+              {loading ? (
+                <ReportSkeleton />
+              ) : validationData ? (
+                <div className="space-y-6">
+                  {/* Stats */}
+                  <StatsRow>
+                    <StatCard accentColor="primary">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total Validations</p>
+                          <p className="text-xl font-bold">{validationData.summary.totalValidations}</p>
+                        </div>
+                        <div className="flex items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/30 p-2">
+                          <ShieldCheck className="h-5 w-5 text-primary-600" />
+                        </div>
+                      </div>
+                    </StatCard>
+                    <StatCard accentColor="success">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Passed</p>
+                          <p className="text-xl font-bold">{validationData.summary.passed}</p>
+                        </div>
+                        <div className="flex items-center justify-center rounded-xl bg-success-100 dark:bg-success-900/30 p-2">
+                          <CheckCircle className="h-5 w-5 text-success-600" />
+                        </div>
+                      </div>
+                    </StatCard>
+                    <StatCard accentColor={validationData.summary.failed > 0 ? 'error' : 'secondary'}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Failed</p>
+                          <p className="text-xl font-bold">{validationData.summary.failed}</p>
+                        </div>
+                        <div className="flex items-center justify-center rounded-xl bg-error-100 dark:bg-error-900/30 p-2">
+                          <XCircle className="h-5 w-5 text-error-600" />
+                        </div>
+                      </div>
+                    </StatCard>
+                    <StatCard accentColor={validationData.summary.overdueSchedules > 0 ? 'warning' : 'success'}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Overdue Schedules</p>
+                          <p className="text-xl font-bold">{validationData.summary.overdueSchedules}</p>
+                        </div>
+                        <div className="flex items-center justify-center rounded-xl bg-warning-100 dark:bg-warning-900/30 p-2">
+                          <AlertTriangle className="h-5 w-5 text-warning-600" />
+                        </div>
+                      </div>
+                    </StatCard>
+                  </StatsRow>
+
+                  {/* Overdue Alert */}
+                  {validationData.overdueSchedules.length > 0 && (
+                    <div className="rounded-lg bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 p-4">
+                      <div className="flex items-center gap-2 text-warning-700 dark:text-warning-400">
+                        <AlertTriangle className="h-5 w-5" />
+                        <p>
+                          <strong>Attention:</strong> {validationData.overdueSchedules.length} validation(s) are overdue.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <DashboardGrid>
+                    <DashboardGrid.TwoThirds>
+                      {/* Recent Validations */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle size="sm">Recent Validations</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {validationData.validations.length === 0 ? (
+                            <p className="text-center text-muted-foreground py-4">
+                              No validations in this period
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {validationData.validations.slice(0, 10).map((v, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                                >
+                                  <div>
+                                    <p className="font-medium text-sm">{v.type}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {v.equipment} • {v.performedBy}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge
+                                      variant={
+                                        v.result === 'PASS'
+                                          ? 'success'
+                                          : v.result === 'FAIL'
+                                          ? 'error'
+                                          : 'warning'
+                                      }
+                                    >
+                                      {v.result}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">{v.date}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </DashboardGrid.TwoThirds>
+
+                    <DashboardGrid.OneThird>
+                      {/* Overdue Schedules */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle size="sm" className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Overdue Schedules
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {validationData.overdueSchedules.length === 0 ? (
+                            <div className="text-center py-4">
+                              <CheckCircle className="h-8 w-8 mx-auto text-success-500 mb-2" />
+                              <p className="text-sm text-muted-foreground">All up to date!</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {validationData.overdueSchedules.map((s, idx) => (
+                                <div
+                                  key={idx}
+                                  className="p-2 rounded-lg bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800"
+                                >
+                                  <p className="font-medium text-sm">{s.type}</p>
+                                  <p className="text-xs text-muted-foreground">{s.equipment}</p>
+                                  <Badge variant="warning" className="mt-1">
+                                    {s.daysOverdue} days overdue
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Summary */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle size="sm">Results Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Passed</span>
+                            <Badge variant="success">{validationData.summary.passed}</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Failed</span>
+                            <Badge variant="error">{validationData.summary.failed}</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Conditional</span>
+                            <Badge variant="warning">{validationData.summary.conditional}</Badge>
+                          </div>
                         </CardContent>
                       </Card>
                     </DashboardGrid.OneThird>

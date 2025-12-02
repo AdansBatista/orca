@@ -437,3 +437,109 @@ export type LookupPackageByQRInput = z.infer<typeof lookupPackageByQRSchema>;
 
 export type RecordPackageUsageInput = z.infer<typeof recordPackageUsageSchema>;
 export type PackageUsageQueryInput = z.infer<typeof packageUsageQuerySchema>;
+
+// =============================================================================
+// Equipment Validation Enums & Schemas
+// =============================================================================
+
+export const ValidationTypeEnum = z.enum([
+  'INSTALLATION_QUALIFICATION',
+  'OPERATIONAL_QUALIFICATION',
+  'PERFORMANCE_QUALIFICATION',
+  'BOWIE_DICK_TEST',
+  'LEAK_RATE_TEST',
+  'CALIBRATION',
+  'PREVENTIVE_MAINTENANCE',
+  'REPAIR_VERIFICATION',
+  'ANNUAL_VALIDATION',
+]);
+
+export const ValidationResultEnum = z.enum([
+  'PASS',
+  'FAIL',
+  'CONDITIONAL',
+]);
+
+export const createSterilizerValidationSchema = z.object({
+  equipmentId: z.string().min(1, 'Equipment is required'),
+  validationType: ValidationTypeEnum,
+  validationDate: z.coerce.date(),
+  nextValidationDue: z.coerce.date().optional().nullable(),
+  result: ValidationResultEnum,
+  parameters: z.record(z.string(), z.unknown()).optional().nullable(),
+  performedBy: z.string().min(1, 'Performed by is required').max(200),
+  performedById: z.string().optional().nullable(),
+  vendorName: z.string().max(200).optional().nullable(),
+  technicianName: z.string().max(200).optional().nullable(),
+  certificateNumber: z.string().max(100).optional().nullable(),
+  certificateUrl: z.string().url().optional().nullable(),
+  certificateExpiry: z.coerce.date().optional().nullable(),
+  failureDetails: z.string().max(2000).optional().nullable(),
+  correctiveAction: z.string().max(2000).optional().nullable(),
+  retestDate: z.coerce.date().optional().nullable(),
+  retestResult: ValidationResultEnum.optional().nullable(),
+  maintenanceRecordId: z.string().optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+});
+
+export const updateSterilizerValidationSchema = createSterilizerValidationSchema.partial();
+
+export const sterilizerValidationQuerySchema = z.object({
+  equipmentId: z.string().optional(),
+  validationType: ValidationTypeEnum.optional(),
+  result: ValidationResultEnum.optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  overdue: z.string().transform((val) => val === 'true').optional(),
+  page: z.coerce.number().int().positive().optional().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).optional().default(20),
+  sortBy: z
+    .enum(['validationDate', 'nextValidationDue', 'validationType', 'result', 'createdAt'])
+    .optional()
+    .default('validationDate'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+});
+
+// =============================================================================
+// Validation Schedule Schemas
+// =============================================================================
+
+export const createValidationScheduleSchema = z.object({
+  equipmentId: z.string().min(1, 'Equipment is required'),
+  validationType: ValidationTypeEnum,
+  frequencyDays: z.number().int().positive().max(730), // Up to 2 years
+  isActive: z.boolean().optional().default(true),
+  lastPerformed: z.coerce.date().optional().nullable(),
+  nextDue: z.coerce.date().optional().nullable(),
+  reminderDays: z.number().int().positive().max(90).optional().default(30),
+  notes: z.string().max(1000).optional().nullable(),
+});
+
+export const updateValidationScheduleSchema = createValidationScheduleSchema.partial();
+
+export const validationScheduleQuerySchema = z.object({
+  equipmentId: z.string().optional(),
+  validationType: ValidationTypeEnum.optional(),
+  isActive: z.string().transform((val) => val === 'true').optional(),
+  overdue: z.string().transform((val) => val === 'true').optional(),
+  dueSoon: z.string().transform((val) => val === 'true').optional(),
+  page: z.coerce.number().int().positive().optional().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).optional().default(20),
+  sortBy: z
+    .enum(['nextDue', 'validationType', 'frequencyDays', 'createdAt'])
+    .optional()
+    .default('nextDue'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
+});
+
+// =============================================================================
+// Validation Type Exports
+// =============================================================================
+
+export type CreateSterilizerValidationInput = z.infer<typeof createSterilizerValidationSchema>;
+export type UpdateSterilizerValidationInput = z.infer<typeof updateSterilizerValidationSchema>;
+export type SterilizerValidationQueryInput = z.infer<typeof sterilizerValidationQuerySchema>;
+
+export type CreateValidationScheduleInput = z.infer<typeof createValidationScheduleSchema>;
+export type UpdateValidationScheduleInput = z.infer<typeof updateValidationScheduleSchema>;
+export type ValidationScheduleQueryInput = z.infer<typeof validationScheduleQuerySchema>;

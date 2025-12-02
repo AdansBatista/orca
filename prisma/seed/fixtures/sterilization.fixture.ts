@@ -12,6 +12,8 @@ import type {
   InstrumentSetCategory,
   InstrumentSetStatus,
   ComplianceLogType,
+  ValidationType,
+  ValidationResult,
 } from '@prisma/client';
 
 // =============================================================================
@@ -291,4 +293,137 @@ export function getRandomBIBrand(): string {
  */
 export function getRandomBIReader(): string {
   return BI_READER_TYPES[Math.floor(Math.random() * BI_READER_TYPES.length)];
+}
+
+// =============================================================================
+// Equipment Validation Fixtures
+// =============================================================================
+
+export interface ValidationScheduleFixture {
+  validationType: ValidationType;
+  frequencyDays: number;
+  reminderDays: number;
+  description: string;
+}
+
+export const VALIDATION_SCHEDULES: ValidationScheduleFixture[] = [
+  {
+    validationType: 'BOWIE_DICK_TEST',
+    frequencyDays: 1,
+    reminderDays: 1,
+    description: 'Daily Bowie-Dick test for prevacuum sterilizers',
+  },
+  {
+    validationType: 'CALIBRATION',
+    frequencyDays: 365,
+    reminderDays: 30,
+    description: 'Annual temperature and pressure calibration',
+  },
+  {
+    validationType: 'ANNUAL_VALIDATION',
+    frequencyDays: 365,
+    reminderDays: 60,
+    description: 'Comprehensive annual validation per manufacturer guidelines',
+  },
+  {
+    validationType: 'PREVENTIVE_MAINTENANCE',
+    frequencyDays: 90,
+    reminderDays: 14,
+    description: 'Quarterly preventive maintenance',
+  },
+  {
+    validationType: 'LEAK_RATE_TEST',
+    frequencyDays: 30,
+    reminderDays: 7,
+    description: 'Monthly vacuum leak rate test',
+  },
+];
+
+export interface ValidationRecordTemplate {
+  validationType: ValidationType;
+  performedBy: string;
+  vendorName?: string;
+  certificatePrefix: string;
+  parameters: Record<string, unknown>;
+}
+
+export const VALIDATION_TEMPLATES: ValidationRecordTemplate[] = [
+  {
+    validationType: 'BOWIE_DICK_TEST',
+    performedBy: 'Sterilization Technician',
+    certificatePrefix: 'BD',
+    parameters: {
+      testType: 'Bowie-Dick',
+      steamPenetration: true,
+      airRemoval: true,
+    },
+  },
+  {
+    validationType: 'CALIBRATION',
+    performedBy: 'Authorized Service Tech',
+    vendorName: 'Medical Equipment Services',
+    certificatePrefix: 'CAL',
+    parameters: {
+      temperatureDeviation: '±1°C',
+      pressureDeviation: '±0.5 PSI',
+      timerAccuracy: '±2 seconds',
+    },
+  },
+  {
+    validationType: 'ANNUAL_VALIDATION',
+    performedBy: 'Certified Validation Specialist',
+    vendorName: 'Sterilizer Validation Corp',
+    certificatePrefix: 'VAL',
+    parameters: {
+      iqCompleted: true,
+      oqCompleted: true,
+      pqCompleted: true,
+      documentationReviewed: true,
+    },
+  },
+  {
+    validationType: 'PREVENTIVE_MAINTENANCE',
+    performedBy: 'Equipment Technician',
+    vendorName: 'Healthcare Equipment Services',
+    certificatePrefix: 'PM',
+    parameters: {
+      gasketInspection: 'Pass',
+      doorSealCheck: 'Pass',
+      filterReplacement: true,
+      chamberCleaning: true,
+    },
+  },
+  {
+    validationType: 'LEAK_RATE_TEST',
+    performedBy: 'Sterilization Technician',
+    certificatePrefix: 'LRT',
+    parameters: {
+      vacuumLevel: '-27 inHg',
+      leakRate: '<10 mbar/min',
+      testDuration: '10 minutes',
+    },
+  },
+];
+
+/**
+ * Generate a certificate number for a validation
+ */
+export function generateValidationCertNumber(prefix: string): string {
+  const year = new Date().getFullYear();
+  const random = Math.floor(Math.random() * 9000) + 1000;
+  return `${prefix}-${year}-${random}`;
+}
+
+/**
+ * Get validation template by type
+ */
+export function getValidationTemplate(type: ValidationType): ValidationRecordTemplate | undefined {
+  return VALIDATION_TEMPLATES.find((t) => t.validationType === type);
+}
+
+/**
+ * Get validation schedule by type
+ */
+export function getValidationSchedule(type: ValidationType): ValidationScheduleFixture | undefined {
+  return VALIDATION_SCHEDULES.find((s) => s.validationType === type);
 }

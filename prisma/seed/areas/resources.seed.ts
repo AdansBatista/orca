@@ -10,9 +10,12 @@ import {
   SAMPLE_INSTRUMENT_SETS,
   CYCLE_PARAMETERS,
   COMPLIANCE_LOG_TEMPLATES,
+  VALIDATION_SCHEDULES,
+  VALIDATION_TEMPLATES,
   generateBILotNumber,
   getRandomBIBrand,
   getRandomBIReader,
+  generateValidationCertNumber,
 } from '../fixtures/sterilization.fixture';
 
 /**
@@ -649,6 +652,140 @@ export async function seedResources(ctx: SeedContext): Promise<void> {
     }
 
     logger.info(`  Created ${complianceCount} compliance logs`);
+
+    // ============================================================================
+    // 10. SEED EQUIPMENT VALIDATIONS AND SCHEDULES
+    // ============================================================================
+    logger.info('Creating equipment validations and schedules...');
+
+    // Get sterilization equipment (autoclaves)
+    const sterilizationEquipment = await db.equipment.findMany({
+      where: {
+        clinicId: primaryClinicId,
+        deletedAt: null,
+        type: { code: { in: ['AUTOCLAVE', 'STERILIZER'] } },
+      },
+    });
+
+    let validationCount = 0;
+    let scheduleCount = 0;
+
+    for (const equipment of sterilizationEquipment) {
+      // Create validation schedules for each equipment
+      for (const scheduleData of VALIDATION_SCHEDULES) {
+        // Check if schedule already exists
+        const existingSchedule = await db.validationSchedule.findFirst({
+          where: {
+            equipmentId: equipment.id,
+            validationType: scheduleData.validationType,
+          },
+        });
+
+        if (!existingSchedule) {
+          // Calculate next due date based on frequency
+          const nextDue = new Date(now);
+          nextDue.setDate(nextDue.getDate() + Math.floor(Math.random() * scheduleData.frequencyDays));
+
+          // Calculate last performed (some time in the past)
+          const lastPerformed = new Date(now);
+          lastPerformed.setDate(
+            lastPerformed.getDate() - Math.floor(Math.random() * scheduleData.frequencyDays)
+          );
+
+          await db.validationSchedule.create({
+            data: {
+              clinicId: primaryClinicId,
+              equipmentId: equipment.id,
+              validationType: scheduleData.validationType,
+              frequencyDays: scheduleData.frequencyDays,
+              reminderDays: scheduleData.reminderDays,
+              isActive: true,
+              lastPerformed,
+              nextDue,
+              notes: scheduleData.description,
+              createdBy,
+            },
+          });
+          scheduleCount++;
+          totalCreated++;
+        }
+      }
+
+      // Create historical validation records
+      for (const template of VALIDATION_TEMPLATES) {
+        // Create 2-4 historical records per validation type (depending on frequency)
+        const numRecords = config.mode === 'full' ? 4 : 2;
+        const scheduleInfo = VALIDATION_SCHEDULES.find(
+          (s) => s.validationType === template.validationType
+        );
+        const frequency = scheduleInfo?.frequencyDays || 365;
+
+        for (let i = 0; i < numRecords; i++) {
+          // Calculate validation date (past dates based on frequency)
+          const validationDate = new Date(now);
+          validationDate.setDate(validationDate.getDate() - i * frequency - Math.floor(Math.random() * 30));
+
+          // Skip if date is more than 2 years ago
+          if (now.getTime() - validationDate.getTime() > 2 * 365 * 24 * 60 * 60 * 1000) {
+            continue;
+          }
+
+          // Calculate next validation due
+          const nextValidationDue = new Date(validationDate);
+          nextValidationDue.setDate(nextValidationDue.getDate() + frequency);
+
+          // Most validations pass, occasionally one fails or is conditional
+          const resultRand = Math.random();
+          const result: 'PASS' | 'FAIL' | 'CONDITIONAL' =
+            resultRand > 0.95 ? 'FAIL' : resultRand > 0.9 ? 'CONDITIONAL' : 'PASS';
+
+          // Generate certificate (only for passed/conditional)
+          const certificateNumber =
+            result !== 'FAIL' ? generateValidationCertNumber(template.certificatePrefix) : null;
+          const certificateExpiry =
+            result !== 'FAIL'
+              ? new Date(validationDate.getTime() + frequency * 24 * 60 * 60 * 1000)
+              : null;
+
+          await db.sterilizerValidation.create({
+            data: {
+              clinicId: primaryClinicId,
+              equipmentId: equipment.id,
+              validationType: template.validationType,
+              validationDate,
+              nextValidationDue,
+              result,
+              parameters: template.parameters as Record<string, string | boolean>,
+              performedBy: template.performedBy,
+              performedById: createdBy || undefined,
+              vendorName: template.vendorName || null,
+              technicianName: template.vendorName ? `Tech ${Math.floor(Math.random() * 100) + 1}` : null,
+              certificateNumber,
+              certificateExpiry,
+              failureDetails:
+                result === 'FAIL'
+                  ? 'Equipment did not meet required parameters. Requires service before re-testing.'
+                  : null,
+              correctiveAction:
+                result === 'FAIL' ? 'Schedule service call with manufacturer.' : null,
+              notes:
+                result === 'PASS'
+                  ? 'All tests completed successfully within acceptable parameters.'
+                  : result === 'CONDITIONAL'
+                  ? 'Minor deviations noted. Equipment functional but requires monitoring.'
+                  : null,
+              createdBy: createdBy!,
+            },
+          });
+
+          validationCount++;
+          totalCreated++;
+        }
+      }
+    }
+
+    logger.info(`  Created ${scheduleCount} validation schedules`);
+    logger.info(`  Created ${validationCount} validation records`);
   }
 
   logger.endArea('Resources (Equipment)', totalCreated);
@@ -662,8 +799,13 @@ export async function clearResources(ctx: SeedContext): Promise<void> {
 
   logger.info('Clearing resources data...');
 
-  // Clear sterilization data first (due to foreign keys)
+  // Clear equipment validation data
+  await db.sterilizerValidation.deleteMany({});
+  await db.validationSchedule.deleteMany({});
+
+  // Clear sterilization data (due to foreign keys)
   await db.complianceLog.deleteMany({});
+  await db.instrumentPackage.deleteMany({});
   await db.chemicalIndicator.deleteMany({});
   await db.biologicalIndicator.deleteMany({});
   await db.sterilizationLoad.deleteMany({});

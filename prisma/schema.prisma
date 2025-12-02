@@ -2559,3 +2559,221 @@ model PackageUsage {
   @@index([usedAt])
   @@map("package_usages")
 }
+
+// -----------------------------------------------------------------------------
+// Sterilizer Validation - Equipment validation and qualification tracking
+// -----------------------------------------------------------------------------
+
+/// SterilizerValidation - Validation records for sterilization equipment
+model SterilizerValidation {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String           @db.ObjectId
+  equipmentId       String           @db.ObjectId
+
+  // Validation type
+  validationType    ValidationType
+
+  // Dates
+  validationDate    DateTime
+  nextValidationDue DateTime?
+
+  // Results
+  result            ValidationResult
+  parameters        Json?            // Test parameters and measurements
+
+  // Documentation
+  performedBy       String           // Can be vendor or staff name
+  performedById     String?          @db.ObjectId  // If internal staff
+  vendorName        String?
+  technicianName    String?
+
+  // Certificates
+  certificateNumber String?
+  certificateUrl    String?
+  certificateExpiry DateTime?
+
+  // For failures
+  failureDetails    String?
+  correctiveAction  String?
+  retestDate        DateTime?
+  retestResult      ValidationResult?
+
+  // Related maintenance
+  maintenanceRecordId String?        @db.ObjectId
+
+  // Notes
+  notes             String?
+
+  // Timestamps & Audit
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  createdBy         String           @db.ObjectId
+
+  @@index([clinicId])
+  @@index([equipmentId])
+  @@index([validationDate])
+  @@index([validationType])
+  @@index([nextValidationDue])
+  @@index([result])
+  @@map("sterilizer_validations")
+}
+
+/// ValidationSchedule - Recurring validation schedules for sterilization equipment
+model ValidationSchedule {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String           @db.ObjectId
+  equipmentId       String           @db.ObjectId
+
+  // Schedule details
+  validationType    ValidationType
+  frequencyDays     Int              // How often (365 for annual, 1 for daily)
+  isActive          Boolean          @default(true)
+
+  // Last/Next
+  lastPerformed     DateTime?
+  nextDue           DateTime?
+
+  // Reminders
+  reminderDays      Int              @default(30)  // Days before to remind
+  reminderSent      Boolean          @default(false)
+
+  // Notes
+  notes             String?
+
+  // Timestamps
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  createdBy         String?          @db.ObjectId
+
+  @@unique([equipmentId, validationType])
+  @@index([clinicId])
+  @@index([equipmentId])
+  @@index([nextDue])
+  @@index([isActive])
+  @@map("validation_schedules")
+}
+
+enum ValidationType {
+  INSTALLATION_QUALIFICATION   // Initial installation verification (IQ)
+  OPERATIONAL_QUALIFICATION    // Functionality verification (OQ)
+  PERFORMANCE_QUALIFICATION    // Performance verification (PQ)
+  BOWIE_DICK_TEST              // Steam penetration test (daily for prevac)
+  LEAK_RATE_TEST               // Vacuum leak test
+  CALIBRATION                  // Temperature/pressure calibration
+  PREVENTIVE_MAINTENANCE       // Scheduled PM
+  REPAIR_VERIFICATION          // Post-repair testing
+  ANNUAL_VALIDATION            // Comprehensive annual validation
+}
+
+enum ValidationResult {
+  PASS          // All criteria met
+  FAIL          // Failed one or more criteria
+  CONDITIONAL   // Pass with conditions/notes
+}
+
+// -----------------------------------------------------------------------------
+// Compliance Reporting - Generated reports and compliance status tracking
+// -----------------------------------------------------------------------------
+
+/// ComplianceReport - Generated compliance reports for sterilization
+model ComplianceReport {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+
+  // Report details
+  reportType      ComplianceReportType
+  reportName      String
+  dateRangeStart  DateTime
+  dateRangeEnd    DateTime
+
+  // Generation
+  generatedAt     DateTime             @default(now())
+  generatedBy     String               @db.ObjectId
+  format          ReportFormat
+
+  // Content
+  reportData      Json?                // Report data snapshot
+  fileUrl         String?              // Generated file URL
+
+  // Status
+  status          ReportStatus         @default(GENERATING)
+
+  // Metadata
+  parameters      Json?                // Report parameters used
+
+  // Timestamps
+  createdAt       DateTime             @default(now())
+
+  @@index([clinicId])
+  @@index([reportType])
+  @@index([generatedAt])
+  @@index([status])
+  @@map("compliance_reports")
+}
+
+/// ComplianceStatus - Real-time compliance status snapshot for clinics
+model ComplianceStatus {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+
+  // Status date
+  statusDate      DateTime             @default(now())
+
+  // Biological Testing Metrics
+  biologicalTestingCompliant Boolean
+  lastBiologicalTest        DateTime?
+  daysSinceLastTest         Int?
+
+  // Cycle Documentation Metrics
+  cycleDocumentationComplete Boolean
+  cyclesThisPeriod          Int
+  cyclesWithIssues          Int
+
+  // Instrument Tracking Metrics
+  instrumentTrackingCurrent Boolean
+  setsInService             Int
+  setsInQuarantine          Int
+
+  // Equipment Validation Metrics
+  equipmentValidationCurrent Boolean
+  equipmentDueValidation    Int
+
+  // Overall
+  overallCompliant          Boolean
+  complianceScore           Float?       // Percentage 0-100
+
+  // Issues
+  openIssues                Json?        // List of compliance issues
+
+  // Timestamps
+  calculatedAt              DateTime     @default(now())
+
+  @@index([clinicId])
+  @@index([statusDate])
+  @@index([overallCompliant])
+  @@map("compliance_statuses")
+}
+
+enum ComplianceReportType {
+  DAILY_STERILIZATION_LOG
+  WEEKLY_BIOLOGICAL_SUMMARY
+  MONTHLY_COMPLIANCE_SUMMARY
+  INSTRUMENT_SET_INVENTORY
+  EQUIPMENT_VALIDATION
+  FAILURE_INVESTIGATION
+  AUDIT_TRAIL
+  CUSTOM
+}
+
+enum ReportFormat {
+  PDF
+  CSV
+  EXCEL
+  HTML
+}
+
+enum ReportStatus {
+  GENERATING
+  COMPLETED
+  FAILED
+}

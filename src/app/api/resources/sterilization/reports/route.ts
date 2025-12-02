@@ -409,13 +409,77 @@ export const GET = withAuth(
         });
       }
 
+      case 'validations': {
+        // Equipment validation report
+        const [validations, schedules] = await Promise.all([
+          db.sterilizerValidation.findMany({
+            where: {
+              ...clinicFilter,
+              validationDate: { gte: startDate, lte: endDate },
+            },
+            orderBy: { validationDate: 'desc' },
+          }),
+          db.validationSchedule.findMany({
+            where: {
+              ...clinicFilter,
+              isActive: true,
+            },
+          }),
+        ]);
+
+        // Get equipment info
+        const equipmentIds = [...new Set([
+          ...validations.map((v) => v.equipmentId),
+          ...schedules.map((s) => s.equipmentId),
+        ])];
+        const equipment = await db.equipment.findMany({
+          where: { id: { in: equipmentIds } },
+          select: { id: true, name: true, equipmentNumber: true },
+        });
+        const equipmentMap = new Map(equipment.map((e) => [e.id, e]));
+
+        // Overdue schedules
+        const overdueSchedules = schedules.filter(
+          (s) => s.nextDue && s.nextDue < now
+        );
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            period: { startDate, endDate },
+            summary: {
+              totalValidations: validations.length,
+              passed: validations.filter((v) => v.result === 'PASS').length,
+              failed: validations.filter((v) => v.result === 'FAIL').length,
+              conditional: validations.filter((v) => v.result === 'CONDITIONAL').length,
+              overdueSchedules: overdueSchedules.length,
+            },
+            validations: validations.map((v) => ({
+              date: v.validationDate.toISOString(),
+              type: v.validationType.replace(/_/g, ' '),
+              equipment: equipmentMap.get(v.equipmentId)?.name || 'Unknown',
+              result: v.result,
+              performedBy: v.performedBy,
+            })),
+            overdueSchedules: overdueSchedules.map((s) => ({
+              type: s.validationType.replace(/_/g, ' '),
+              equipment: equipmentMap.get(s.equipmentId)?.name || 'Unknown',
+              dueDate: s.nextDue ? s.nextDue.toISOString() : null,
+              daysOverdue: s.nextDue
+                ? Math.ceil((now.getTime() - s.nextDue.getTime()) / (1000 * 60 * 60 * 24))
+                : 0,
+            })),
+          },
+        });
+      }
+
       default:
         return NextResponse.json(
           {
             success: false,
             error: {
               code: 'INVALID_REPORT_TYPE',
-              message: 'Invalid report type. Valid types: summary, cycles, packages, usage, compliance',
+              message: 'Invalid report type. Valid types: summary, cycles, packages, usage, compliance, validations',
             },
           },
           { status: 400 }
