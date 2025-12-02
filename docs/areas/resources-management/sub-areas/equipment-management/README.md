@@ -12,12 +12,12 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | ✅ Implemented |
 | **Priority** | High |
 | **Complexity** | Large |
 | **Parent Area** | [Resources Management](../../) |
 | **Dependencies** | Auth, Supplier Management |
-| **Last Updated** | 2024-11-27 |
+| **Last Updated** | 2024-12-01 |
 
 ---
 
@@ -44,9 +44,9 @@ The system tracks equipment from acquisition through disposal, including mainten
 
 | # | Function | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 3.1.1 | [Equipment Catalog](./functions/equipment-catalog.md) | Register and categorize equipment | 📋 Planned | Critical |
-| 3.1.2 | [Maintenance Scheduling](./functions/maintenance-scheduling.md) | Schedule and track preventive maintenance | 📋 Planned | High |
-| 3.1.3 | [Repair History](./functions/repair-history.md) | Log equipment repairs and service | 📋 Planned | High |
+| 3.1.1 | [Equipment Catalog](./functions/equipment-catalog.md) | Register and categorize equipment | ✅ Implemented | Critical |
+| 3.1.2 | [Maintenance Scheduling](./functions/maintenance-scheduling.md) | Schedule and track preventive maintenance | ✅ Implemented | High |
+| 3.1.3 | [Repair History](./functions/repair-history.md) | Log equipment repairs and service | ✅ Implemented | High |
 | 3.1.4 | [Depreciation Tracking](./functions/depreciation-tracking.md) | Calculate and report asset depreciation | 📋 Planned | Medium |
 | 3.1.5 | [Warranty Management](./functions/warranty-management.md) | Track warranties and service contracts | 📋 Planned | Medium |
 | 3.1.6 | [Equipment Transfer](./functions/equipment-transfer.md) | Handle multi-location equipment moves | 📋 Planned | Low |
@@ -654,6 +654,6 @@ enum DepreciationMethod {
 
 ---
 
-**Status**: 📋 Planned
-**Last Updated**: 2024-11-27
+**Status**: ✅ Implemented
+**Last Updated**: 2024-12-01
 **Owner**: Development Team

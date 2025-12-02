@@ -247,60 +247,54 @@ function SupplierCard({ supplier }: { supplier: SupplierWithCounts }) {
   const statusVariant = supplier.status === 'ACTIVE' ? 'success' : supplier.status === 'ON_HOLD' ? 'warning' : 'default';
 
   return (
-    <Card className="hover:border-primary-300 transition-colors">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-              <h3 className="font-semibold text-foreground truncate">{supplier.name}</h3>
+    <Link href={`/resources/suppliers/${supplier.id}`}>
+      <Card className="hover:border-primary-300 transition-colors cursor-pointer h-full">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                <h3 className="font-semibold text-foreground truncate">{supplier.name}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">{supplier.code}</p>
             </div>
-            <p className="text-sm text-muted-foreground">{supplier.code}</p>
+            <Badge variant={statusVariant}>{supplier.status}</Badge>
           </div>
-          <Badge variant={statusVariant}>{supplier.status}</Badge>
-        </div>
 
-        <div className="mt-3 space-y-1.5">
-          {supplier.contactName && (
-            <p className="text-sm text-muted-foreground truncate">
-              Contact: {supplier.contactName}
-            </p>
-          )}
-          {supplier.phone && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Phone className="h-3 w-3" />
-              <span>{supplier.phone}</span>
-            </div>
-          )}
-          {supplier.email && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Mail className="h-3 w-3" />
-              <span className="truncate">{supplier.email}</span>
-            </div>
-          )}
-          {supplier.website && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Globe className="h-3 w-3" />
-              <a
-                href={supplier.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="truncate hover:text-primary-600"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {supplier.website.replace(/^https?:\/\//, '')}
-              </a>
-            </div>
-          )}
-        </div>
-
-        {supplier._count && (
-          <div className="mt-3 pt-3 border-t border-border/50 flex gap-4 text-xs text-muted-foreground">
-            <span>{supplier._count.equipment} equipment</span>
-            <span>{supplier._count.maintenanceRecords + supplier._count.repairRecords} service records</span>
+          <div className="mt-3 space-y-1.5">
+            {supplier.contactName && (
+              <p className="text-sm text-muted-foreground truncate">
+                Contact: {supplier.contactName}
+              </p>
+            )}
+            {supplier.phone && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="h-3 w-3" />
+                <span>{supplier.phone}</span>
+              </div>
+            )}
+            {supplier.email && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Mail className="h-3 w-3" />
+                <span className="truncate">{supplier.email}</span>
+              </div>
+            )}
+            {supplier.website && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Globe className="h-3 w-3" />
+                <span className="truncate">{supplier.website.replace(/^https?:\/\//, '')}</span>
+              </div>
+            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          {supplier._count && (
+            <div className="mt-3 pt-3 border-t border-border/50 flex gap-4 text-xs text-muted-foreground">
+              <span>{supplier._count.equipment} equipment</span>
+              <span>{supplier._count.maintenanceRecords + supplier._count.repairRecords} service records</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

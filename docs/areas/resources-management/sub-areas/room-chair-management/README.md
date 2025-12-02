@@ -12,12 +12,12 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | ✅ Implemented |
 | **Priority** | High |
 | **Complexity** | Medium |
 | **Parent Area** | [Resources Management](../../) |
 | **Dependencies** | Auth, Equipment Management |
-| **Last Updated** | 2024-11-27 |
+| **Last Updated** | 2024-12-01 |
 
 ---
 
@@ -43,9 +43,9 @@ Orthodontic practices typically have multiple treatment chairs in open bay confi
 
 | # | Function | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 3.2.1 | [Room Registry](./functions/room-registry.md) | Maintain list of rooms/operatories | 📋 Planned | Critical |
-| 3.2.2 | [Chair Configuration](./functions/chair-configuration.md) | Configure chair-specific settings | 📋 Planned | High |
-| 3.2.3 | [Equipment Assignment](./functions/equipment-assignment.md) | Assign equipment to rooms | 📋 Planned | High |
+| 3.2.1 | [Room Registry](./functions/room-registry.md) | Maintain list of rooms/operatories | ✅ Implemented | Critical |
+| 3.2.2 | [Chair Configuration](./functions/chair-configuration.md) | Configure chair-specific settings | ✅ Implemented | High |
+| 3.2.3 | [Equipment Assignment](./functions/equipment-assignment.md) | Assign equipment to rooms | ✅ Implemented | High |
 | 3.2.4 | [Room Scheduling](./functions/room-scheduling.md) | Manage room availability | 📋 Planned | High |
 | 3.2.5 | [Setup Templates](./functions/setup-templates.md) | Define room setup checklists | 📋 Planned | Medium |
 
@@ -579,6 +579,6 @@ model RoomSetupTemplate {
 
 ---
 
-**Status**: 📋 Planned
-**Last Updated**: 2024-11-27
+**Status**: ✅ Implemented
+**Last Updated**: 2024-12-01
 **Owner**: Development Team
