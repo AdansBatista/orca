@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardGrid } from '@/components/layout';
+import { SterilizationLabel } from '@/components/sterilization/SterilizationLabel';
 
 type CycleDetail = SterilizationCycle & {
   loads: SterilizationLoad[];
@@ -215,7 +216,7 @@ export default function CycleDetailPage() {
           </div>
 
           <DashboardGrid>
-            <DashboardGrid.TwoThirds>
+            <DashboardGrid.TwoThirds className="space-y-6">
               {/* Cycle Parameters */}
               <Card>
                 <CardHeader>
@@ -335,7 +336,7 @@ export default function CycleDetailPage() {
               )}
             </DashboardGrid.TwoThirds>
 
-            <DashboardGrid.OneThird>
+            <DashboardGrid.OneThird className="space-y-6">
               {/* Indicator Results */}
               <Card>
                 <CardHeader>
@@ -436,6 +437,23 @@ export default function CycleDetailPage() {
                     ))}
                   </CardContent>
                 </Card>
+              )}
+
+              {/* Sterilization Label with QR Code */}
+              {cycle.status === 'COMPLETED' && (
+                <SterilizationLabel
+                  cycle={{
+                    id: cycle.id,
+                    cycleNumber: cycle.cycleNumber,
+                    cycleType: cycle.cycleType,
+                    startTime: cycle.startTime,
+                    temperature: cycle.temperature,
+                    pressure: cycle.pressure,
+                    exposureTime: cycle.exposureTime,
+                    status: cycle.status,
+                  }}
+                  expirationDays={30}
+                />
               )}
             </DashboardGrid.OneThird>
           </DashboardGrid>

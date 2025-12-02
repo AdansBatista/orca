@@ -2138,6 +2138,7 @@ model SterilizationCycle {
   loads           SterilizationLoad[]
   biologicalIndicators BiologicalIndicator[]
   chemicalIndicators   ChemicalIndicator[]
+  packages        InstrumentPackage[]
 
   @@unique([clinicId, cycleNumber])
   @@index([clinicId])
@@ -2445,4 +2446,116 @@ enum ComplianceLogType {
   INSPECTION       // External inspection record
   POLICY_REVIEW    // Policy/procedure review
   OTHER
+}
+
+// ============================================================================
+// INSTRUMENT PACKAGE & PATIENT LINKING
+// ============================================================================
+
+/// InstrumentPackage - Sterilized packages with QR codes for patient tracking
+model InstrumentPackage {
+  id                String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String               @db.ObjectId
+
+  // Package Identification
+  packageNumber     String               // Unique identifier (e.g., "PKG-2024-001234")
+  qrCode            String               // QR code content (ORCA-STERIL-...)
+
+  // Package Type
+  packageType       PackageType
+
+  // Sterilization Link
+  cycleId           String               @db.ObjectId
+  sterilizedDate    DateTime             // Date package was sterilized
+  expirationDate    DateTime             // Calculated expiration date
+
+  // Contents
+  instrumentSetId   String?              @db.ObjectId  // Link to InstrumentSet if applicable
+  instrumentNames   String[]             // Names of instruments in package
+  itemCount         Int                  @default(1)   // Number of items in package
+  cassetteName      String?              // If using cassette system
+
+  // Status
+  status            PackageStatus        @default(STERILE)
+
+  // Prepared by
+  preparedById      String               @db.ObjectId
+  preparedAt        DateTime             @default(now())
+
+  // Notes
+  notes             String?
+
+  // Timestamps & Audit
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  createdBy         String?              @db.ObjectId
+  updatedBy         String?              @db.ObjectId
+
+  // Relations
+  cycle             SterilizationCycle   @relation(fields: [cycleId], references: [id])
+  usages            PackageUsage[]
+
+  @@unique([clinicId, packageNumber])
+  @@unique([qrCode])
+  @@index([clinicId])
+  @@index([cycleId])
+  @@index([status])
+  @@index([expirationDate])
+  @@index([instrumentSetId])
+  @@map("instrument_packages")
+}
+
+enum PackageType {
+  CASSETTE_FULL    // Full-size cassette
+  CASSETTE_EXAM    // Exam cassette
+  POUCH            // Sterilization pouch
+  WRAPPED          // Wrapped instruments
+  INDIVIDUAL       // Individual instrument
+}
+
+enum PackageStatus {
+  STERILE          // Sterile and ready for use
+  USED             // Has been used with a patient
+  EXPIRED          // Past expiration date
+  COMPROMISED      // Packaging integrity compromised
+  RECALLED         // Recalled due to sterilization failure
+}
+
+/// PackageUsage - Records when a sterilized package is used with a patient
+model PackageUsage {
+  id                String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String               @db.ObjectId
+
+  // Package Link
+  packageId         String               @db.ObjectId
+
+  // Patient Link
+  patientId         String               @db.ObjectId
+  appointmentId     String?              @db.ObjectId
+
+  // Usage Details
+  usedAt            DateTime             @default(now())
+  usedById          String               @db.ObjectId  // Staff member who used/recorded
+  procedureType     String?              // Type of procedure performed
+  procedureNotes    String?              // Notes about the procedure
+
+  // Verification
+  verifiedPackage   Boolean              @default(true)  // Package was verified as sterile
+  verificationNotes String?              // Notes if there were any concerns
+
+  // Notes
+  notes             String?
+
+  // Timestamps
+  createdAt         DateTime             @default(now())
+
+  // Relations
+  package           InstrumentPackage    @relation(fields: [packageId], references: [id])
+
+  @@index([clinicId])
+  @@index([packageId])
+  @@index([patientId])
+  @@index([appointmentId])
+  @@index([usedAt])
+  @@map("package_usages")
 }

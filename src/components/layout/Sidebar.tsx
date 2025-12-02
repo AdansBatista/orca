@@ -38,6 +38,9 @@ import {
   Truck,
   DoorOpen,
   FlaskConical,
+  List,
+  BoxesIcon,
+  FileBarChart,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -156,7 +159,16 @@ const defaultNavGroups: NavGroup[] = [
         children: [
           { label: "Equipment", href: "/resources/equipment", icon: Package },
           { label: "Rooms", href: "/resources/rooms", icon: DoorOpen },
-          { label: "Sterilization", href: "/resources/sterilization", icon: FlaskConical },
+          {
+            label: "Sterilization",
+            href: "/resources/sterilization",
+            icon: FlaskConical,
+            children: [
+              { label: "Cycles", href: "/resources/sterilization", icon: List },
+              { label: "Packages", href: "/resources/sterilization/packages", icon: BoxesIcon },
+              { label: "Reports", href: "/resources/sterilization/reports", icon: FileBarChart },
+            ],
+          },
           { label: "Maintenance", href: "/resources/maintenance", icon: Wrench },
           { label: "Suppliers", href: "/resources/suppliers", icon: Truck },
         ],
@@ -525,6 +537,36 @@ function CollapsibleNavItem({ item, isCollapsed }: NavItemComponentProps) {
               (child.href === "/staff"
                 ? pathname === "/staff" || /^\/staff\/[a-f0-9-]+/.test(pathname)
                 : pathname.startsWith(child.href + "/"));
+
+            // Handle nested children with sub-menu
+            if (child.children) {
+              return (
+                <DropdownMenuSub key={child.href}>
+                  <DropdownMenuSubTrigger>
+                    <ChildIcon className="mr-2 h-4 w-4" />
+                    {child.label}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {child.children.map((subChild) => {
+                      const SubChildIcon = subChild.icon;
+                      const isSubActive = pathname === subChild.href || pathname.startsWith(subChild.href + "/");
+                      return (
+                        <DropdownMenuItem key={subChild.href} asChild>
+                          <Link
+                            href={subChild.href}
+                            className={cn(isSubActive && "bg-primary-100 text-primary-700")}
+                          >
+                            <SubChildIcon className="mr-2 h-4 w-4" />
+                            {subChild.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              );
+            }
+
             return (
               <DropdownMenuItem key={child.href} asChild>
                 <Link
@@ -566,6 +608,74 @@ function CollapsibleNavItem({ item, isCollapsed }: NavItemComponentProps) {
       </CollapsibleTrigger>
       <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
         <div className="ml-4 mt-1 space-y-1 border-l border-border/50 pl-2">
+          {item.children?.map((child) =>
+            child.children ? (
+              <NestedCollapsibleNavItem
+                key={child.href}
+                item={child}
+              />
+            ) : (
+              <NavItemComponent
+                key={child.href}
+                item={child}
+                isCollapsed={false}
+                isNested
+              />
+            )
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+/**
+ * Nested collapsible navigation item (for 2nd level nesting)
+ */
+function NestedCollapsibleNavItem({ item }: { item: NavItem }) {
+  const pathname = usePathname();
+  const Icon = item.icon;
+
+  // Check if any child is active
+  const isChildActive = item.children?.some((child) => {
+    if (pathname === child.href) return true;
+    return pathname.startsWith(child.href + "/");
+  });
+
+  // Auto-expand if a child is active
+  const [isOpen, setIsOpen] = React.useState(isChildActive ?? false);
+
+  // Update open state when navigation changes
+  React.useEffect(() => {
+    if (isChildActive) {
+      setIsOpen(true);
+    }
+  }, [isChildActive]);
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <button
+          className={cn(
+            "flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-colors w-full",
+            "hover:bg-primary-100 hover:text-primary-700",
+            "dark:hover:bg-primary-900/20 dark:hover:text-primary-400",
+            isChildActive && "text-primary-700 dark:text-primary-400",
+            !isChildActive && "text-muted-foreground"
+          )}
+        >
+          <Icon className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left">{item.label}</span>
+          <ChevronDown
+            className={cn(
+              "h-3 w-3 shrink-0 transition-transform duration-200",
+              isOpen && "rotate-180"
+            )}
+          />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+        <div className="ml-3 mt-1 space-y-1 border-l border-border/50 pl-2">
           {item.children?.map((child) => (
             <NavItemComponent
               key={child.href}

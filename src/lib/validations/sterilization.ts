@@ -88,6 +88,22 @@ export const ComplianceLogTypeEnum = z.enum([
   'OTHER',
 ]);
 
+export const PackageTypeEnum = z.enum([
+  'CASSETTE_FULL',
+  'CASSETTE_EXAM',
+  'POUCH',
+  'WRAPPED',
+  'INDIVIDUAL',
+]);
+
+export const PackageStatusEnum = z.enum([
+  'STERILE',
+  'USED',
+  'EXPIRED',
+  'COMPROMISED',
+  'RECALLED',
+]);
+
 // =============================================================================
 // Sterilization Cycle Schemas
 // =============================================================================
@@ -332,3 +348,92 @@ export type InstrumentSetQueryInput = z.infer<typeof instrumentSetQuerySchema>;
 export type CreateComplianceLogInput = z.infer<typeof createComplianceLogSchema>;
 export type UpdateComplianceLogInput = z.infer<typeof updateComplianceLogSchema>;
 export type ComplianceLogQueryInput = z.infer<typeof complianceLogQuerySchema>;
+
+// =============================================================================
+// Instrument Package Schemas
+// =============================================================================
+
+export const createInstrumentPackageSchema = z.object({
+  cycleId: z.string().min(1, 'Sterilization cycle is required'),
+  packageType: PackageTypeEnum,
+  instrumentSetId: z.string().optional().nullable(),
+  instrumentNames: z.array(z.string()).min(1, 'At least one instrument name is required'),
+  itemCount: z.number().int().positive().optional().default(1),
+  cassetteName: z.string().max(100).optional().nullable(),
+  expirationDays: z.number().int().positive().max(365).optional().default(30),
+  notes: z.string().max(1000).optional().nullable(),
+});
+
+export const updateInstrumentPackageSchema = z.object({
+  packageType: PackageTypeEnum.optional(),
+  instrumentSetId: z.string().optional().nullable(),
+  instrumentNames: z.array(z.string()).optional(),
+  itemCount: z.number().int().positive().optional(),
+  cassetteName: z.string().max(100).optional().nullable(),
+  status: PackageStatusEnum.optional(),
+  notes: z.string().max(1000).optional().nullable(),
+});
+
+export const instrumentPackageQuerySchema = z.object({
+  search: z.string().optional(),
+  cycleId: z.string().optional(),
+  packageType: PackageTypeEnum.optional(),
+  status: PackageStatusEnum.optional(),
+  instrumentSetId: z.string().optional(),
+  expiringWithinDays: z.coerce.number().int().positive().optional(),
+  expired: z.string().transform((val) => val === 'true').optional(),
+  page: z.coerce.number().int().positive().optional().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).optional().default(20),
+  sortBy: z
+    .enum(['packageNumber', 'sterilizedDate', 'expirationDate', 'status', 'createdAt'])
+    .optional()
+    .default('sterilizedDate'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+});
+
+export const lookupPackageByQRSchema = z.object({
+  qrCode: z.string().min(1, 'QR code is required'),
+});
+
+// =============================================================================
+// Package Usage Schemas (Patient Linking)
+// =============================================================================
+
+export const recordPackageUsageSchema = z.object({
+  packageId: z.string().min(1, 'Package is required'),
+  patientId: z.string().min(1, 'Patient is required'),
+  appointmentId: z.string().optional().nullable(),
+  procedureType: z.string().max(200).optional().nullable(),
+  procedureNotes: z.string().max(1000).optional().nullable(),
+  verifiedPackage: z.boolean().optional().default(true),
+  verificationNotes: z.string().max(500).optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
+});
+
+export const packageUsageQuerySchema = z.object({
+  packageId: z.string().optional(),
+  patientId: z.string().optional(),
+  appointmentId: z.string().optional(),
+  usedById: z.string().optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  page: z.coerce.number().int().positive().optional().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).optional().default(20),
+  sortBy: z
+    .enum(['usedAt', 'createdAt'])
+    .optional()
+    .default('usedAt'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+});
+
+// =============================================================================
+// Package Type Exports
+// =============================================================================
+
+export type CreateInstrumentPackageInput = z.infer<typeof createInstrumentPackageSchema>;
+export type UpdateInstrumentPackageInput = z.infer<typeof updateInstrumentPackageSchema>;
+export type InstrumentPackageQueryInput = z.infer<typeof instrumentPackageQuerySchema>;
+export type LookupPackageByQRInput = z.infer<typeof lookupPackageByQRSchema>;
+
+export type RecordPackageUsageInput = z.infer<typeof recordPackageUsageSchema>;
+export type PackageUsageQueryInput = z.infer<typeof packageUsageQuerySchema>;
