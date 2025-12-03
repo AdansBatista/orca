@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { Settings, Plus, Filter, RefreshCw } from 'lucide-react';
+import { Settings, Plus, Filter, RefreshCw, List } from 'lucide-react';
 
 import { PageHeader, PageContent } from '@/components/layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -19,16 +19,48 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet';
 import { BookingCalendar, CalendarEvent } from '@/components/booking';
 import { AppointmentQuickView } from '@/components/booking/AppointmentQuickView';
 import { toast } from 'sonner';
 
+interface Provider {
+  id: string;
+  firstName: string;
+  lastName: string;
+  title: string | null;
+}
+
 export default function BookingPage() {
-  const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<string>('all');
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [loadingProviders, setLoadingProviders] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showQuickView, setShowQuickView] = useState(false);
+  const [calendarKey, setCalendarKey] = useState(0); // Force calendar refresh
+
+  // Fetch providers on mount
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        const response = await fetch('/api/staff?isProvider=true&status=ACTIVE&pageSize=50');
+        const result = await response.json();
+        if (result.success) {
+          setProviders(result.data.items || []);
+        }
+      } catch {
+        toast.error('Failed to load providers');
+      } finally {
+        setLoadingProviders(false);
+      }
+    };
+    fetchProviders();
+  }, []);
+
+  // Refresh calendar data
+  const handleRefreshCalendar = useCallback(() => {
+    setCalendarKey((prev) => prev + 1);
+  }, []);
 
   // Handle event click - show quick view
   const handleEventClick = useCallback((appointmentId: string, event: CalendarEvent) => {
@@ -43,8 +75,11 @@ export default function BookingPage() {
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
     });
+    if (selectedProvider && selectedProvider !== 'all') {
+      params.set('provider', selectedProvider);
+    }
     window.location.href = `/booking/appointments/new?${params}`;
-  }, []);
+  }, [selectedProvider]);
 
   // Handle event drop (reschedule)
   const handleEventDrop = useCallback(async (
@@ -108,6 +143,14 @@ export default function BookingPage() {
     }
   }, []);
 
+  // Handle status change from quick view - refresh calendar
+  const handleStatusChange = useCallback(() => {
+    handleRefreshCalendar();
+  }, [handleRefreshCalendar]);
+
+  // Get provider IDs for filtering
+  const providerIds = selectedProvider && selectedProvider !== 'all' ? [selectedProvider] : undefined;
+
   return (
     <>
       <PageHeader
@@ -119,6 +162,12 @@ export default function BookingPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
+            <Link href="/booking/appointments">
+              <Button variant="outline" size="sm">
+                <List className="h-4 w-4 mr-2" />
+                List View
+              </Button>
+            </Link>
             <Link href="/booking/settings/appointment-types">
               <Button variant="outline" size="sm">
                 <Settings className="h-4 w-4 mr-2" />
@@ -146,16 +195,32 @@ export default function BookingPage() {
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">Filter:</span>
                   </div>
-                  {/* Provider filter would go here - needs providers API */}
-                  <Select value="all" onValueChange={() => {}}>
+                  <Select
+                    value={selectedProvider}
+                    onValueChange={setSelectedProvider}
+                    disabled={loadingProviders}
+                  >
                     <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="All Providers" />
+                      <SelectValue placeholder={loadingProviders ? 'Loading...' : 'All Providers'} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Providers</SelectItem>
-                      {/* Provider options would be populated from API */}
+                      {providers.map((provider) => (
+                        <SelectItem key={provider.id} value={provider.id}>
+                          {provider.firstName} {provider.lastName}
+                          {provider.title && ` - ${provider.title}`}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={handleRefreshCalendar}
+                    title="Refresh calendar"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -163,7 +228,7 @@ export default function BookingPage() {
                   <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <span className="w-3 h-3 rounded-sm bg-[#3B82F6]" />
-                      <span>Scheduled</span>
+                      <span>Arrived</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span className="w-3 h-3 rounded-sm bg-[#F59E0B]" />
@@ -187,7 +252,8 @@ export default function BookingPage() {
           <Card>
             <CardContent className="p-4">
               <BookingCalendar
-                providerIds={selectedProviders.length > 0 ? selectedProviders : undefined}
+                key={calendarKey}
+                providerIds={providerIds}
                 onEventClick={handleEventClick}
                 onDateSelect={handleDateSelect}
                 onEventDrop={handleEventDrop}
@@ -210,6 +276,7 @@ export default function BookingPage() {
             <AppointmentQuickView
               event={selectedEvent}
               onClose={() => setShowQuickView(false)}
+              onStatusChange={handleStatusChange}
             />
           )}
         </SheetContent>

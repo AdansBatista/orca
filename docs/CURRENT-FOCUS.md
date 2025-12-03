@@ -1,6 +1,6 @@
 # Current Development Focus
 
-> **Last Updated**: 2024-12-02
+> **Last Updated**: 2025-12-03
 >
 > **Purpose**: Single source of truth for what LLMs and developers should work on
 
@@ -10,8 +10,8 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Current Phase** | Phase 1 - Foundation Infrastructure ✅ COMPLETE |
-| **Implementation Status** | ✅ Phase 1 Complete (Auth ✅, Staff ✅, Resources ✅) |
+| **Current Phase** | Phase 2 - Core Operations (In Progress) |
+| **Implementation Status** | ✅ Phase 1 Complete, 🔄 Phase 2 In Progress |
 | **Documentation Status** | ✅ Complete for all 13 areas |
 
 ---
@@ -48,14 +48,31 @@ These areas have no dependencies and can be started immediately:
 
 ---
 
-## 🚀 Phase 2: Core Operations - READY TO START
+## 🚀 Phase 2: Core Operations - IN PROGRESS
 
-### 1. Booking & Scheduling (NEXT)
+### 1. Booking & Scheduling 🔄 IN PROGRESS
 - **Documentation**: [docs/areas/booking/](areas/booking/)
 - **Depends On**: Auth ✅, Staff ✅, Resources ✅
 - **Key Deliverables**: Appointment scheduling, calendar management, provider availability
 - **Priority**: Critical - core functionality for practice operations
-- **Status**: Ready to implement
+- **Status**: Phase 2 UI Implementation In Progress
+- **Completed (Phase 1 MVP)**:
+  - ✅ API routes for appointments CRUD
+  - ✅ API routes for appointment types
+  - ✅ Appointment status transitions (confirm, check-in, start, complete, cancel, no-show)
+  - ✅ Calendar API with provider/resource filtering
+  - ✅ Availability checking API
+  - ✅ Basic booking calendar component (FullCalendar)
+- **Completed (Phase 2)**:
+  - ✅ Enhanced calendar page with provider filtering
+  - ✅ Calendar status refresh on appointment changes
+  - ✅ Appointments list page with search, filters, pagination
+  - ✅ Sidebar sub-navigation for booking
+  - ✅ Waitlist Management (API + UI) - waitlist entries, prioritization, preferences
+  - ✅ Cancellation Tracking (API + UI) - failed appointment recovery, rebooking workflow
+  - ✅ At-Risk Patients (API + UI) - risk scoring, intervention tracking
+  - ✅ Emergency Appointments (API + UI) - triage, severity tracking, resolution workflow
+  - ✅ Appointment Reminders (API + UI) - templates, queue, multi-channel support
 
 ### 2. Practice Orchestration
 - **Documentation**: [docs/areas/practice-orchestration/](areas/practice-orchestration/)
@@ -124,11 +141,13 @@ If asked to "implement the next feature" or "start development" without specific
 
 ```
 Phase 1 Complete? ✅ YES
-└── Start Phase 2: Booking & Scheduling ← YOU ARE HERE
-    ├── Calendar Management
-    ├── Appointment Management
-    ├── Waitlist & Recovery
-    └── Emergency & Reminders
+Phase 2 Started? ✅ YES (Booking in progress)
+└── Continue Phase 2: Booking & Scheduling ← YOU ARE HERE
+    ├── ✅ Calendar Management (MVP + Enhanced UI)
+    ├── ✅ Appointment Management (CRUD + List View)
+    ├── ✅ Waitlist & Recovery (API + UI Complete, Notifications on hold)
+    ├── ✅ Emergency & Reminders (API + UI Complete)
+    └── ⏳ On-Call Management (Next - additional features)
 ```
 
 ---
@@ -137,6 +156,10 @@ Phase 1 Complete? ✅ YES
 
 | Date | Area/Feature | Status |
 |------|--------------|--------|
+| 2025-12-03 | Booking - Emergency & Reminders (API + UI) | ✅ Complete |
+| 2025-12-03 | Booking - Waitlist & Recovery (API + UI) | ✅ Complete |
+| 2025-12-03 | Booking - Phase 2 Calendar & Appointments UI | ✅ Complete |
+| 2024-12-02 | Booking - Phase 1 MVP (API & Basic Components) | ✅ Complete |
 | 2024-12-02 | Resources Management - Sterilization & Compliance | ✅ Complete |
 | 2024-12-02 | Resources Management - Inventory Management | ✅ Complete |
 | 2024-12-01 | Resources Management - Room/Chair Management | ✅ Complete |
@@ -153,7 +176,8 @@ Phase 1 Complete? ✅ YES
 
 | Area | Sub-Area | Assignee | Started | Status |
 |------|----------|----------|---------|--------|
-| Booking & Scheduling | Calendar Management | - | - | Ready to start |
+| Booking & Scheduling | Opening Notifications | - | - | On hold (infrastructure needed) |
+| Booking & Scheduling | On-Call Management | - | - | Next priority |
 
 ---
 

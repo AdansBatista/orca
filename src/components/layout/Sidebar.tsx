@@ -45,6 +45,11 @@ import {
   ShoppingCart,
   ArrowRightLeft,
   Activity,
+  Clock,
+  XCircle,
+  AlertTriangle,
+  Siren,
+  Bell,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -136,7 +141,21 @@ const defaultNavGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", icon: Home },
       { label: "Patients", href: "/patients", icon: Users },
-      { label: "Booking", href: "/booking", icon: Calendar },
+      {
+        label: "Booking",
+        href: "/booking",
+        icon: Calendar,
+        children: [
+          { label: "Calendar", href: "/booking", icon: CalendarClock },
+          { label: "Appointments", href: "/booking/appointments", icon: List },
+          { label: "Waitlist", href: "/booking/waitlist", icon: Clock },
+          { label: "Cancellations", href: "/booking/cancellations", icon: XCircle },
+          { label: "At-Risk Patients", href: "/booking/at-risk", icon: AlertTriangle },
+          { label: "Emergencies", href: "/booking/emergencies", icon: Siren },
+          { label: "Reminders", href: "/booking/reminders", icon: Bell },
+          { label: "Appointment Types", href: "/booking/settings/appointment-types", icon: Settings },
+        ],
+      },
       { label: "Treatments", href: "/treatments", icon: ClipboardList },
     ],
   },

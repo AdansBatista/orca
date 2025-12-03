@@ -36,6 +36,23 @@ model Clinic {
   appointmentTypes AppointmentType[]
   appointments     Appointment[]
 
+  // Waitlist & Recovery relations
+  waitlistEntries            WaitlistEntry[]
+  appointmentCancellations   AppointmentCancellation[]
+  patientRiskScores          PatientRiskScore[]
+
+  // Emergency & Reminders relations
+  emergencyAppointments      EmergencyAppointment[]
+  onCallSchedules            OnCallSchedule[]
+  onCallSwapRequests         OnCallSwapRequest[]
+  reminderTemplates          ReminderTemplate[]
+  reminderSequences          ReminderSequence[]
+  appointmentReminders       AppointmentReminder[]
+  afterHoursMessages         AfterHoursMessage[]
+  afterHoursSettings         AfterHoursSettings?
+  emergencyProtocols         EmergencyProtocol[]
+  emergencyFAQs              EmergencyFAQ[]
+
   @@map("clinics")
 }
 
@@ -246,6 +263,16 @@ model Patient {
   // Booking relations
   appointments Appointment[]
 
+  // Waitlist & Recovery relations
+  waitlistEntries            WaitlistEntry[]
+  appointmentCancellations   AppointmentCancellation[]
+  patientRiskScores          PatientRiskScore[]
+
+  // Emergency & Reminders relations
+  emergencyAppointments      EmergencyAppointment[]
+  appointmentReminders       AppointmentReminder[]
+  afterHoursMessages         AfterHoursMessage[]
+
   @@index([clinicId])
   @@index([lastName, firstName])
   @@map("patients")
@@ -337,6 +364,7 @@ model StaffProfile {
 
   // Booking relations (when staff is a provider)
   appointmentsAsProvider Appointment[] @relation("AppointmentProvider")
+  waitlistPreferences    WaitlistEntry[] @relation("WaitlistPreferredProvider")
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -3640,6 +3668,7 @@ model AppointmentType {
   // Relations
   clinic           Clinic   @relation(fields: [clinicId], references: [id])
   appointments     Appointment[]
+  waitlistEntries  WaitlistEntry[]
 
   @@unique([clinicId, code])
   @@index([clinicId])
@@ -3741,6 +3770,7 @@ model Appointment {
   provider             StaffProfile       @relation("AppointmentProvider", fields: [providerId], references: [id])
   chair                TreatmentChair?    @relation(fields: [chairId], references: [id])
   room                 Room?              @relation(fields: [roomId], references: [id])
+  reminders            AppointmentReminder[]
 
   @@index([clinicId])
   @@index([patientId])
@@ -3750,4 +3780,888 @@ model Appointment {
   @@index([status])
   @@index([chairId])
   @@map("appointments")
+}
+
+// =============================================================================
+// WAITLIST & RECOVERY - Waitlist management, cancellation tracking, recovery
+// =============================================================================
+
+/// WaitlistEntry - Patient waiting for an appointment
+model WaitlistEntry {
+  id                    String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String              @db.ObjectId
+  patientId             String              @db.ObjectId
+
+  // Waitlist details
+  appointmentTypeId     String              @db.ObjectId
+  priority              WaitlistPriority    @default(STANDARD)
+  status                WaitlistStatus      @default(ACTIVE)
+
+  // Preferences
+  preferredProviderId   String?             @db.ObjectId
+  dateRangeStart        DateTime?
+  dateRangeEnd          DateTime?
+  preferredTimes        String[]            // "MORNING", "AFTERNOON", "EVENING"
+  preferredDays         Int[]               // 0-6 (Sunday-Saturday)
+
+  // Notes
+  notes                 String?
+  reasonForWaitlist     String?
+
+  // Expiration
+  expiresAt             DateTime?
+
+  // Tracking
+  position              Int?                // Dynamic position in queue
+  addedAt               DateTime            @default(now())
+  addedBy               String              @db.ObjectId
+
+  // Notifications tracking (simplified - full notifications on hold)
+  notificationsSent     Int                 @default(0)
+  lastNotifiedAt        DateTime?
+
+  // Resolution
+  resolvedAt            DateTime?
+  resolvedBy            String?             @db.ObjectId
+  resolution            WaitlistResolution?
+  bookedAppointmentId   String?             @db.ObjectId
+
+  // Timestamps
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  // Relations
+  clinic                Clinic              @relation(fields: [clinicId], references: [id])
+  patient               Patient             @relation(fields: [patientId], references: [id])
+  appointmentType       AppointmentType     @relation(fields: [appointmentTypeId], references: [id])
+  preferredProvider     StaffProfile?       @relation("WaitlistPreferredProvider", fields: [preferredProviderId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([status])
+  @@index([priority])
+  @@index([appointmentTypeId])
+  @@map("waitlist_entries")
+}
+
+enum WaitlistPriority {
+  URGENT
+  HIGH
+  STANDARD
+  FLEXIBLE
+}
+
+enum WaitlistStatus {
+  ACTIVE
+  NOTIFIED      // Currently being offered an opening
+  BOOKED        // Successfully booked
+  EXPIRED       // Entry expired
+  REMOVED       // Manually removed
+  DECLINED      // Patient declined all offers
+}
+
+enum WaitlistResolution {
+  BOOKED
+  EXPIRED
+  PATIENT_REMOVED
+  STAFF_REMOVED
+  DECLINED_ALL_OFFERS
+}
+
+/// AppointmentCancellation - Detailed cancellation tracking
+model AppointmentCancellation {
+  id                    String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String              @db.ObjectId
+  appointmentId         String              @db.ObjectId
+  patientId             String              @db.ObjectId
+
+  // Cancellation details
+  cancellationType      CancellationType
+  cancelledAt           DateTime            @default(now())
+  cancelledBy           String              @db.ObjectId
+  cancelledByType       CancelledByType
+
+  // Original appointment info (snapshot)
+  originalStartTime     DateTime
+  originalEndTime       DateTime
+  originalProviderId    String              @db.ObjectId
+  appointmentTypeId     String              @db.ObjectId
+
+  // Reason
+  reason                CancellationReason
+  reasonDetails         String?
+
+  // Notice period
+  noticeHours           Float               // Hours before appointment
+  isLateCancel          Boolean             @default(false)
+
+  // Fee
+  lateCancelFee         Float?
+  feeWaived             Boolean             @default(false)
+  feeWaivedReason       String?
+  feeWaivedBy           String?             @db.ObjectId
+
+  // Recovery tracking
+  recoveryStatus        RecoveryStatus      @default(PENDING)
+  recoveryAttempts      Int                 @default(0)
+  lastRecoveryAttemptAt DateTime?
+  recoveryNotes         String?
+  rescheduledAppointmentId String?          @db.ObjectId
+
+  // Timestamps
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  // Relations
+  clinic                Clinic              @relation(fields: [clinicId], references: [id])
+  patient               Patient             @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([appointmentId])
+  @@index([cancelledAt])
+  @@index([reason])
+  @@index([recoveryStatus])
+  @@map("appointment_cancellations")
+}
+
+enum CancellationType {
+  CANCELLED       // Patient cancelled in advance
+  LATE_CANCEL     // Cancelled within late cancel window
+  NO_SHOW         // Patient didn't show up
+  PRACTICE_CANCEL // Practice cancelled (provider sick, etc.)
+}
+
+enum CancelledByType {
+  PATIENT
+  STAFF
+  SYSTEM
+  PROVIDER
+}
+
+enum CancellationReason {
+  SCHEDULE_CONFLICT
+  ILLNESS
+  TRANSPORTATION
+  FORGOT
+  FINANCIAL
+  WEATHER
+  FAMILY_EMERGENCY
+  CHANGED_PROVIDERS
+  PRACTICE_CLOSURE
+  PROVIDER_UNAVAILABLE
+  OTHER
+}
+
+enum RecoveryStatus {
+  PENDING
+  IN_PROGRESS
+  RECOVERED
+  LOST
+  NOT_NEEDED
+}
+
+/// PatientRiskScore - Track patients at risk of dropping out
+model PatientRiskScore {
+  id                    String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String              @db.ObjectId
+  patientId             String              @db.ObjectId
+
+  // Risk assessment
+  riskScore             Float               // 0-100, higher = more at risk
+  riskLevel             RiskLevel
+  calculatedAt          DateTime            @default(now())
+
+  // Risk factors (stored as JSON for flexibility)
+  riskFactors           Json?               // Array of { factor, weight, description, value }
+
+  // Recommendations
+  recommendedActions    String[]
+
+  // Status
+  status                RiskStatus          @default(ACTIVE)
+  reviewedAt            DateTime?
+  reviewedBy            String?             @db.ObjectId
+  reviewNotes           String?
+
+  // Intervention tracking
+  interventionStatus    InterventionStatus?
+  interventionAt        DateTime?
+  interventionBy        String?             @db.ObjectId
+  interventionNotes     String?
+
+  // Stats at time of calculation
+  noShowCount           Int                 @default(0)
+  cancelCount           Int                 @default(0)
+  missedInRowCount      Int                 @default(0)
+  daysSinceLastVisit    Int?
+  totalAppointments     Int                 @default(0)
+
+  // Timestamps
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  // Relations
+  clinic                Clinic              @relation(fields: [clinicId], references: [id])
+  patient               Patient             @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([riskLevel])
+  @@index([status])
+  @@map("patient_risk_scores")
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskStatus {
+  ACTIVE
+  REVIEWED
+  RESOLVED
+  DROPPED_OUT
+}
+
+enum InterventionStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESSFUL
+  UNSUCCESSFUL
+}
+
+// =============================================================================
+// EMERGENCY & REMINDERS - Emergency appointments, on-call, reminders, confirmations
+// =============================================================================
+
+/// EmergencyAppointment - Emergency patient requests and triage
+model EmergencyAppointment {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+
+  // Patient info
+  patientId             String?               @db.ObjectId // Can be null for new patients
+  patientName           String                // Name (for walk-ins without record)
+  patientPhone          String
+  patientEmail          String?
+
+  // Emergency details
+  emergencyType         EmergencyType
+  severity              EmergencySeverity     @default(MEDIUM)
+  description           String
+  symptoms              String[]              // Additional symptoms
+  onsetTime             DateTime?             // When did it start
+
+  // Triage
+  triageStatus          TriageStatus          @default(PENDING)
+  triageNotes           String?
+  triageCompletedAt     DateTime?
+  triageCompletedBy     String?               @db.ObjectId
+  selfCareInstructions  String?               // Instructions given to patient
+
+  // Request channel
+  requestChannel        RequestChannel        @default(PHONE)
+  requestedAt           DateTime              @default(now())
+  requestedBy           String?               @db.ObjectId // Staff who took the call
+
+  // Resolution
+  resolution            EmergencyResolution?
+  resolvedAt            DateTime?
+  resolvedBy            String?               @db.ObjectId
+  resolutionNotes       String?
+
+  // Appointment link (if scheduled)
+  appointmentId         String?               @db.ObjectId
+  scheduledFor          DateTime?
+
+  // On-call handling
+  onCallProviderId      String?               @db.ObjectId
+  onCallNotifiedAt      DateTime?
+  onCallAcknowledgedAt  DateTime?
+
+  // After-hours flag
+  isAfterHours          Boolean               @default(false)
+
+  // Fee tracking
+  emergencyFee          Float?
+  feeWaived             Boolean               @default(false)
+  feeWaivedReason       String?
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  patient               Patient?              @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([triageStatus])
+  @@index([severity])
+  @@index([requestedAt])
+  @@map("emergency_appointments")
+}
+
+enum EmergencyType {
+  BROKEN_BRACKET
+  POKING_WIRE
+  BROKEN_WIRE
+  LOST_RETAINER
+  LOOSE_BAND
+  LOOSE_BRACKET
+  APPLIANCE_IRRITATION
+  TRAUMA_INJURY
+  SEVERE_PAIN
+  SWELLING_INFECTION
+  LOST_ALIGNER
+  BROKEN_RETAINER
+  BROKEN_APPLIANCE
+  OTHER
+}
+
+enum EmergencySeverity {
+  LOW           // Can wait, self-care may resolve
+  MEDIUM        // Should be seen within 24-48 hours
+  HIGH          // Should be seen same-day
+  CRITICAL      // Needs immediate attention, may need ER referral
+}
+
+enum TriageStatus {
+  PENDING       // Awaiting triage
+  IN_PROGRESS   // Being triaged
+  COMPLETED     // Triage complete
+  REFERRED      // Referred out (ER, general dentist)
+}
+
+enum RequestChannel {
+  PHONE
+  SMS
+  WEB_FORM
+  PATIENT_PORTAL
+  WALK_IN
+  AFTER_HOURS
+  EMAIL
+}
+
+enum EmergencyResolution {
+  APPOINTMENT_SCHEDULED
+  SELF_CARE_RESOLVED
+  REFERRED_GENERAL_DENTIST
+  REFERRED_ER
+  NO_ACTION_NEEDED
+  PATIENT_NO_SHOW
+  PATIENT_DECLINED
+}
+
+/// OnCallSchedule - Provider on-call assignments
+model OnCallSchedule {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+
+  // Provider assignment
+  providerId            String                @db.ObjectId
+  providerName          String                // Denormalized for quick access
+
+  // Schedule period
+  startDate             DateTime
+  endDate               DateTime
+  startTime             String                // "17:00" format (after-hours start)
+  endTime               String                // "08:00" format (next day)
+
+  // Type
+  type                  OnCallType            @default(PRIMARY)
+  status                OnCallStatus          @default(SCHEDULED)
+
+  // Backup
+  backupProviderId      String?               @db.ObjectId
+  backupProviderName    String?
+
+  // Contact override (if different from profile)
+  contactPhone          String?
+  contactEmail          String?
+  notes                 String?
+
+  // Holiday/special info
+  isHoliday             Boolean               @default(false)
+  holidayName           String?
+
+  // Acknowledgment
+  acknowledgedAt        DateTime?
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdBy             String                @db.ObjectId
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  swapRequests          OnCallSwapRequest[]   @relation("OriginalOnCall")
+  swapsReceived         OnCallSwapRequest[]   @relation("SwapTarget")
+
+  @@index([clinicId])
+  @@index([providerId])
+  @@index([startDate, endDate])
+  @@index([status])
+  @@map("on_call_schedules")
+}
+
+enum OnCallType {
+  PRIMARY
+  BACKUP
+  HOLIDAY
+  SPECIAL
+}
+
+enum OnCallStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  SWAPPED
+  CANCELLED
+}
+
+/// OnCallSwapRequest - Shift swap requests between providers
+model OnCallSwapRequest {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+
+  // Original assignment
+  originalOnCallId      String                @db.ObjectId
+  requestingProviderId  String                @db.ObjectId
+
+  // Swap target
+  targetOnCallId        String?               @db.ObjectId
+  targetProviderId      String                @db.ObjectId
+
+  // Request details
+  reason                String
+  status                SwapRequestStatus     @default(PENDING)
+
+  // Approval
+  approvedAt            DateTime?
+  approvedBy            String?               @db.ObjectId
+  declinedAt            DateTime?
+  declinedBy            String?               @db.ObjectId
+  declineReason         String?
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  originalOnCall        OnCallSchedule        @relation("OriginalOnCall", fields: [originalOnCallId], references: [id])
+  targetOnCall          OnCallSchedule?       @relation("SwapTarget", fields: [targetOnCallId], references: [id])
+
+  @@index([clinicId])
+  @@index([originalOnCallId])
+  @@index([status])
+  @@map("on_call_swap_requests")
+}
+
+enum SwapRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  CANCELLED
+}
+
+/// ReminderTemplate - Clinic-specific reminder message templates
+model ReminderTemplate {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+
+  // Template info
+  name                  String
+  channel               ReminderChannel
+  type                  ReminderType
+
+  // Content
+  subject               String?               // For email
+  body                  String                // Template with variables like {patient_name}
+
+  // Options
+  includeCalendarLink   Boolean               @default(false)
+  includeDirections     Boolean               @default(false)
+  includeConfirmLink    Boolean               @default(false)
+  includeCancelLink     Boolean               @default(false)
+
+  // Status
+  isActive              Boolean               @default(true)
+  isDefault             Boolean               @default(false)
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdBy             String?               @db.ObjectId
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  sequenceSteps         ReminderSequenceStep[]
+
+  @@index([clinicId])
+  @@index([channel])
+  @@index([type])
+  @@map("reminder_templates")
+}
+
+enum ReminderChannel {
+  SMS
+  EMAIL
+  VOICE
+  PUSH
+}
+
+enum ReminderType {
+  STANDARD            // Regular reminder
+  CONFIRMATION        // Requesting confirmation
+  FINAL               // Last reminder before appointment
+  PRE_VISIT           // Prep instructions
+  FIRST_VISIT         // Special for first-time patients
+  FOLLOW_UP           // Post-appointment follow-up
+}
+
+/// ReminderSequence - Multi-step reminder workflows
+model ReminderSequence {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+
+  // Sequence info
+  name                  String
+  description           String?
+  appointmentTypeId     String?               @db.ObjectId // Specific type or null for all
+  isDefault             Boolean               @default(false)
+  isActive              Boolean               @default(true)
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdBy             String?               @db.ObjectId
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  steps                 ReminderSequenceStep[]
+
+  @@index([clinicId])
+  @@index([appointmentTypeId])
+  @@map("reminder_sequences")
+}
+
+/// ReminderSequenceStep - Individual step in a reminder sequence
+model ReminderSequenceStep {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  sequenceId            String                @db.ObjectId
+
+  // Step order
+  stepOrder             Int                   // 1, 2, 3...
+
+  // Timing
+  offsetDays            Int                   // Days before appointment (negative = after)
+  offsetHours           Int                   @default(0) // Additional hours
+  sendTime              String?               // Preferred time "09:00" (uses patient timezone)
+
+  // Content
+  channel               ReminderChannel
+  reminderType          ReminderType
+  templateId            String?               @db.ObjectId
+
+  // Behavior
+  skipIfConfirmed       Boolean               @default(true)
+  skipIfCancelled       Boolean               @default(true)
+  skipIfPreviousFailed  Boolean               @default(false)
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  sequence              ReminderSequence      @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  template              ReminderTemplate?     @relation(fields: [templateId], references: [id])
+
+  @@index([sequenceId])
+  @@map("reminder_sequence_steps")
+}
+
+/// AppointmentReminder - Individual reminder records
+model AppointmentReminder {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+  appointmentId         String                @db.ObjectId
+  patientId             String                @db.ObjectId
+
+  // Reminder details
+  channel               ReminderChannel
+  reminderType          ReminderType
+  sequenceStepId        String?               @db.ObjectId
+  templateId            String?               @db.ObjectId
+
+  // Scheduling
+  scheduledFor          DateTime
+  sentAt                DateTime?
+
+  // Status
+  status                ReminderStatus        @default(SCHEDULED)
+  failureReason         String?
+  retryCount            Int                   @default(0)
+
+  // Delivery tracking
+  deliveredAt           DateTime?
+  deliveryReceipt       String?               // External delivery ID
+
+  // Response tracking (for confirmations)
+  responseType          ConfirmationResponse?
+  respondedAt           DateTime?
+  responseRaw           String?               // Raw response text
+
+  // Content sent
+  contentSent           String?               // Actual message sent
+
+  // External IDs
+  externalMessageId     String?               // Twilio/SendGrid ID
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  appointment           Appointment           @relation(fields: [appointmentId], references: [id])
+  patient               Patient               @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([appointmentId])
+  @@index([patientId])
+  @@index([scheduledFor])
+  @@index([status])
+  @@map("appointment_reminders")
+}
+
+enum ReminderStatus {
+  SCHEDULED
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+  SKIPPED
+}
+
+enum ConfirmationResponse {
+  CONFIRMED
+  DECLINED
+  RESCHEDULE_REQUESTED
+  NO_RESPONSE
+}
+
+/// AfterHoursMessage - After-hours contact tracking
+model AfterHoursMessage {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+
+  // Caller info
+  callerName            String
+  callerPhone           String
+  callerEmail           String?
+  patientId             String?               @db.ObjectId // If identified
+
+  // Message details
+  messageType           AfterHoursMessageType
+  urgency               AfterHoursUrgency     @default(ROUTINE)
+  message               String
+  routing               AfterHoursRouting     @default(VOICEMAIL)
+
+  // Status
+  status                AfterHoursStatus      @default(PENDING)
+  acknowledgedAt        DateTime?
+  acknowledgedBy        String?               @db.ObjectId
+
+  // Resolution
+  resolvedAt            DateTime?
+  resolvedBy            String?               @db.ObjectId
+  resolutionNotes       String?
+
+  // Callback tracking
+  callbackScheduledFor  DateTime?
+  callbackCompletedAt   DateTime?
+  callbackNotes         String?
+
+  // Links
+  emergencyAppointmentId String?              @db.ObjectId
+  appointmentId         String?               @db.ObjectId
+
+  // On-call handling
+  onCallProviderId      String?               @db.ObjectId
+  onCallNotifiedAt      DateTime?
+
+  // Timestamps
+  receivedAt            DateTime              @default(now())
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  patient               Patient?              @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([status])
+  @@index([urgency])
+  @@index([receivedAt])
+  @@map("after_hours_messages")
+}
+
+enum AfterHoursMessageType {
+  EMERGENCY
+  APPOINTMENT_REQUEST
+  GENERAL_QUESTION
+  BILLING_QUESTION
+  PRESCRIPTION_REQUEST
+  OTHER
+}
+
+enum AfterHoursUrgency {
+  ROUTINE
+  URGENT
+  EMERGENCY
+}
+
+enum AfterHoursRouting {
+  VOICEMAIL
+  ON_CALL_PROVIDER
+  ANSWERING_SERVICE
+  AUTO_RESPONSE
+  EMERGENCY_LINE
+}
+
+enum AfterHoursStatus {
+  PENDING
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  CALLBACK_SCHEDULED
+  NO_ACTION_NEEDED
+}
+
+/// AfterHoursSettings - Clinic after-hours configuration
+model AfterHoursSettings {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @unique @db.ObjectId
+
+  // Business hours
+  weekdayOpen           String                @default("08:00")
+  weekdayClose          String                @default("17:00")
+  saturdayOpen          String?               // null = closed
+  saturdayClose         String?
+  sundayOpen            String?
+  sundayClose           String?
+
+  // Phone routing
+  afterHoursPhone       String?
+  answeringServicePhone String?
+  emergencyLinePhone    String?
+
+  // Auto-response templates
+  smsAutoReply          String?
+  emailAutoReply        String?
+  voicemailGreeting     String?
+
+  // Emergency keywords for auto-triage
+  emergencyKeywords     String[]              // ["pain", "bleeding", "swelling", "broken"]
+
+  // Thresholds
+  urgentResponseMinutes Int                   @default(30)
+  routineResponseHours  Int                   @default(24)
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  updatedBy             String?               @db.ObjectId
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+
+  @@map("after_hours_settings")
+}
+
+/// EmergencyProtocol - Standardized procedures for emergencies
+model EmergencyProtocol {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+
+  // Protocol details
+  emergencyType         EmergencyType
+  name                  String
+  description           String?
+
+  // Severity defaults
+  typicalSeverity       EmergencySeverity     @default(MEDIUM)
+  maxWaitDays           Int                   @default(2) // Max days before must be seen
+
+  // Triage questions
+  triageQuestions       Json?                 // Array of { question, options: [{ text, severity }] }
+
+  // Instructions
+  selfCareInstructions  String?               // Patient can do at home
+  whenToCall            String?               // When patient should call
+  whenToSeekER          String?               // When to go to ER
+
+  // Media
+  imageUrl              String?
+  videoUrl              String?
+
+  // Versioning
+  version               Int                   @default(1)
+  isActive              Boolean               @default(true)
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  updatedBy             String?               @db.ObjectId
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+
+  @@unique([clinicId, emergencyType])
+  @@index([clinicId])
+  @@index([emergencyType])
+  @@map("emergency_protocols")
+}
+
+/// EmergencyFAQ - Patient-facing emergency FAQ
+model EmergencyFAQ {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+
+  // FAQ content
+  question              String
+  answer                String
+  category              FAQCategory           @default(GENERAL)
+  emergencyType         EmergencyType?        // Related emergency type if applicable
+
+  // Display
+  displayOrder          Int                   @default(0)
+  isPublished           Boolean               @default(true)
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdBy             String?               @db.ObjectId
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([category])
+  @@map("emergency_faqs")
+}
+
+enum FAQCategory {
+  PREVENTION
+  SELF_CARE
+  WHEN_TO_CALL
+  GENERAL
 }
