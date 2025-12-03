@@ -280,7 +280,7 @@ export function PurchaseOrderList() {
               const StatusIcon = statusInfo.icon;
               return (
                 <Link key={po.id} href={`/resources/purchase-orders/${po.id}`}>
-                  <Card className="hover:border-primary-300 transition-colors cursor-pointer">
+                  <Card interactive>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">

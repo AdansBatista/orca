@@ -32,7 +32,7 @@ const cardVariants = cva(
         lg: "p-6",
       },
       interactive: {
-        true: "cursor-pointer hover:border-border",
+        true: "cursor-pointer hover:border-primary-300 hover:shadow-md transition-all",
         false: "",
       },
     },

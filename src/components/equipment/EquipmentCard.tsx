@@ -6,7 +6,6 @@ import type { Equipment, EquipmentType, Supplier } from '@prisma/client';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 type EquipmentWithRelations = Equipment & {
   type: Pick<EquipmentType, 'id' | 'name' | 'code'>;
@@ -33,14 +32,14 @@ const conditionConfig: Record<string, { label: string; color: string }> = {
   CRITICAL: { label: 'Critical', color: 'text-error-700' },
 };
 
-const categoryConfig: Record<string, { label: string; color: string }> = {
-  DIAGNOSTIC: { label: 'Diagnostic', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
-  TREATMENT: { label: 'Treatment', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' },
-  DIGITAL: { label: 'Digital', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400' },
-  CHAIR: { label: 'Chair', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
-  STERILIZATION: { label: 'Sterilization', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' },
-  SAFETY: { label: 'Safety', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
-  OTHER: { label: 'Other', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
+const categoryConfig: Record<string, { label: string; variant: 'info' | 'soft-accent' | 'soft-primary' | 'success' | 'warning' | 'error' | 'ghost' }> = {
+  DIAGNOSTIC: { label: 'Diagnostic', variant: 'info' },
+  TREATMENT: { label: 'Treatment', variant: 'soft-accent' },
+  DIGITAL: { label: 'Digital', variant: 'soft-primary' },
+  CHAIR: { label: 'Chair', variant: 'success' },
+  STERILIZATION: { label: 'Sterilization', variant: 'warning' },
+  SAFETY: { label: 'Safety', variant: 'error' },
+  OTHER: { label: 'Other', variant: 'ghost' },
 };
 
 export function EquipmentCard({ equipment }: EquipmentCardProps) {
@@ -56,7 +55,7 @@ export function EquipmentCard({ equipment }: EquipmentCardProps) {
 
   return (
     <Link href={`/resources/equipment/${equipment.id}`}>
-      <Card className="hover:border-primary-300 transition-colors cursor-pointer h-full">
+      <Card interactive className="h-full">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
@@ -66,9 +65,9 @@ export function EquipmentCard({ equipment }: EquipmentCardProps) {
 
               {/* Type & Category */}
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className={cn('text-xs px-2 py-0.5 rounded-full', category.color)}>
+                <Badge variant={category.variant} size="sm">
                   {category.label}
-                </span>
+                </Badge>
                 <span className="text-xs text-muted-foreground">
                   {equipment.type.name}
                 </span>
@@ -102,7 +101,7 @@ export function EquipmentCard({ equipment }: EquipmentCardProps) {
                 <StatusIcon className="h-3 w-3" />
                 {status.label}
               </Badge>
-              <span className={cn('text-xs font-medium', condition.color)}>
+              <span className={`text-xs font-medium ${condition.color}`}>
                 {condition.label}
               </span>
             </div>

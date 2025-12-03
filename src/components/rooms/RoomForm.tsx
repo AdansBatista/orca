@@ -5,11 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+import { AlertCircle, Loader2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -130,9 +133,10 @@ export function RoomForm({ initialData, roomId, mode }: RoomFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {error && (
-        <Card variant="ghost" className="border-error-200 bg-error-50">
-          <CardContent className="p-4 text-error-700">{error}</CardContent>
-        </Card>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Basic Information */}
@@ -290,6 +294,7 @@ export function RoomForm({ initialData, roomId, mode }: RoomFormProps) {
           Cancel
         </Button>
         <Button type="submit" disabled={submitting}>
+          {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {submitting ? 'Saving...' : mode === 'edit' ? 'Save Changes' : 'Create Room'}
         </Button>
       </div>

@@ -99,16 +99,14 @@ function ViewToggle({ view, onChange }: { view: ViewMode; onChange: (v: ViewMode
           return (
             <Tooltip key={option.value}>
               <TooltipTrigger asChild>
-                <button
+                <Button
+                  variant={isActive ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-7 w-7"
                   onClick={() => onChange(option.value)}
-                  className={`p-1.5 rounded-md transition-all ${
-                    isActive
-                      ? 'bg-background shadow-sm text-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-                  }`}
                 >
                   <Icon className="h-4 w-4" />
-                </button>
+                </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">
                 <p className="font-medium">{option.label}</p>

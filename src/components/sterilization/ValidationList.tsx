@@ -145,7 +145,7 @@ function ValidationCard({ validation }: { validation: ValidationWithEquipment })
 
   return (
     <Link href={`/resources/sterilization/validations/${validation.id}`}>
-      <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+      <Card interactive className="h-full">
         <CardContent className="p-4">
           <div className="space-y-3">
             {/* Header */}

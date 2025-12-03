@@ -63,7 +63,7 @@ function getIndicatorIcon(pass: boolean | null) {
 export function CycleCard({ cycle }: CycleCardProps) {
   return (
     <Link href={`/resources/sterilization/${cycle.id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer">
+      <Card interactive>
         <CardContent className="p-4">
           <div className="space-y-3">
             {/* Header */}

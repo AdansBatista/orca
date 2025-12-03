@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui/pagination';
 
 type SupplierWithCounts = Supplier & {
   _count?: {
@@ -212,30 +213,13 @@ export function SupplierList() {
           </div>
 
           {data && data.totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {((data.page - 1) * data.pageSize) + 1} to{' '}
-                {Math.min(data.page * data.pageSize, data.total)} of {data.total} suppliers
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === data.totalPages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={data.page}
+              totalPages={data.totalPages}
+              total={data.total}
+              pageSize={data.pageSize}
+              onPageChange={setPage}
+            />
           )}
         </>
       )}
@@ -248,7 +232,7 @@ function SupplierCard({ supplier }: { supplier: SupplierWithCounts }) {
 
   return (
     <Link href={`/resources/suppliers/${supplier.id}`}>
-      <Card className="hover:border-primary-300 transition-colors cursor-pointer h-full">
+      <Card interactive className="h-full">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">

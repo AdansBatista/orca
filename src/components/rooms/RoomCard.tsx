@@ -57,7 +57,7 @@ const statusLabels: Record<RoomStatus, string> = {
 export function RoomCard({ room }: RoomCardProps) {
   return (
     <Link href={`/resources/rooms/${room.id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer">
+      <Card interactive>
         <CardContent className="p-4">
           <div className="space-y-3">
             {/* Header */}
