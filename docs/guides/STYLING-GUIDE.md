@@ -339,6 +339,8 @@ Based on 4px base unit (Tailwind default).
 
 ### 2.4 Modals & Dialogs
 
+#### Simple Dialog (confirmations, short forms)
+
 ```tsx
 <Dialog>
   <DialogTrigger asChild>
@@ -349,7 +351,7 @@ Based on 4px base unit (Tailwind default).
       <DialogTitle>Confirm Action</DialogTitle>
       <DialogDescription>This action cannot be undone.</DialogDescription>
     </DialogHeader>
-    <div className="py-4">{/* Dialog content */}</div>
+    <div className="px-6 py-4">{/* Dialog content */}</div>
     <DialogFooter>
       <Button variant="outline">Cancel</Button>
       <Button>Confirm</Button>
@@ -357,6 +359,41 @@ Based on 4px base unit (Tailwind default).
   </DialogContent>
 </Dialog>
 ```
+
+#### Scrollable Dialog (long forms, complex content)
+
+For dialogs with tall content, use `DialogBody` to create a scrollable middle section with sticky header and footer:
+
+```tsx
+import { Dialog, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle } from '@/components/ui/dialog';
+
+<Dialog>
+  <DialogContent className="max-w-2xl">
+    <DialogHeader>
+      <DialogTitle>Edit Settings</DialogTitle>
+      <DialogDescription>Configure your preferences below.</DialogDescription>
+    </DialogHeader>
+    <DialogBody>
+      {/* This content will scroll if it exceeds viewport */}
+      <form className="space-y-6">
+        {/* Form fields... */}
+      </form>
+    </DialogBody>
+    <DialogFooter>
+      <Button variant="outline">Cancel</Button>
+      <Button>Save Changes</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+#### Dialog Structure
+
+| Component       | Purpose                                  | Behavior                        |
+| --------------- | ---------------------------------------- | ------------------------------- |
+| `DialogHeader`  | Title & description                      | Sticky at top, has border       |
+| `DialogBody`    | Main content (forms, lists, etc.)        | Scrollable, flex-1              |
+| `DialogFooter`  | Action buttons                           | Sticky at bottom, has border    |
 
 #### Modal Sizes
 
@@ -374,6 +411,9 @@ Based on 4px base unit (Tailwind default).
 - Close on Escape key
 - Close on backdrop click (unless dangerous action)
 - Stack buttons right-aligned: Cancel, then Primary Action
+- **Height constraint**: Dialogs are constrained to `max-h-[90vh]`
+- **For tall content**: Use `DialogBody` wrapper - header stays sticky at top, footer stays sticky at bottom, body scrolls
+- **For simple content**: Content can be placed directly between header and footer with `px-6 py-4` classes
 
 ### 2.5 Tables & Data Display
 

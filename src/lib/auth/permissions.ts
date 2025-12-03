@@ -3,6 +3,11 @@ import { ROLE_PERMISSIONS, ROLE_HIERARCHY, type PermissionCode } from './types';
 
 /**
  * Check if a role has a specific permission
+ * Supports:
+ * - Wildcard '*' (all permissions)
+ * - Resource wildcard 'resource:*' (all actions on resource)
+ * - Legacy levels: view < edit < full
+ * - CRUD actions: read, create, update, delete, manage
  */
 export function hasPermission(
   role: UserRole,
@@ -16,26 +21,48 @@ export function hasPermission(
   }
 
   // Parse the required permission
-  const [area, requiredLevel] = requiredPermission.split(':');
+  const [area, requiredAction] = requiredPermission.split(':');
 
   // Check for exact match
   if (permissions.includes(requiredPermission)) {
     return true;
   }
 
-  // Check for higher permission levels
-  // full > edit > view > none
-  const levelHierarchy = ['view', 'edit', 'full'];
-  const requiredIndex = levelHierarchy.indexOf(requiredLevel);
-
-  if (requiredIndex === -1) {
-    return false;
+  // Check for resource wildcard (e.g., 'booking:*' grants 'booking:read')
+  if (permissions.includes(`${area}:*`)) {
+    return true;
   }
 
-  // Check if user has a higher level for this area
-  for (let i = requiredIndex; i < levelHierarchy.length; i++) {
-    if (permissions.includes(`${area}:${levelHierarchy[i]}`)) {
-      return true;
+  // Check for legacy permission levels (view < edit < full)
+  const levelHierarchy = ['view', 'edit', 'full'];
+  const requiredLevelIndex = levelHierarchy.indexOf(requiredAction);
+
+  if (requiredLevelIndex !== -1) {
+    // Check if user has a higher level for this area
+    for (let i = requiredLevelIndex; i < levelHierarchy.length; i++) {
+      if (permissions.includes(`${area}:${levelHierarchy[i]}`)) {
+        return true;
+      }
+    }
+  }
+
+  // Map CRUD actions to legacy levels for backwards compatibility
+  // read -> view, create/update -> edit, delete/manage -> full
+  const crudToLegacy: Record<string, string> = {
+    read: 'view',
+    create: 'edit',
+    update: 'edit',
+    delete: 'full',
+    manage: 'full',
+  };
+
+  const mappedLevel = crudToLegacy[requiredAction];
+  if (mappedLevel) {
+    const mappedIndex = levelHierarchy.indexOf(mappedLevel);
+    for (let i = mappedIndex; i < levelHierarchy.length; i++) {
+      if (permissions.includes(`${area}:${levelHierarchy[i]}`)) {
+        return true;
+      }
     }
   }
 

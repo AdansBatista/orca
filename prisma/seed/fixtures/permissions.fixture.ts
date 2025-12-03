@@ -25,6 +25,8 @@ export const PERMISSION_RESOURCES = [
   'maintenance',
   'rooms',
   'sterilization',
+  // Booking & Scheduling
+  'booking',
 ] as const;
 
 export const PERMISSION_ACTIONS = [
@@ -66,6 +68,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'maintenance:*',
     'rooms:*',
     'sterilization:*',
+    // Booking & Scheduling
+    'booking:*',
   ],
 
   doctor: [
@@ -85,6 +89,10 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'maintenance:create',
     'rooms:read',
     'sterilization:read',
+    // Booking & Scheduling (view, create, modify)
+    'booking:read',
+    'booking:create',
+    'booking:update',
   ],
 
   clinical_staff: [
@@ -106,6 +114,10 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'sterilization:read',
     'sterilization:create',
     'sterilization:update',
+    // Booking & Scheduling (view, create, modify for clinical duties)
+    'booking:read',
+    'booking:create',
+    'booking:update',
   ],
 
   front_desk: [
@@ -119,6 +131,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     // Resources Management (read access for scheduling rooms/equipment)
     'equipment:read',
     'rooms:read',
+    // Booking & Scheduling (full access for scheduling duties)
+    'booking:*',
   ],
 
   billing: [
@@ -127,6 +141,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'insurance:*',
     'reports:read',
     'appointments:read',
+    // Booking & Scheduling (view only for billing context)
+    'booking:read',
   ],
 
   read_only: [
@@ -134,6 +150,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'appointments:read',
     'treatment:read',
     'reports:read',
+    // Booking & Scheduling (view only)
+    'booking:read',
   ],
 };
 

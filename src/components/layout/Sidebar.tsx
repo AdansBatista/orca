@@ -136,7 +136,7 @@ const defaultNavGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", icon: Home },
       { label: "Patients", href: "/patients", icon: Users },
-      { label: "Schedule", href: "/schedule", icon: Calendar },
+      { label: "Booking", href: "/booking", icon: Calendar },
       { label: "Treatments", href: "/treatments", icon: ClipboardList },
     ],
   },

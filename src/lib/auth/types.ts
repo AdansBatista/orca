@@ -59,10 +59,12 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
 
 /**
  * Default permissions by role
+ * Supports both legacy levels (view/edit/full) and CRUD actions (read/create/update/delete/manage)
  */
 export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
   super_admin: ['*'], // All permissions
   clinic_admin: [
+    // Legacy levels
     'patients:full',
     'appointments:full',
     'treatments:full',
@@ -77,8 +79,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'roles:full',
     'audit:view',
     'schedule:full',
+    // CRUD actions for new modules
+    'patients:*',
+    'booking:*',
+    'equipment:*',
+    'suppliers:*',
+    'maintenance:*',
+    'rooms:*',
+    'sterilization:*',
+    'inventory:*',
   ],
   doctor: [
+    // Legacy levels
     'patients:full',
     'appointments:full',
     'treatments:full',
@@ -87,32 +99,64 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'documents:full',
     'messages:full',
     'staff:view',
+    // CRUD actions
+    'patients:*',
+    'booking:read',
+    'booking:create',
+    'booking:update',
+    'equipment:read',
+    'rooms:read',
   ],
   clinical_staff: [
+    // Legacy levels
     'patients:edit',
     'appointments:edit',
     'treatments:view',
     'documents:edit',
     'messages:view',
     'staff:view',
+    // CRUD actions
+    'patients:read',
+    'patients:update',
+    'booking:read',
+    'booking:create',
+    'booking:update',
+    'equipment:read',
+    'rooms:read',
+    'sterilization:read',
+    'sterilization:create',
+    'sterilization:update',
   ],
   front_desk: [
+    // Legacy levels
     'patients:edit',
     'appointments:full',
     'billing:view',
     'documents:view',
     'messages:full',
     'staff:view',
+    // CRUD actions
+    'patients:create',
+    'patients:read',
+    'patients:update',
+    'booking:*',
+    'equipment:read',
+    'rooms:read',
   ],
   billing: [
+    // Legacy levels
     'patients:view',
     'appointments:view',
     'billing:full',
     'reports:view',
     'documents:view',
     'staff:view',
+    // CRUD actions
+    'patients:read',
+    'booking:read',
   ],
   read_only: [
+    // Legacy levels
     'patients:view',
     'appointments:view',
     'treatments:view',
@@ -120,5 +164,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'reports:view',
     'documents:view',
     'staff:view',
+    // CRUD actions
+    'patients:read',
+    'booking:read',
   ],
 };

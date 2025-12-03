@@ -173,13 +173,63 @@ await db.auditLog.create({
 
 ## MongoDB/Prisma Soft Delete
 
-### deletedAt Must Be Explicitly Set to null
+### Querying for null Values in MongoDB
 
-**Problem:** When seeding data, optional `DateTime?` fields like `deletedAt` may not be properly set to `null`, causing queries with `deletedAt: null` filter to return no results.
+**Problem:** MongoDB handles `null` queries differently than expected. When querying `{ deletedAt: null }`, it may return 0 results even when documents have `deletedAt` explicitly set to `null`.
 
-**Symptom:** Seed data exists in database but API returns empty results. Debug shows `activeEquipment: 0` while `totalEquipment: 15`.
+**Symptom:** Queries with `deletedAt: null` return empty results, but removing the filter returns all expected records.
 
-**Solution:** Always explicitly set `deletedAt: null` when creating records that use soft-delete:
+**Root Cause:** MongoDB's null query semantics differ - `{ field: null }` doesn't always match documents where the field is explicitly `null`.
+
+**Solution:** Use `OR` with `isSet: false` for reliable null checks in MongoDB:
+
+```typescript
+// ✅ CORRECT - MongoDB-compatible null check
+const activeItems = await db.patient.findMany({
+  where: {
+    clinicId,
+    OR: [
+      { deletedAt: { isSet: false } },  // Field doesn't exist
+      { deletedAt: null },              // Field is explicitly null
+    ],
+  },
+});
+
+// ❌ WRONG - May return 0 results in MongoDB
+const activeItems = await db.patient.findMany({
+  where: {
+    clinicId,
+    deletedAt: null,  // This often fails!
+  },
+});
+```
+
+**Complex Query Example (with other OR conditions):**
+
+```typescript
+// When combining with other OR conditions, use AND
+const conflicts = await db.appointment.findFirst({
+  where: {
+    providerId,
+    status: { notIn: ['CANCELLED', 'NO_SHOW'] },
+    AND: [
+      { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
+      {
+        OR: [
+          { startTime: { lte: start }, endTime: { gt: start } },
+          { startTime: { lt: end }, endTime: { gte: end } },
+        ],
+      },
+    ],
+  },
+});
+```
+
+### Creating Records - Explicitly Set deletedAt
+
+**Problem:** When seeding data, omitting `deletedAt` may cause issues with subsequent queries.
+
+**Solution:** Always explicitly set `deletedAt: null` when creating records:
 
 ```typescript
 // ✅ CORRECT - Explicitly set deletedAt
@@ -187,16 +237,7 @@ await db.equipment.create({
   data: {
     name: 'Equipment',
     // ... other fields
-    deletedAt: null, // Must be explicit for MongoDB
-  },
-});
-
-// ❌ WRONG - Omitting deletedAt may cause filter issues
-await db.equipment.create({
-  data: {
-    name: 'Equipment',
-    // ... other fields
-    // deletedAt not set - may not be null!
+    deletedAt: null, // Explicit for clarity
   },
 });
 ```
@@ -274,18 +315,44 @@ const categoryOptions = [
 
 ---
 
+## Next.js Build Issues
+
+### Html Import Error in Production Build
+
+**Problem:** Production build (`npm run build`) fails with "<Html> should not be imported outside of pages/_document" error.
+
+**Error:**
+```
+Error: <Html> should not be imported outside of pages/_document.
+Read more: https://nextjs.org/docs/messages/no-document-import-in-page
+    at x (c:\dev\orca\.next\server\chunks\8548.js:6:1351)
+Error occurred prerendering page "/404"
+```
+
+**Status:** Under investigation. Dev server (`npm run dev`) works correctly.
+
+**Workaround:** Use `npm run dev` for development. This issue affects production builds only.
+
+**Possible Causes:**
+1. Conflict between next-themes and Next.js 15 App Router
+2. Bundle optimization issues with theme provider
+3. Pages/App Router hybrid configuration issues
+
+---
+
 ## Quick Checklist for New Features
 
 Before committing, verify:
 
-1. [ ] `npm run build` passes without errors
+1. [ ] `npx tsc --noEmit` passes without errors
 2. [ ] All API routes use `withAuth` with typed params if dynamic
 3. [ ] Forms using Zod + react-hook-form have resolver cast
 4. [ ] Any `useSearchParams` usage is wrapped in Suspense
 5. [ ] Prisma JSON fields are properly cast
 6. [ ] Zod error handling uses `.issues` not `.errors`
 7. [ ] Select.Item values are never empty strings (use `'__all__'` for "All" options)
+8. [ ] MongoDB null queries use `OR: [{ field: { isSet: false } }, { field: null }]`
 
 ---
 
-**Last Updated:** 2025-12-02
+**Last Updated:** 2025-12-03

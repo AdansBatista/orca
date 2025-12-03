@@ -7,6 +7,8 @@ import { seedStaff, clearStaff } from './staff.seed';
 import { seedScheduling, clearScheduling } from './scheduling.seed';
 import { seedPerformance, clearPerformance } from './performance.seed';
 import { seedResources, clearResources } from './resources.seed';
+import { seedPatients, clearPatients } from './patients.seed';
+import { seedBooking, clearBooking } from './booking.seed';
 
 /**
  * Registry of all seedable areas with their dependencies.
@@ -88,27 +90,24 @@ export const areaRegistry: SeedArea[] = [
   // ============================================================================
   // PHASE 2: Core Operations
   // ============================================================================
-  // {
-  //   id: 'patients',
-  //   name: 'Patients',
-  //   phase: 2,
-  //   dependencies: ['auth:users'],
-  //   seed: seedPatients,
-  // },
-  // {
-  //   id: 'booking:types',
-  //   name: 'Appointment Types',
-  //   phase: 2,
-  //   dependencies: ['core'],
-  //   seed: seedAppointmentTypes,
-  // },
-  // {
-  //   id: 'booking:appointments',
-  //   name: 'Appointments',
-  //   phase: 2,
-  //   dependencies: ['patients', 'staff', 'booking:types'],
-  //   seed: seedAppointments,
-  // },
+  {
+    id: 'patients',
+    name: 'Patients (Basic)',
+    phase: 2,
+    dependencies: ['core', 'auth:users'],
+    seed: seedPatients,
+    clear: clearPatients,
+    // NOTE: This is a temporary basic seeder for booking testing.
+    // Will be expanded when Patient Management area is implemented.
+  },
+  {
+    id: 'booking',
+    name: 'Booking (Appointment Types & Appointments)',
+    phase: 2,
+    dependencies: ['core', 'auth:users', 'staff', 'resources', 'patients'],
+    seed: seedBooking,
+    clear: clearBooking,
+  },
 
   // ============================================================================
   // PHASE 3: Clinical

@@ -32,6 +32,10 @@ model Clinic {
   transfersFrom   InventoryTransfer[] @relation("TransfersFrom")
   transfersTo     InventoryTransfer[] @relation("TransfersTo")
 
+  // Booking relations
+  appointmentTypes AppointmentType[]
+  appointments     Appointment[]
+
   @@map("clinics")
 }
 
@@ -239,6 +243,9 @@ model Patient {
   createdBy String? @db.ObjectId
   updatedBy String? @db.ObjectId
 
+  // Booking relations
+  appointments Appointment[]
+
   @@index([clinicId])
   @@index([lastName, firstName])
   @@map("patients")
@@ -327,6 +334,9 @@ model StaffProfile {
   ceCredits        CECredit[]
   recognitions     Recognition[]
   performanceMetrics PerformanceMetric[]
+
+  // Booking relations (when staff is a provider)
+  appointmentsAsProvider Appointment[] @relation("AppointmentProvider")
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -1973,6 +1983,9 @@ model Room {
   chairs          TreatmentChair[]
   roomEquipment   RoomEquipment[]
 
+  // Booking relations
+  appointments    Appointment[]
+
   @@unique([clinicId, roomNumber])
   @@index([clinicId])
   @@index([roomType])
@@ -2043,6 +2056,9 @@ model TreatmentChair {
 
   // Relations
   room            Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  // Booking relations
+  appointments    Appointment[]
 
   @@unique([clinicId, chairNumber])
   @@index([clinicId])
@@ -3572,4 +3588,166 @@ enum WasteType {
   RECALLED
   CONTAMINATED
   OTHER
+}
+
+// =============================================================================
+// BOOKING & SCHEDULING AREA - Appointments, calendar management, scheduling
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Appointment Types - Configurable types of appointments
+// -----------------------------------------------------------------------------
+
+/// AppointmentType - Defines types of appointments (Scan, Adjustment, Bonding, etc.)
+model AppointmentType {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String   @db.ObjectId
+
+  // Identification
+  code             String   // Unique code within clinic (e.g., "SCAN", "ADJ", "BOND")
+  name             String   // Display name (e.g., "Scan Appointment", "Adjustment")
+  description      String?
+
+  // Duration settings (in minutes)
+  defaultDuration  Int      // Default appointment duration
+  minDuration      Int?     // Minimum allowed duration
+  maxDuration      Int?     // Maximum allowed duration
+
+  // Visual settings
+  color            String   // Hex color for calendar display (e.g., "#3B82F6")
+  icon             String?  // Icon identifier
+
+  // Resource requirements
+  requiresChair    Boolean  @default(true)  // Requires treatment chair
+  requiresRoom     Boolean  @default(false) // Requires specific room
+
+  // Buffer times (in minutes)
+  prepTime         Int      @default(0)     // Preparation time before
+  cleanupTime      Int      @default(0)     // Cleanup time after
+
+  // Configuration
+  isActive         Boolean  @default(true)  // Available for booking
+  allowOnline      Boolean  @default(false) // Can be booked via patient portal
+  sortOrder        Int      @default(0)     // Display order in lists
+
+  // Timestamps & Audit
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?                // Soft delete
+  createdBy        String?  @db.ObjectId
+  updatedBy        String?  @db.ObjectId
+
+  // Relations
+  clinic           Clinic   @relation(fields: [clinicId], references: [id])
+  appointments     Appointment[]
+
+  @@unique([clinicId, code])
+  @@index([clinicId])
+  @@index([isActive])
+  @@map("appointment_types")
+}
+
+// -----------------------------------------------------------------------------
+// Appointments - Core appointment records
+// -----------------------------------------------------------------------------
+
+/// Appointment status lifecycle
+enum AppointmentStatus {
+  SCHEDULED       // Appointment booked, not yet confirmed
+  CONFIRMED       // Patient confirmed attendance
+  ARRIVED         // Patient has arrived at clinic
+  IN_PROGRESS     // Appointment in progress
+  COMPLETED       // Appointment completed
+  NO_SHOW         // Patient did not show up
+  CANCELLED       // Appointment cancelled
+}
+
+/// Confirmation status for appointment
+enum ConfirmationStatus {
+  UNCONFIRMED     // No confirmation sent yet
+  PENDING         // Confirmation sent, awaiting response
+  CONFIRMED       // Patient confirmed
+  DECLINED        // Patient declined, needs reschedule
+}
+
+/// Source of appointment booking
+enum AppointmentSource {
+  STAFF           // Booked by staff in-person or phone
+  PHONE           // Specifically phone booking
+  ONLINE          // Patient self-service booking
+  WAITLIST        // Booked from waitlist opening
+  TREATMENT_PLAN  // Auto-generated from treatment plan
+  RECALL          // Generated from recall system
+}
+
+/// Appointment - Scheduled patient appointment
+model Appointment {
+  id                   String             @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId             String             @db.ObjectId
+  patientId            String             @db.ObjectId
+
+  // Timing
+  startTime            DateTime
+  endTime              DateTime
+  duration             Int                // Duration in minutes
+
+  // Type and assignment
+  appointmentTypeId    String             @db.ObjectId
+  providerId           String             @db.ObjectId
+  chairId              String?            @db.ObjectId
+  roomId               String?            @db.ObjectId
+
+  // Status tracking
+  status               AppointmentStatus      @default(SCHEDULED)
+  confirmationStatus   ConfirmationStatus     @default(UNCONFIRMED)
+
+  // Confirmation details
+  confirmedAt          DateTime?
+  confirmedBy          String?            // "patient", "staff", "auto"
+
+  // Check-in flow
+  arrivedAt            DateTime?
+  checkedInBy          String?            @db.ObjectId
+  startedAt            DateTime?
+  completedAt          DateTime?
+
+  // Cancellation details
+  cancelledAt          DateTime?
+  cancelledBy          String?            @db.ObjectId
+  cancellationReason   String?
+
+  // No-show tracking
+  markedNoShowAt       DateTime?
+  noShowReason         String?
+
+  // Booking info
+  source               AppointmentSource  @default(STAFF)
+  bookedBy             String             @db.ObjectId
+  bookedAt             DateTime           @default(now())
+
+  // Notes
+  notes                String?            // Internal staff notes
+  patientNotes         String?            // Notes visible to patient
+
+  // Timestamps & Audit
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deletedAt            DateTime?          // Soft delete
+
+  // Relations
+  clinic               Clinic             @relation(fields: [clinicId], references: [id])
+  patient              Patient            @relation(fields: [patientId], references: [id])
+  appointmentType      AppointmentType    @relation(fields: [appointmentTypeId], references: [id])
+  provider             StaffProfile       @relation("AppointmentProvider", fields: [providerId], references: [id])
+  chair                TreatmentChair?    @relation(fields: [chairId], references: [id])
+  room                 Room?              @relation(fields: [roomId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([providerId])
+  @@index([appointmentTypeId])
+  @@index([startTime])
+  @@index([status])
+  @@index([chairId])
+  @@map("appointments")
 }
