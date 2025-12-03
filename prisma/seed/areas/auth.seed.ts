@@ -61,7 +61,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
 
   // Get role IDs for assignment
   const roles = await db.role.findMany();
-  const roleMap = new Map(roles.map((r) => [r.code, r.id]));
+  const roleMap = new Map(roles.map((r: any) => [r.code, r.id]));
 
   // Password hash for "Password123!" - generated with bcrypt
   const passwordHash = '$2b$10$GrGlAYs4z/F5A2CVCEZO0OXe5zUfD50zyl.t4ubR9DWBiJmoVYnli';

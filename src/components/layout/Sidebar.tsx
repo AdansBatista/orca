@@ -41,6 +41,10 @@ import {
   List,
   BoxesIcon,
   FileBarChart,
+  Boxes,
+  ShoppingCart,
+  ArrowRightLeft,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -167,6 +171,16 @@ const defaultNavGroups: NavGroup[] = [
               { label: "Cycles", href: "/resources/sterilization", icon: List },
               { label: "Packages", href: "/resources/sterilization/packages", icon: BoxesIcon },
               { label: "Reports", href: "/resources/sterilization/reports", icon: FileBarChart },
+            ],
+          },
+          {
+            label: "Inventory",
+            href: "/resources/inventory",
+            icon: Boxes,
+            children: [
+              { label: "Items", href: "/resources/inventory", icon: Boxes },
+              { label: "Purchase Orders", href: "/resources/purchase-orders", icon: ShoppingCart },
+              { label: "Transfers", href: "/resources/transfers", icon: ArrowRightLeft },
             ],
           },
           { label: "Maintenance", href: "/resources/maintenance", icon: Wrench },

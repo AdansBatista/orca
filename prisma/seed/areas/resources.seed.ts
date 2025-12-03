@@ -17,6 +17,10 @@ import {
   getRandomBIReader,
   generateValidationCertNumber,
 } from '../fixtures/sterilization.fixture';
+import {
+  INVENTORY_ITEMS,
+  INVENTORY_SUPPLIERS,
+} from '../fixtures/inventory.fixture';
 
 /**
  * Seed resources data: Equipment types, suppliers, and sample equipment.
@@ -786,6 +790,490 @@ export async function seedResources(ctx: SeedContext): Promise<void> {
 
     logger.info(`  Created ${scheduleCount} validation schedules`);
     logger.info(`  Created ${validationCount} validation records`);
+
+    // ============================================================================
+    // 11. SEED INVENTORY ITEMS
+    // ============================================================================
+    logger.info('Creating inventory items...');
+
+    // Get suppliers for this clinic (we'll need them for linking)
+    const inventorySuppliers = await db.supplier.findMany({
+      where: { clinicId: primaryClinicId, deletedAt: null },
+    });
+
+    // Map supplier codes to IDs
+    const supplierCodeMap = new Map(inventorySuppliers.map((s) => [s.code, s.id]));
+
+    // Also create inventory-specific suppliers if they don't exist
+    for (const supplierData of INVENTORY_SUPPLIERS) {
+      if (!supplierCodeMap.has(supplierData.code)) {
+        const existingSupplier = await db.supplier.findFirst({
+          where: { clinicId: primaryClinicId, code: supplierData.code },
+        });
+
+        if (!existingSupplier) {
+          const supplier = await db.supplier.create({
+            data: {
+              clinicId: primaryClinicId,
+              code: supplierData.code,
+              name: supplierData.name,
+              contactName: `${supplierData.name} Support`,
+              email: supplierData.email,
+              phone: supplierData.phone,
+              website: supplierData.website,
+              notes: `Default lead time: ${supplierData.defaultLeadTimeDays} days. Categories: ${supplierData.categories.join(', ')}`,
+              status: 'ACTIVE',
+              createdBy,
+              updatedBy: createdBy,
+              deletedAt: null,
+            },
+          });
+          supplierCodeMap.set(supplierData.code, supplier.id);
+          idTracker.add('Supplier', supplier.id, primaryClinicId);
+          totalCreated++;
+        } else {
+          supplierCodeMap.set(supplierData.code, existingSupplier.id);
+        }
+      }
+    }
+
+    let inventoryItemCount = 0;
+    const now3 = new Date();
+
+    for (const itemData of INVENTORY_ITEMS) {
+      // Check if item already exists by SKU
+      const existingItem = await db.inventoryItem.findFirst({
+        where: { clinicId: primaryClinicId, sku: itemData.sku },
+      });
+
+      if (existingItem) {
+        continue;
+      }
+
+      // Find appropriate supplier based on manufacturer
+      let supplierId: string | null = null;
+      if (itemData.manufacturer) {
+        // Map manufacturer to supplier code
+        const manufacturerToSupplier: Record<string, string> = {
+          '3M': '3M-UNITEK',
+          'Ormco Corporation': 'ORMCO',
+          'American Orthodontics': 'AMERICAN-ORTHO',
+          'TP Orthodontics': 'TP-ORTHO',
+          'Dentsply Sirona': 'HENRY-SCHEIN',
+          'Halyard Health': 'PATTERSON',
+          'Crosstex International': 'PATTERSON',
+          Dynarex: 'PATTERSON',
+          Metrex: 'HENRY-SCHEIN',
+          'GOJO Industries': 'PATTERSON',
+          'Reliance Orthodontics': 'HENRY-SCHEIN',
+        };
+        const supplierCode = manufacturerToSupplier[itemData.manufacturer] || 'HENRY-SCHEIN';
+        supplierId = supplierCodeMap.get(supplierCode) || null;
+      }
+
+      // Create the inventory item
+      // NOTE: deletedAt must be explicitly set to null for MongoDB soft-delete queries to work
+      const inventoryItem = await db.inventoryItem.create({
+        data: {
+          clinicId: primaryClinicId,
+          sku: itemData.sku,
+          name: itemData.name,
+          description: itemData.description,
+          category: itemData.category,
+          status: 'ACTIVE',
+          brand: itemData.brand,
+          manufacturer: itemData.manufacturer,
+          supplierId,
+          supplierSku: itemData.sku, // Same as internal SKU for seed data
+          unitOfMeasure: itemData.unitOfMeasure,
+          unitsPerPackage: itemData.unitsPerPackage,
+          packageDescription: itemData.packageDescription,
+          unitCost: itemData.unitCost,
+          lastCost: itemData.unitCost,
+          averageCost: itemData.unitCost,
+          currentStock: itemData.initialStock,
+          reservedStock: 0,
+          availableStock: itemData.initialStock,
+          reorderPoint: itemData.reorderPoint,
+          reorderQuantity: itemData.reorderQuantity,
+          safetyStock: itemData.safetyStock,
+          leadTimeDays: itemData.leadTimeDays,
+          trackLots: itemData.trackLots,
+          trackExpiry: itemData.trackExpiry,
+          storageRequirements: itemData.storageRequirements,
+          size: itemData.size,
+          color: itemData.color,
+          material: itemData.material,
+          createdBy,
+          updatedBy: createdBy,
+          deletedAt: null, // Must be explicit for MongoDB
+        },
+      });
+
+      idTracker.add('InventoryItem', inventoryItem.id, primaryClinicId);
+      inventoryItemCount++;
+      totalCreated++;
+
+      // Create initial stock movement
+      await db.stockMovement.create({
+        data: {
+          clinicId: primaryClinicId,
+          itemId: inventoryItem.id,
+          movementType: 'ADJUSTMENT_ADD',
+          quantity: itemData.initialStock,
+          previousStock: 0,
+          newStock: itemData.initialStock,
+          unitCost: itemData.unitCost,
+          reason: 'Initial inventory setup',
+          notes: 'Seed data - opening balance',
+          createdBy: createdBy!,
+        },
+      });
+      totalCreated++;
+
+      // Create lot if tracking lots and has expiry
+      if (itemData.trackLots && itemData.trackExpiry) {
+        const expirationDate = new Date(now3);
+        expirationDate.setMonth(expirationDate.getMonth() + 12 + Math.floor(Math.random() * 12)); // 12-24 months out
+
+        const lotNumber = `LOT-${now3.getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+
+        await db.inventoryLot.create({
+          data: {
+            clinicId: primaryClinicId,
+            itemId: inventoryItem.id,
+            lotNumber,
+            initialQuantity: itemData.initialStock,
+            currentQuantity: itemData.initialStock,
+            expirationDate,
+            status: 'AVAILABLE',
+            receivedDate: now3,
+            unitCost: itemData.unitCost,
+          },
+        });
+        totalCreated++;
+      }
+
+      // Create reorder alert if below reorder point (for demo)
+      if (itemData.initialStock < itemData.reorderPoint) {
+        await db.reorderAlert.create({
+          data: {
+            clinicId: primaryClinicId,
+            itemId: inventoryItem.id,
+            alertType: itemData.initialStock <= itemData.safetyStock ? 'CRITICAL_STOCK' : 'LOW_STOCK',
+            alertDate: now3,
+            currentStock: itemData.initialStock,
+            reorderPoint: itemData.reorderPoint,
+            suggestedQuantity: itemData.reorderQuantity,
+            status: 'ACTIVE',
+          },
+        });
+        totalCreated++;
+      }
+    }
+
+    logger.info(`  Created ${inventoryItemCount} inventory items with stock movements`);
+
+    // ============================================================================
+    // 12. SEED SAMPLE PURCHASE ORDERS
+    // ============================================================================
+    if (config.mode === 'full') {
+      logger.info('Creating sample purchase orders...');
+
+      const inventoryItems = await db.inventoryItem.findMany({
+        where: { clinicId: primaryClinicId, deletedAt: null },
+        take: 10,
+      });
+
+      // Get a supplier
+      const poSupplier = inventorySuppliers[0] || (await db.supplier.findFirst({
+        where: { clinicId: primaryClinicId, deletedAt: null },
+      }));
+
+      if (poSupplier && inventoryItems.length > 0) {
+        // Create a completed PO (received)
+        const completedPO = await db.purchaseOrder.create({
+          data: {
+            clinicId: primaryClinicId,
+            supplierId: poSupplier.id,
+            poNumber: `PO-${now3.getFullYear()}-00001`,
+            status: 'RECEIVED',
+            orderDate: new Date(now3.getTime() - 30 * 24 * 60 * 60 * 1000),
+            expectedDate: new Date(now3.getTime() - 25 * 24 * 60 * 60 * 1000),
+            receivedDate: new Date(now3.getTime() - 23 * 24 * 60 * 60 * 1000),
+            subtotal: 500,
+            taxAmount: 40,
+            shippingAmount: 25,
+            totalAmount: 565,
+            paymentTerms: 'Net 30',
+            notes: 'Regular monthly supply order',
+            createdBy: createdBy!,
+            updatedBy: createdBy,
+          },
+        });
+        idTracker.add('PurchaseOrder', completedPO.id, primaryClinicId);
+        totalCreated++;
+
+        // Add items to completed PO
+        for (let i = 0; i < Math.min(3, inventoryItems.length); i++) {
+          const item = inventoryItems[i];
+          await db.purchaseOrderItem.create({
+            data: {
+              purchaseOrderId: completedPO.id,
+              itemId: item.id,
+              lineNumber: i + 1,
+              description: item.name,
+              sku: item.sku,
+              supplierSku: item.supplierSku,
+              orderedQuantity: item.reorderQuantity || 10,
+              receivedQuantity: item.reorderQuantity || 10,
+              unitPrice: item.unitCost || 10,
+              lineTotal: (item.reorderQuantity || 10) * Number(item.unitCost || 10),
+              status: 'RECEIVED',
+            },
+          });
+          totalCreated++;
+        }
+
+        // Create a pending PO (submitted, waiting for delivery)
+        const pendingPO = await db.purchaseOrder.create({
+          data: {
+            clinicId: primaryClinicId,
+            supplierId: poSupplier.id,
+            poNumber: `PO-${now3.getFullYear()}-00002`,
+            status: 'SUBMITTED',
+            orderDate: new Date(now3.getTime() - 5 * 24 * 60 * 60 * 1000),
+            expectedDate: new Date(now3.getTime() + 2 * 24 * 60 * 60 * 1000),
+            subtotal: 350,
+            taxAmount: 28,
+            shippingAmount: 15,
+            totalAmount: 393,
+            paymentTerms: 'Net 30',
+            notes: 'Urgent restock order',
+            createdBy: createdBy!,
+            updatedBy: createdBy,
+          },
+        });
+        idTracker.add('PurchaseOrder', pendingPO.id, primaryClinicId);
+        totalCreated++;
+
+        // Add items to pending PO
+        for (let i = 3; i < Math.min(6, inventoryItems.length); i++) {
+          const item = inventoryItems[i];
+          await db.purchaseOrderItem.create({
+            data: {
+              purchaseOrderId: pendingPO.id,
+              itemId: item.id,
+              lineNumber: i - 2,
+              description: item.name,
+              sku: item.sku,
+              supplierSku: item.supplierSku,
+              orderedQuantity: item.reorderQuantity || 10,
+              receivedQuantity: 0,
+              unitPrice: item.unitCost || 10,
+              lineTotal: (item.reorderQuantity || 10) * Number(item.unitCost || 10),
+              status: 'ORDERED',
+            },
+          });
+          totalCreated++;
+        }
+
+        // Create a draft PO
+        const draftPO = await db.purchaseOrder.create({
+          data: {
+            clinicId: primaryClinicId,
+            supplierId: poSupplier.id,
+            poNumber: `PO-${now3.getFullYear()}-00003`,
+            status: 'DRAFT',
+            subtotal: 0,
+            totalAmount: 0,
+            createdBy: createdBy!,
+            updatedBy: createdBy,
+          },
+        });
+        idTracker.add('PurchaseOrder', draftPO.id, primaryClinicId);
+        totalCreated++;
+
+        logger.info('  Created 3 sample purchase orders');
+      }
+
+      // ============================================================================
+      // 13. SEED INVENTORY TRANSFERS
+      // ============================================================================
+      logger.info('Creating sample inventory transfers...');
+
+      // Only create transfers if we have multiple clinics
+      if (clinicIds.length >= 2) {
+        const secondaryClinicId = clinicIds[1];
+        const secondaryClinic = await db.clinic.findUnique({ where: { id: secondaryClinicId } });
+
+        const transferItems = await db.inventoryItem.findMany({
+          where: { clinicId: primaryClinicId, deletedAt: null, availableStock: { gt: 5 } },
+          take: 8,
+        });
+
+        if (transferItems.length > 0) {
+          let transferCount = 0;
+
+          // Transfer 1: Completed transfer (RECEIVED)
+          const completedTransfer = await db.inventoryTransfer.create({
+            data: {
+              fromClinicId: primaryClinicId,
+              toClinicId: secondaryClinicId,
+              transferNumber: `TRF-${now3.getFullYear()}-00001`,
+              status: 'RECEIVED',
+              reason: 'Stock balancing between clinics',
+              notes: 'Monthly stock transfer to balance inventory levels',
+              isUrgent: false,
+              requestedDate: new Date(now3.getTime() - 14 * 24 * 60 * 60 * 1000),
+              approvedDate: new Date(now3.getTime() - 13 * 24 * 60 * 60 * 1000),
+              shippedDate: new Date(now3.getTime() - 12 * 24 * 60 * 60 * 1000),
+              receivedDate: new Date(now3.getTime() - 10 * 24 * 60 * 60 * 1000),
+              requestedBy: createdBy!,
+              approvedBy: createdBy,
+              shippedBy: createdBy,
+              receivedBy: createdBy,
+              shippingMethod: 'Ground',
+              trackingNumber: 'TRK123456789',
+              carrierName: 'FedEx',
+            },
+          });
+          idTracker.add('InventoryTransfer', completedTransfer.id, primaryClinicId);
+          transferCount++;
+          totalCreated++;
+
+          // Add items to completed transfer
+          for (let i = 0; i < Math.min(2, transferItems.length); i++) {
+            const item = transferItems[i];
+            await db.transferItem.create({
+              data: {
+                transferId: completedTransfer.id,
+                itemId: item.id,
+                requestedQuantity: 5,
+                approvedQuantity: 5,
+                shippedQuantity: 5,
+                receivedQuantity: 5,
+                status: 'RECEIVED',
+              },
+            });
+            totalCreated++;
+          }
+
+          // Transfer 2: In transit
+          const inTransitTransfer = await db.inventoryTransfer.create({
+            data: {
+              fromClinicId: primaryClinicId,
+              toClinicId: secondaryClinicId,
+              transferNumber: `TRF-${now3.getFullYear()}-00002`,
+              status: 'IN_TRANSIT',
+              reason: 'Urgent supply request',
+              notes: 'Expedited transfer for urgent patient needs',
+              isUrgent: true,
+              urgentReason: 'Critical patient appointment scheduled',
+              requestedDate: new Date(now3.getTime() - 3 * 24 * 60 * 60 * 1000),
+              approvedDate: new Date(now3.getTime() - 2 * 24 * 60 * 60 * 1000),
+              shippedDate: new Date(now3.getTime() - 1 * 24 * 60 * 60 * 1000),
+              requestedBy: createdBy!,
+              approvedBy: createdBy,
+              shippedBy: createdBy,
+              shippingMethod: 'Express',
+              trackingNumber: 'TRK987654321',
+              carrierName: 'UPS',
+            },
+          });
+          idTracker.add('InventoryTransfer', inTransitTransfer.id, primaryClinicId);
+          transferCount++;
+          totalCreated++;
+
+          // Add items to in-transit transfer
+          for (let i = 2; i < Math.min(4, transferItems.length); i++) {
+            const item = transferItems[i];
+            await db.transferItem.create({
+              data: {
+                transferId: inTransitTransfer.id,
+                itemId: item.id,
+                requestedQuantity: 3,
+                approvedQuantity: 3,
+                shippedQuantity: 3,
+                status: 'SHIPPED',
+              },
+            });
+            totalCreated++;
+          }
+
+          // Transfer 3: Pending approval (REQUESTED)
+          const pendingTransfer = await db.inventoryTransfer.create({
+            data: {
+              fromClinicId: primaryClinicId,
+              toClinicId: secondaryClinicId,
+              transferNumber: `TRF-${now3.getFullYear()}-00003`,
+              status: 'REQUESTED',
+              reason: 'Routine stock replenishment',
+              notes: 'Regular bi-weekly transfer request',
+              isUrgent: false,
+              requestedDate: new Date(now3.getTime() - 1 * 24 * 60 * 60 * 1000),
+              requestedBy: createdBy!,
+            },
+          });
+          idTracker.add('InventoryTransfer', pendingTransfer.id, primaryClinicId);
+          transferCount++;
+          totalCreated++;
+
+          // Add items to pending transfer
+          for (let i = 4; i < Math.min(6, transferItems.length); i++) {
+            const item = transferItems[i];
+            await db.transferItem.create({
+              data: {
+                transferId: pendingTransfer.id,
+                itemId: item.id,
+                requestedQuantity: 10,
+                status: 'REQUESTED',
+              },
+            });
+            totalCreated++;
+          }
+
+          // Transfer 4: Approved, preparing to ship
+          const preparingTransfer = await db.inventoryTransfer.create({
+            data: {
+              fromClinicId: secondaryClinicId,
+              toClinicId: primaryClinicId,
+              transferNumber: `TRF-${now3.getFullYear()}-00004`,
+              status: 'PREPARING',
+              reason: 'Return of excess inventory',
+              notes: 'Returning excess stock from last order',
+              isUrgent: false,
+              requestedDate: new Date(now3.getTime() - 5 * 24 * 60 * 60 * 1000),
+              approvedDate: new Date(now3.getTime() - 4 * 24 * 60 * 60 * 1000),
+              requestedBy: createdBy!,
+              approvedBy: createdBy,
+            },
+          });
+          idTracker.add('InventoryTransfer', preparingTransfer.id, secondaryClinicId);
+          transferCount++;
+          totalCreated++;
+
+          // Add items to preparing transfer
+          for (let i = 6; i < Math.min(8, transferItems.length); i++) {
+            const item = transferItems[i];
+            await db.transferItem.create({
+              data: {
+                transferId: preparingTransfer.id,
+                itemId: item.id,
+                requestedQuantity: 8,
+                approvedQuantity: 6, // Partial approval
+                status: 'APPROVED',
+              },
+            });
+            totalCreated++;
+          }
+
+          logger.info(`  Created ${transferCount} inventory transfers with items`);
+        }
+      } else {
+        logger.info('  Skipping transfers - requires multiple clinics');
+      }
+    }
   }
 
   logger.endArea('Resources (Equipment)', totalCreated);
@@ -798,6 +1286,20 @@ export async function clearResources(ctx: SeedContext): Promise<void> {
   const { db, logger } = ctx;
 
   logger.info('Clearing resources data...');
+
+  // Clear inventory data first (due to foreign keys)
+  await db.wasteRecord.deleteMany({});
+  await db.usageAnalyticsSummary.deleteMany({});
+  await db.expirationAlert.deleteMany({});
+  await db.reorderAlert.deleteMany({});
+  await db.transferItem.deleteMany({});
+  await db.inventoryTransfer.deleteMany({});
+  await db.purchaseOrderReceipt.deleteMany({});
+  await db.purchaseOrderItem.deleteMany({});
+  await db.purchaseOrder.deleteMany({});
+  await db.stockMovement.deleteMany({});
+  await db.inventoryLot.deleteMany({});
+  await db.inventoryItem.deleteMany({});
 
   // Clear equipment validation data
   await db.sterilizerValidation.deleteMany({});

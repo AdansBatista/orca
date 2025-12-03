@@ -171,10 +171,32 @@ export function withAuth<T extends Record<string, string>>(
 }
 
 /**
+ * Clinic filter result - either a specific clinicId or allow all
+ */
+type ClinicFilter =
+  | { clinicId: string }
+  | { clinicId?: { in: string[] } };
+
+/**
  * Helper to get clinicId filter for queries
  * Ensures data isolation - EVERY query must use this
+ *
+ * For super_admin: Returns filter that allows ALL clinics
+ * For multi-clinic users: Returns filter for their assigned clinics
+ * For single-clinic users: Returns filter for their clinic only
  */
-export function getClinicFilter(session: Session): { clinicId: string } {
+export function getClinicFilter(session: Session): ClinicFilter {
+  // Super admin can see all data
+  if (session.user.role === 'super_admin') {
+    return {}; // No filter = all clinics
+  }
+
+  // Users with access to multiple clinics
+  if (session.user.clinicIds && session.user.clinicIds.length > 1) {
+    return { clinicId: { in: session.user.clinicIds } };
+  }
+
+  // Single clinic user (most common)
   return { clinicId: session.user.clinicId };
 }
 

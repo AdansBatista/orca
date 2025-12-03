@@ -29,6 +29,8 @@ model Clinic {
   users           User[]
   patients        Patient[]
   roleAssignments RoleAssignment[]
+  transfersFrom   InventoryTransfer[] @relation("TransfersFrom")
+  transfersTo     InventoryTransfer[] @relation("TransfersTo")
 
   @@map("clinics")
 }
@@ -1584,6 +1586,8 @@ model Supplier {
   equipment       Equipment[]
   maintenanceRecords MaintenanceRecord[]
   repairRecords   RepairRecord[]
+  inventoryItems  InventoryItem[]
+  purchaseOrders  PurchaseOrder[]
 
   @@unique([clinicId, code])
   @@index([clinicId])
@@ -2776,4 +2780,796 @@ enum ReportStatus {
   GENERATING
   COMPLETED
   FAILED
+}
+
+// =============================================================================
+// INVENTORY MANAGEMENT - Supplies, Stock, Purchase Orders, Transfers
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Inventory Item - Product catalog for orthodontic supplies and consumables
+// -----------------------------------------------------------------------------
+
+/// InventoryItem - Catalog of orthodontic supplies and consumables
+model InventoryItem {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+
+  // Identification
+  name            String         // e.g., "3M Clarity Ceramic Brackets"
+  sku             String         // Unique SKU within clinic
+  barcode         String?        // Barcode/UPC for scanning
+  upc             String?        // Universal Product Code
+
+  // Classification
+  category        InventoryCategory
+  subcategory     String?        // e.g., "Self-Ligating" for brackets
+  brand           String?        // e.g., "3M", "Ormco"
+  manufacturer    String?
+
+  // Specifications
+  description     String?
+  specifications  Json?          // Flexible specs (size, color, material, etc.)
+  size            String?        // e.g., "Small", "0.014", "MBT"
+  color           String?        // e.g., "Clear", "Silver", "Red"
+  material        String?        // e.g., "Ceramic", "Stainless Steel", "NiTi"
+
+  // Supplier Info
+  supplierId      String?        @db.ObjectId
+  supplierSku     String?        // Supplier's product code
+  alternateSupplierIds String[]  @db.ObjectId  // Backup suppliers
+
+  // Pricing
+  unitCost        Float          // Standard unit cost
+  lastCost        Float?         // Most recent purchase cost
+  averageCost     Float?         // Weighted average cost
+  unitOfMeasure   String         @default("EACH")  // EACH, BOX, PACK, ROLL
+  unitsPerPackage Int            @default(1)
+  packageDescription String?     // e.g., "Box of 20 brackets"
+
+  // Stock Levels
+  currentStock    Int            @default(0)
+  reservedStock   Int            @default(0)      // Reserved for scheduled procedures
+  availableStock  Int            @default(0)      // currentStock - reservedStock
+
+  // Reorder Settings
+  reorderPoint    Int            @default(10)     // Alert when stock falls below
+  reorderQuantity Int            @default(20)     // Standard order quantity
+  safetyStock     Int            @default(5)      // Minimum buffer stock
+  maxStock        Int?                            // Maximum stock limit
+  leadTimeDays    Int            @default(7)      // Expected delivery time
+
+  // Tracking Options
+  trackLots       Boolean        @default(false)  // Enable lot/batch tracking
+  trackExpiry     Boolean        @default(true)   // Track expiration dates
+  trackSerial     Boolean        @default(false)  // Serial number tracking
+
+  // Storage
+  storageLocation String?        // e.g., "Cabinet A, Shelf 2"
+  storageRequirements String?    // e.g., "Refrigerate", "Keep dry"
+
+  // Status
+  status          InventoryItemStatus @default(ACTIVE)
+  isOrderable     Boolean        @default(true)
+
+  // Documents
+  msdsUrl         String?        // Material Safety Data Sheet
+  imageUrl        String?        // Product image
+  documents       String[]       // Additional document URLs
+
+  // Usage Stats (cached/calculated)
+  averageDailyUsage Float?
+  lastUsedAt      DateTime?
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?      // Soft delete
+  createdBy       String?        @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  supplier        Supplier?      @relation(fields: [supplierId], references: [id])
+  lots            InventoryLot[]
+  stockMovements  StockMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
+  reorderAlerts   ReorderAlert[]
+  transferItems   TransferItem[]
+
+  @@unique([clinicId, sku])
+  @@index([clinicId])
+  @@index([category])
+  @@index([supplierId])
+  @@index([status])
+  @@index([currentStock])
+  @@index([barcode])
+  @@index([name])
+  @@map("inventory_items")
+}
+
+enum InventoryCategory {
+  BRACKETS        // Metal, ceramic, self-ligating, lingual
+  WIRES           // NiTi, stainless steel, TMA, copper NiTi
+  ELASTICS        // Power chains, ligatures, separators
+  BANDS           // Molar bands, pre-welded
+  BONDING         // Adhesives, primers, etchants
+  IMPRESSION      // Alginate, PVS, bite registration
+  RETAINERS       // Clear retainer material, Hawley
+  INSTRUMENTS     // Disposable instruments
+  DISPOSABLES     // Single-use clinical items
+  PPE             // Personal protective equipment
+  OFFICE_SUPPLIES // Non-clinical supplies
+  CLEANING        // Sterilization and cleaning supplies
+  OTHER
+}
+
+enum InventoryItemStatus {
+  ACTIVE          // Currently in use
+  DISCONTINUED    // No longer available from supplier
+  BACKORDERED     // Temporarily unavailable
+  INACTIVE        // Not currently ordering
+  PENDING_APPROVAL // Awaiting approval to add
+}
+
+// -----------------------------------------------------------------------------
+// Inventory Lot - Lot/batch tracking for traceability
+// -----------------------------------------------------------------------------
+
+/// InventoryLot - Lot/batch tracking for supplies with expiration dates
+model InventoryLot {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  itemId          String         @db.ObjectId
+
+  // Lot Identification
+  lotNumber       String         // Manufacturer lot/batch number
+  serialNumbers   String[]       // Serial numbers if tracking enabled
+
+  // Quantities
+  initialQuantity Int            // Quantity received
+  currentQuantity Int            // Current remaining quantity
+  reservedQuantity Int           @default(0)
+
+  // Dates
+  receivedDate    DateTime       // Date received into inventory
+  manufacturingDate DateTime?    // Manufacturing date if known
+  expirationDate  DateTime?      // Expiration date
+
+  // Source
+  purchaseOrderId String?        @db.ObjectId
+  supplierId      String?        @db.ObjectId
+
+  // Cost
+  unitCost        Float?         // Cost per unit for this lot
+
+  // Location
+  storageLocation String?        // Where this lot is stored
+
+  // Status
+  status          LotStatus      @default(AVAILABLE)
+  quarantineReason String?       // Reason if quarantined
+
+  // Expiration Alerts
+  expirationAlertSent Boolean    @default(false)
+  expirationAlertDates Json?     // Track which alerts sent
+
+  // Extension Documentation (if expiration extended)
+  originalExpirationDate DateTime?
+  extensionReason String?
+  extensionApprovedBy String?    @db.ObjectId
+  extensionDocument String?      // URL to documentation
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  item            InventoryItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  stockMovements  StockMovement[]
+  expirationAlerts ExpirationAlert[]
+  transferItems   TransferItem[]
+
+  @@unique([clinicId, itemId, lotNumber])
+  @@index([clinicId])
+  @@index([itemId])
+  @@index([expirationDate])
+  @@index([status])
+  @@index([lotNumber])
+  @@map("inventory_lots")
+}
+
+enum LotStatus {
+  AVAILABLE       // Ready for use
+  RESERVED        // Reserved for specific use
+  DEPLETED        // Fully consumed
+  EXPIRED         // Past expiration date
+  RECALLED        // Manufacturer recall
+  QUARANTINE      // Held for investigation
+  DAMAGED         // Cannot be used
+}
+
+// -----------------------------------------------------------------------------
+// Stock Movement - Audit trail for all inventory changes
+// -----------------------------------------------------------------------------
+
+/// StockMovement - Record of all inventory changes
+model StockMovement {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  itemId          String         @db.ObjectId
+  lotId           String?        @db.ObjectId
+
+  // Movement Details
+  movementType    StockMovementType
+  quantity        Int            // Positive for additions, negative for removals
+  unitCost        Float?         // Cost at time of movement
+
+  // Reference
+  referenceType   MovementReferenceType?
+  referenceId     String?        @db.ObjectId
+
+  // Usage Context (when applicable)
+  patientId       String?        @db.ObjectId
+  appointmentId   String?        @db.ObjectId
+  procedureId     String?        @db.ObjectId
+  providerId      String?        @db.ObjectId
+
+  // Transfer Context
+  fromLocationId  String?        @db.ObjectId
+  toLocationId    String?        @db.ObjectId
+  transferId      String?        @db.ObjectId
+
+  // Stock Snapshot
+  previousStock   Int            // Stock before this movement
+  newStock        Int            // Stock after this movement
+
+  // Notes
+  reason          String?        // Required for adjustments
+  notes           String?
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  createdBy       String         @db.ObjectId
+
+  // Relations
+  item            InventoryItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  lot             InventoryLot?  @relation(fields: [lotId], references: [id])
+  transfer        InventoryTransfer? @relation(fields: [transferId], references: [id])
+
+  @@index([clinicId])
+  @@index([itemId])
+  @@index([lotId])
+  @@index([movementType])
+  @@index([createdAt])
+  @@index([patientId])
+  @@index([providerId])
+  @@index([transferId])
+  @@map("stock_movements")
+}
+
+enum StockMovementType {
+  RECEIVED            // From purchase order
+  USED                // Used in treatment
+  ADJUSTMENT_ADD      // Manual increase
+  ADJUSTMENT_REMOVE   // Manual decrease
+  TRANSFER_IN         // From another location
+  TRANSFER_OUT        // To another location
+  RETURNED_TO_SUPPLIER
+  RETURNED_FROM_PATIENT
+  EXPIRED             // Removed due to expiration
+  DAMAGED             // Removed due to damage
+  LOST                // Unaccounted for
+  RECALLED            // Manufacturer recall
+  OPENING_BALANCE     // Initial stock setup
+  COUNT_VARIANCE      // Physical count adjustment
+}
+
+enum MovementReferenceType {
+  PURCHASE_ORDER
+  TRANSFER
+  ADJUSTMENT
+  PATIENT_TREATMENT
+  RETURN
+  RECALL
+  INVENTORY_COUNT
+}
+
+// -----------------------------------------------------------------------------
+// Purchase Orders - Procurement workflow
+// -----------------------------------------------------------------------------
+
+/// PurchaseOrder - Order for supplies from suppliers
+model PurchaseOrder {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  supplierId      String         @db.ObjectId
+
+  // Order Identification
+  poNumber        String         // PO-2024-00001 format
+  externalPoNumber String?       // Supplier's order number
+
+  // Status
+  status          PurchaseOrderStatus @default(DRAFT)
+
+  // Dates
+  orderDate       DateTime?      // When submitted to supplier
+  expectedDate    DateTime?      // Expected delivery date
+  receivedDate    DateTime?      // When fully received
+
+  // Amounts
+  subtotal        Float          @default(0)
+  taxAmount       Float          @default(0)
+  shippingAmount  Float          @default(0)
+  discountAmount  Float          @default(0)
+  totalAmount     Float          @default(0)
+
+  // Shipping
+  shipTo          Json?          // Shipping address
+  shippingMethod  String?
+  trackingNumber  String?
+
+  // Payment
+  paymentTerms    String?        // e.g., "Net 30"
+  invoiceNumber   String?
+  invoiceDate     DateTime?
+
+  // Approval
+  approvalRequired Boolean       @default(false)
+  approvalThreshold Float?       // Amount requiring approval
+  approvedBy      String?        @db.ObjectId
+  approvedAt      DateTime?
+  rejectedBy      String?        @db.ObjectId
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  // Notes
+  notes           String?        // External notes (visible on PO)
+  internalNotes   String?        // Internal notes only
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String         @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  supplier        Supplier       @relation(fields: [supplierId], references: [id])
+  items           PurchaseOrderItem[]
+  receipts        PurchaseOrderReceipt[]
+  lots            InventoryLot[]
+
+  @@unique([clinicId, poNumber])
+  @@index([clinicId])
+  @@index([supplierId])
+  @@index([status])
+  @@index([orderDate])
+  @@index([poNumber])
+  @@map("purchase_orders")
+}
+
+enum PurchaseOrderStatus {
+  DRAFT             // Being created
+  PENDING_APPROVAL  // Awaiting approval
+  APPROVED          // Approved, ready to submit
+  REJECTED          // Approval rejected
+  SUBMITTED         // Sent to supplier
+  ACKNOWLEDGED      // Supplier confirmed
+  PARTIALLY_RECEIVED // Some items received
+  RECEIVED          // All items received
+  CLOSED            // Complete, invoiced
+  CANCELLED         // Order cancelled
+}
+
+/// PurchaseOrderItem - Line items on a purchase order
+model PurchaseOrderItem {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  purchaseOrderId String         @db.ObjectId
+  itemId          String         @db.ObjectId
+
+  // Item Details
+  lineNumber      Int            // Line sequence
+  description     String         // Item description
+  sku             String         // Item SKU
+  supplierSku     String?        // Supplier's SKU
+
+  // Quantities
+  orderedQuantity Int
+  receivedQuantity Int           @default(0)
+  backorderedQuantity Int        @default(0)
+
+  // Pricing
+  unitPrice       Float
+  discountPercent Float          @default(0)
+  lineTotal       Float
+
+  // Status
+  status          POItemStatus   @default(ORDERED)
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  item            InventoryItem  @relation(fields: [itemId], references: [id])
+
+  @@index([purchaseOrderId])
+  @@index([itemId])
+  @@map("purchase_order_items")
+}
+
+enum POItemStatus {
+  ORDERED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  BACKORDERED
+  CANCELLED
+}
+
+/// PurchaseOrderReceipt - Receiving records for purchase orders
+model PurchaseOrderReceipt {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  purchaseOrderId String         @db.ObjectId
+
+  // Receipt Details
+  receiptNumber   String         // RCV-2024-00001 format
+  receiptDate     DateTime       @default(now())
+
+  // Shipping Info
+  packingSlipNumber String?
+  carrierName     String?
+  trackingNumber  String?
+
+  // Items Received (with lot info)
+  items           Json           // Array of { itemId, quantity, lotNumber, expirationDate }
+
+  // Notes
+  notes           String?
+  damageNotes     String?        // Document any damaged items
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  createdBy       String         @db.ObjectId
+
+  // Relations
+  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([purchaseOrderId])
+  @@index([receiptDate])
+  @@index([receiptNumber])
+  @@map("purchase_order_receipts")
+}
+
+// -----------------------------------------------------------------------------
+// Inventory Transfers - Multi-location inventory movement
+// -----------------------------------------------------------------------------
+
+/// InventoryTransfer - Transfer supplies between clinic locations
+model InventoryTransfer {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  fromClinicId    String         @db.ObjectId
+  toClinicId      String         @db.ObjectId
+
+  // Transfer Identification
+  transferNumber  String         // TRF-2024-00001 format
+
+  // Status
+  status          TransferStatus @default(REQUESTED)
+
+  // Dates
+  requestedDate   DateTime       @default(now())
+  approvedDate    DateTime?
+  shippedDate     DateTime?
+  receivedDate    DateTime?
+
+  // People
+  requestedBy     String         @db.ObjectId
+  approvedBy      String?        @db.ObjectId
+  rejectedBy      String?        @db.ObjectId
+  shippedBy       String?        @db.ObjectId
+  receivedBy      String?        @db.ObjectId
+
+  // Rejection
+  rejectionReason String?
+
+  // Shipping
+  shippingMethod  String?
+  trackingNumber  String?
+  carrierName     String?
+
+  // Notes
+  reason          String?        // Why the transfer is needed
+  notes           String?
+
+  // Priority
+  isUrgent        Boolean        @default(false)
+  urgentReason    String?
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  fromClinic      Clinic           @relation("TransfersFrom", fields: [fromClinicId], references: [id])
+  toClinic        Clinic           @relation("TransfersTo", fields: [toClinicId], references: [id])
+  items           TransferItem[]
+  stockMovements  StockMovement[]
+
+  @@unique([transferNumber])
+  @@index([fromClinicId])
+  @@index([toClinicId])
+  @@index([status])
+  @@index([requestedDate])
+  @@map("inventory_transfers")
+}
+
+enum TransferStatus {
+  REQUESTED       // Request submitted
+  APPROVED        // Approved by source location
+  REJECTED        // Request rejected
+  PREPARING       // Being picked/packed
+  IN_TRANSIT      // Shipped
+  RECEIVED        // Received at destination
+  CANCELLED       // Cancelled before completion
+}
+
+/// TransferItem - Line items on an inventory transfer
+model TransferItem {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  transferId      String         @db.ObjectId
+  itemId          String         @db.ObjectId
+  lotId           String?        @db.ObjectId
+
+  // Quantities
+  requestedQuantity Int
+  approvedQuantity Int?
+  shippedQuantity Int?
+  receivedQuantity Int?
+
+  // Status
+  status          TransferItemStatus @default(REQUESTED)
+
+  // Variance
+  varianceReason  String?        // Reason for quantity differences
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  transfer        InventoryTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  item            InventoryItem     @relation(fields: [itemId], references: [id])
+  lot             InventoryLot?     @relation(fields: [lotId], references: [id])
+
+  @@index([transferId])
+  @@index([itemId])
+  @@map("transfer_items")
+}
+
+enum TransferItemStatus {
+  REQUESTED
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+  SHIPPED
+  RECEIVED
+  VARIANCE
+}
+
+// -----------------------------------------------------------------------------
+// Reorder Alerts - Low stock notifications
+// -----------------------------------------------------------------------------
+
+/// ReorderAlert - Low stock alert for inventory items
+model ReorderAlert {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  itemId          String         @db.ObjectId
+
+  // Alert Details
+  alertType       ReorderAlertType
+  alertDate       DateTime       @default(now())
+
+  // Stock Info at Alert Time
+  currentStock    Int
+  reorderPoint    Int
+  suggestedQuantity Int
+
+  // Status
+  status          AlertStatus    @default(ACTIVE)
+  dismissedAt     DateTime?
+  dismissedBy     String?        @db.ObjectId
+  dismissReason   String?
+
+  // Resolution
+  purchaseOrderId String?        @db.ObjectId
+  resolvedAt      DateTime?
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  item            InventoryItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([itemId])
+  @@index([status])
+  @@index([alertDate])
+  @@index([alertType])
+  @@map("reorder_alerts")
+}
+
+enum ReorderAlertType {
+  LOW_STOCK         // Below reorder point
+  CRITICAL_STOCK    // Below safety stock
+  OUT_OF_STOCK      // Zero stock
+  APPROACHING_LOW   // Projected to be low soon
+}
+
+enum AlertStatus {
+  ACTIVE            // Needs attention
+  DISMISSED         // Manually dismissed
+  ORDERED           // Purchase order created
+  RESOLVED          // Stock replenished
+}
+
+// -----------------------------------------------------------------------------
+// Expiration Alerts - Expiring inventory notifications
+// -----------------------------------------------------------------------------
+
+/// ExpirationAlert - Alert for expiring inventory lots
+model ExpirationAlert {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  itemId          String         @db.ObjectId
+  lotId           String         @db.ObjectId
+
+  // Alert Details
+  alertLevel      ExpirationAlertLevel
+  alertDate       DateTime       @default(now())
+  expirationDate  DateTime
+  daysUntilExpiry Int
+
+  // Quantity at Risk
+  quantity        Int
+  estimatedValue  Float?
+
+  // Status
+  status          ExpirationAlertStatus @default(ACTIVE)
+  action          ExpirationAction?
+  actionDate      DateTime?
+  actionBy        String?        @db.ObjectId
+  actionNotes     String?
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  lot             InventoryLot   @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([itemId])
+  @@index([lotId])
+  @@index([status])
+  @@index([alertLevel])
+  @@index([expirationDate])
+  @@map("expiration_alerts")
+}
+
+enum ExpirationAlertLevel {
+  WARNING         // 90 days before
+  CAUTION         // 60 days before
+  URGENT          // 30 days before
+  CRITICAL        // 7 days or less
+  EXPIRED         // Past expiration
+}
+
+enum ExpirationAlertStatus {
+  ACTIVE          // Needs attention
+  ACKNOWLEDGED    // Seen, no action yet
+  RESOLVED        // Action taken
+}
+
+enum ExpirationAction {
+  USED            // Prioritized and consumed
+  RETURNED        // Returned to supplier
+  DISCARDED       // Disposed of
+  EXTENDED        // Expiration extended
+  TRANSFERRED     // Sent to another location
+}
+
+// -----------------------------------------------------------------------------
+// Usage Analytics - Aggregated usage data for reporting
+// -----------------------------------------------------------------------------
+
+/// UsageAnalyticsSummary - Aggregated usage data for analytics
+model UsageAnalyticsSummary {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  itemId          String         @db.ObjectId
+
+  // Period
+  period          String         // YYYY-MM format
+  periodType      AnalyticsPeriodType
+
+  // Usage Metrics
+  totalQuantity   Int
+  totalValue      Float
+
+  // Breakdowns (JSON for flexibility)
+  byProvider      Json?          // { providerId: quantity }
+  byProcedure     Json?          // { procedureType: quantity }
+  byDayOfWeek     Json?          // { day: quantity }
+
+  // Calculations
+  averageDailyUsage Float?
+  variance        Float?         // vs. previous period
+  variancePercent Float?
+
+  // Timestamps
+  calculatedAt    DateTime       @default(now())
+
+  @@unique([clinicId, itemId, period, periodType])
+  @@index([clinicId])
+  @@index([itemId])
+  @@index([period])
+  @@index([periodType])
+  @@map("usage_analytics_summaries")
+}
+
+enum AnalyticsPeriodType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+/// WasteRecord - Record of wasted inventory
+model WasteRecord {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  itemId          String         @db.ObjectId
+  lotId           String?        @db.ObjectId
+
+  // Waste Details
+  wasteType       WasteType
+  wasteDate       DateTime       @default(now())
+  quantity        Int
+  unitCost        Float
+  totalValue      Float
+
+  // Context
+  reason          String?
+  notes           String?
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  createdBy       String         @db.ObjectId
+
+  @@index([clinicId])
+  @@index([itemId])
+  @@index([wasteType])
+  @@index([wasteDate])
+  @@map("waste_records")
+}
+
+enum WasteType {
+  EXPIRED
+  DAMAGED
+  LOST
+  RECALLED
+  CONTAMINATED
+  OTHER
 }

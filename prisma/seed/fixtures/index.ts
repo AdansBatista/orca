@@ -55,3 +55,10 @@ export {
   type CycleParameters,
   type ComplianceLogTemplate,
 } from './sterilization.fixture';
+
+export {
+  INVENTORY_ITEMS,
+  INVENTORY_SUPPLIERS,
+  type InventoryItemFixture,
+  type InventorySupplierFixture,
+} from './inventory.fixture';

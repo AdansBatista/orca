@@ -229,6 +229,51 @@ When implementing new features, the build may reveal pre-existing issues in othe
 
 ---
 
+## Radix UI / shadcn Issues
+
+### Select.Item Cannot Have Empty String Value
+
+**Problem:** Radix UI's `Select.Item` component throws an error when `value=""` is used. This commonly happens when creating "All" options in filter dropdowns.
+
+**Error:**
+```
+A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+```
+
+**Solution:** Use a non-empty placeholder value like `'__all__'` for "all" options, and convert it back when building API queries:
+
+```typescript
+// ✅ CORRECT - Use '__all__' instead of empty string
+const categoryOptions = [
+  { value: '__all__', label: 'All Categories' },  // Not ''
+  { value: 'BRACKETS', label: 'Brackets' },
+  { value: 'WIRES', label: 'Wires' },
+];
+
+// State initialization
+const [category, setCategory] = useState('__all__');  // Not ''
+
+// When building API queries, convert '__all__' to empty (skip the filter)
+const params = new URLSearchParams();
+if (category && category !== '__all__') {
+  params.set('category', category);
+}
+
+// ❌ WRONG - Empty string causes runtime error
+const categoryOptions = [
+  { value: '', label: 'All Categories' },  // This will throw!
+  { value: 'BRACKETS', label: 'Brackets' },
+];
+```
+
+**Pattern Summary:**
+1. Use `'__all__'` (or similar like `'all'`) as the value for "All" options
+2. Initialize state with `'__all__'` instead of empty string
+3. When building API params/URLs, check `value !== '__all__'` before adding to params
+4. Add a comment explaining this pattern for future developers
+
+---
+
 ## Quick Checklist for New Features
 
 Before committing, verify:
@@ -239,7 +284,8 @@ Before committing, verify:
 4. [ ] Any `useSearchParams` usage is wrapped in Suspense
 5. [ ] Prisma JSON fields are properly cast
 6. [ ] Zod error handling uses `.issues` not `.errors`
+7. [ ] Select.Item values are never empty strings (use `'__all__'` for "All" options)
 
 ---
 
-**Last Updated:** 2024-11-29
+**Last Updated:** 2025-12-02
