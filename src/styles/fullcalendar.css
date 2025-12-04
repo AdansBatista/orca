@@ -285,6 +285,28 @@
   background-color: hsl(var(--muted) / 0.3);
 }
 
+/* Booking zone background events - enhanced visibility */
+.fc-bg-event {
+  opacity: 1 !important;
+  border-left: 4px solid var(--fc-event-border-color, currentColor) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+/* Add a subtle diagonal stripe pattern for booking zones */
+.fc-timegrid-bg-harness .fc-bg-event {
+  background-image: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 45%,
+    rgba(255, 255, 255, 0.1) 45%,
+    rgba(255, 255, 255, 0.1) 55%,
+    transparent 55%,
+    transparent 100%
+  );
+  background-size: 8px 8px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .fc .fc-toolbar {

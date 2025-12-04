@@ -15,6 +15,13 @@ import {
   generateCancellations,
   generateRiskScores,
 } from '../fixtures/waitlist-recovery.fixture';
+import {
+  DEFAULT_WEEKDAY_SCHEDULES,
+  EXTENDED_SCHEDULES,
+  DEFAULT_BOOKING_TEMPLATES,
+  generateScheduleBlocks,
+  generateRecurringAppointments,
+} from '../fixtures/advanced-scheduling.fixture';
 
 /**
  * Seed booking data: Appointment types, appointments, and emergency/reminder data
@@ -606,6 +613,159 @@ export async function seedBooking(ctx: SeedContext): Promise<void> {
         }
 
         logger.info(`  Created ${riskScoreCount} patient risk scores`);
+
+        // ============================================================================
+        // 14. SEED PROVIDER SCHEDULES (only in standard/full mode)
+        // ============================================================================
+        logger.info('  Seeding provider schedules...');
+
+        let providerScheduleCount = 0;
+        for (let i = 0; i < providers.length; i++) {
+          const provider = providers[i];
+          // Alternate between regular and extended schedules
+          const scheduleTemplate = i % 3 === 0 ? EXTENDED_SCHEDULES : DEFAULT_WEEKDAY_SCHEDULES;
+
+          for (const scheduleData of scheduleTemplate) {
+            // Check if schedule already exists
+            const existingSchedule = await db.providerSchedule.findFirst({
+              where: {
+                clinicId: primaryClinicId,
+                providerId: provider.id,
+                dayOfWeek: scheduleData.dayOfWeek,
+              },
+            });
+
+            if (!existingSchedule) {
+              await db.providerSchedule.create({
+                data: {
+                  clinicId: primaryClinicId,
+                  providerId: provider.id,
+                  dayOfWeek: scheduleData.dayOfWeek,
+                  startTime: scheduleData.startTime,
+                  endTime: scheduleData.endTime,
+                  isWorkingDay: scheduleData.isWorkingDay,
+                  lunchStartTime: scheduleData.lunchStartTime,
+                  lunchEndTime: scheduleData.lunchEndTime,
+                  autoBlockLunch: scheduleData.autoBlockLunch,
+                  createdBy: bookingUser?.id || providerIds[0],
+                },
+              });
+              providerScheduleCount++;
+            }
+          }
+        }
+
+        logger.info(`  Created ${providerScheduleCount} provider schedules`);
+
+        // ============================================================================
+        // 15. SEED SCHEDULE BLOCKS (only in standard/full mode)
+        // ============================================================================
+        logger.info('  Seeding schedule blocks...');
+
+        let scheduleBlockCount = 0;
+        // Create schedule blocks for the first provider
+        if (providers.length > 0) {
+          const scheduleBlocksData = generateScheduleBlocks(
+            primaryClinicId,
+            providers[0].id,
+            bookingUser?.id || providerIds[0]
+          );
+
+          for (const blockData of scheduleBlocksData) {
+            const block = await db.scheduleBlock.create({
+              data: blockData,
+            });
+            idTracker.add('ScheduleBlock', block.id);
+            scheduleBlockCount++;
+          }
+        }
+
+        logger.info(`  Created ${scheduleBlockCount} schedule blocks`);
+
+        // ============================================================================
+        // 16. SEED BOOKING TEMPLATES (only in standard/full mode)
+        // ============================================================================
+        logger.info('  Seeding booking templates...');
+
+        let bookingTemplateCount = 0;
+        for (const templateData of DEFAULT_BOOKING_TEMPLATES) {
+          const existingTemplate = await db.bookingTemplate.findFirst({
+            where: {
+              clinicId: primaryClinicId,
+              name: templateData.name,
+            },
+          });
+
+          if (!existingTemplate) {
+            const template = await db.bookingTemplate.create({
+              data: {
+                clinicId: primaryClinicId,
+                name: templateData.name,
+                description: templateData.description,
+                templateType: templateData.templateType,
+                slots: templateData.slots,
+                isActive: true,
+                isDefault: templateData.name === 'Standard Day',
+                createdBy: bookingUser?.id || providerIds[0],
+              },
+            });
+            idTracker.add('BookingTemplate', template.id);
+            bookingTemplateCount++;
+          }
+        }
+
+        logger.info(`  Created ${bookingTemplateCount} booking templates`);
+
+        // ============================================================================
+        // 17. SEED RECURRING APPOINTMENTS (only in standard/full mode)
+        // ============================================================================
+        logger.info('  Seeding recurring appointments...');
+
+        const recurringData = generateRecurringAppointments(
+          primaryClinicId,
+          patientIds,
+          providerIds,
+          appointmentTypeMap,
+          bookingUser?.id || providerIds[0]
+        );
+
+        let recurringCount = 0;
+        for (const recurring of recurringData) {
+          // Skip if no appointment type ID
+          if (!recurring.appointmentTypeId) {
+            logger.info(`  Skipping recurring series - no appointment type found`);
+            continue;
+          }
+
+          const recurringAppt = await db.recurringAppointment.create({
+            data: {
+              ...recurring,
+              appointmentTypeId: recurring.appointmentTypeId, // Ensure non-undefined
+            },
+          });
+          idTracker.add('RecurringAppointment', recurringAppt.id);
+
+          // Generate a few sample occurrences for each recurring series
+          const occurrenceDate = new Date(recurring.startDate);
+          for (let j = 0; j < 3; j++) {
+            occurrenceDate.setDate(occurrenceDate.getDate() + (recurring.interval * 7));
+
+            await db.recurringOccurrence.create({
+              data: {
+                clinicId: primaryClinicId,
+                recurringId: recurringAppt.id,
+                occurrenceNumber: j + 1,
+                scheduledDate: new Date(occurrenceDate),
+                scheduledTime: recurring.preferredTime,
+                status: j === 0 ? 'SCHEDULED' : 'PENDING',
+              },
+            });
+          }
+
+          recurringCount++;
+        }
+
+        logger.info(`  Created ${recurringCount} recurring appointment series with occurrences`);
       } else {
         logger.info('  Skipping appointments - missing required data (patients, providers, or types)');
       }
@@ -625,6 +785,25 @@ export async function clearBooking(ctx: SeedContext): Promise<void> {
   logger.info('Clearing booking data...');
 
   // Delete in reverse dependency order
+
+  // Advanced Scheduling data (Phase 3)
+  await db.recurringOccurrence.deleteMany({});
+  logger.info('  Cleared recurring occurrences');
+
+  await db.recurringAppointment.deleteMany({});
+  logger.info('  Cleared recurring appointments');
+
+  await db.templateApplication.deleteMany({});
+  logger.info('  Cleared template applications');
+
+  await db.bookingTemplate.deleteMany({});
+  logger.info('  Cleared booking templates');
+
+  await db.scheduleBlock.deleteMany({});
+  logger.info('  Cleared schedule blocks');
+
+  await db.providerSchedule.deleteMany({});
+  logger.info('  Cleared provider schedules');
 
   // Waitlist & Recovery data
   await db.patientRiskScore.deleteMany({});

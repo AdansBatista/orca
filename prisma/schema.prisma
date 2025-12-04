@@ -53,6 +53,17 @@ model Clinic {
   emergencyProtocols         EmergencyProtocol[]
   emergencyFAQs              EmergencyFAQ[]
 
+  // Advanced Scheduling relations
+  providerSchedules          ProviderSchedule[]
+  scheduleBlocks             ScheduleBlock[]
+  bookingTemplates           BookingTemplate[]
+  templateApplications       TemplateApplication[]
+  recurringAppointments      RecurringAppointment[]
+  recurringOccurrences       RecurringOccurrence[]
+  openingNotifications       OpeningNotification[]
+  reEngagementCampaigns      ReEngagementCampaign[]
+  campaignPatients           CampaignPatient[]
+
   @@map("clinics")
 }
 
@@ -273,6 +284,11 @@ model Patient {
   appointmentReminders       AppointmentReminder[]
   afterHoursMessages         AfterHoursMessage[]
 
+  // Advanced Scheduling relations
+  recurringAppointments      RecurringAppointment[]
+  openingNotifications       OpeningNotification[]
+  campaignPatients           CampaignPatient[]
+
   @@index([clinicId])
   @@index([lastName, firstName])
   @@map("patients")
@@ -365,6 +381,13 @@ model StaffProfile {
   // Booking relations (when staff is a provider)
   appointmentsAsProvider Appointment[] @relation("AppointmentProvider")
   waitlistPreferences    WaitlistEntry[] @relation("WaitlistPreferredProvider")
+
+  // Advanced Scheduling relations
+  providerSchedules      ProviderSchedule[] @relation("ProviderSchedules")
+  scheduleBlocks         ScheduleBlock[] @relation("ScheduleBlocks")
+  bookingTemplates       BookingTemplate[] @relation("BookingTemplates")
+  templateApplications   TemplateApplication[] @relation("TemplateApplications")
+  recurringAppointments  RecurringAppointment[] @relation("RecurringAppointments")
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -3669,6 +3692,7 @@ model AppointmentType {
   clinic           Clinic   @relation(fields: [clinicId], references: [id])
   appointments     Appointment[]
   waitlistEntries  WaitlistEntry[]
+  recurringAppointments RecurringAppointment[]
 
   @@unique([clinicId, code])
   @@index([clinicId])
@@ -3835,6 +3859,7 @@ model WaitlistEntry {
   patient               Patient             @relation(fields: [patientId], references: [id])
   appointmentType       AppointmentType     @relation(fields: [appointmentTypeId], references: [id])
   preferredProvider     StaffProfile?       @relation("WaitlistPreferredProvider", fields: [preferredProviderId], references: [id])
+  openingNotifications  OpeningNotification[]
 
   @@index([clinicId])
   @@index([patientId])
@@ -4664,4 +4689,505 @@ enum FAQCategory {
   SELF_CARE
   WHEN_TO_CALL
   GENERAL
+}
+
+// =============================================================================
+// ADVANCED SCHEDULING - Provider schedules, templates, recurring appointments
+// =============================================================================
+
+/// ProviderSchedule - Default working hours for a provider on a specific day
+model ProviderSchedule {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String              @db.ObjectId
+  providerId       String              @db.ObjectId
+
+  // Day of week (0=Sunday, 1=Monday, etc.)
+  dayOfWeek        Int                 // 0-6
+
+  // Working hours
+  startTime        String              // "08:00" format
+  endTime          String              // "17:00" format
+  isWorkingDay     Boolean             @default(true)
+
+  // Breaks during the day (stored as JSON array)
+  breaks           Json?               // Array of { startTime, endTime, label }
+
+  // Effective date range (for historical tracking / future changes)
+  effectiveFrom    DateTime?
+  effectiveTo      DateTime?
+
+  // Lunch settings
+  lunchStartTime   String?             // "12:00"
+  lunchEndTime     String?             // "13:00"
+  autoBlockLunch   Boolean             @default(true)
+
+  // Timestamps
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  createdBy        String?             @db.ObjectId
+  updatedBy        String?             @db.ObjectId
+
+  // Relations
+  clinic           Clinic              @relation(fields: [clinicId], references: [id])
+  provider         StaffProfile        @relation("ProviderSchedules", fields: [providerId], references: [id])
+
+  @@unique([clinicId, providerId, dayOfWeek, effectiveFrom])
+  @@index([clinicId])
+  @@index([providerId])
+  @@index([dayOfWeek])
+  @@map("provider_schedules")
+}
+
+/// ScheduleBlock - Blocked time on provider's calendar (vacation, meeting, etc.)
+model ScheduleBlock {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String              @db.ObjectId
+  providerId       String              @db.ObjectId
+
+  // Block details
+  title            String
+  blockType        ScheduleBlockType
+  reason           String?
+
+  // Time range
+  startDateTime    DateTime
+  endDateTime      DateTime
+  allDay           Boolean             @default(false)
+
+  // Recurrence (for recurring blocks like weekly meetings)
+  isRecurring      Boolean             @default(false)
+  recurrenceRule   String?             // RRULE format
+
+  // Status
+  status           ScheduleBlockStatus @default(ACTIVE)
+
+  // Approval (for time off requests)
+  requiresApproval Boolean             @default(false)
+  approvedBy       String?             @db.ObjectId
+  approvedAt       DateTime?
+
+  // Notifications
+  notifyPatients   Boolean             @default(false)  // Auto-notify affected patients
+  notificationSent Boolean             @default(false)
+
+  // Timestamps
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  createdBy        String?             @db.ObjectId
+
+  // Relations
+  clinic           Clinic              @relation(fields: [clinicId], references: [id])
+  provider         StaffProfile        @relation("ScheduleBlocks", fields: [providerId], references: [id])
+
+  @@index([clinicId])
+  @@index([providerId])
+  @@index([startDateTime])
+  @@index([status])
+  @@map("schedule_blocks")
+}
+
+enum ScheduleBlockType {
+  VACATION          // Time off / vacation
+  SICK_LEAVE        // Sick leave
+  PERSONAL          // Personal time
+  MEETING           // Staff meeting
+  TRAINING          // Training session
+  CONFERENCE        // External conference
+  ADMIN_TIME        // Administrative work
+  LUNCH             // Lunch break
+  BREAK             // Short break
+  HOLIDAY           // Clinic holiday
+  MAINTENANCE       // Equipment/room maintenance
+  OTHER             // Other reason
+}
+
+enum ScheduleBlockStatus {
+  ACTIVE            // Block is active
+  PENDING_APPROVAL  // Awaiting approval
+  APPROVED          // Approved but not yet active
+  REJECTED          // Request rejected
+  CANCELLED         // Block cancelled
+}
+
+/// BookingTemplate - Reusable booking slot templates for the calendar
+model BookingTemplate {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String              @db.ObjectId
+
+  // Template info
+  name             String
+  description      String?
+  templateType     BookingTemplateType @default(DAY)
+
+  // Settings
+  isActive         Boolean             @default(true)
+  isDefault        Boolean             @default(false)
+
+  // For provider-specific templates
+  providerId       String?             @db.ObjectId
+
+  // Template slots (stored as JSON)
+  slots            Json                // Array of BookingTemplateSlot
+
+  // Color coding
+  color            String?             // Hex color for calendar display
+
+  // Versioning
+  version          Int                 @default(1)
+
+  // Timestamps
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  createdBy        String?             @db.ObjectId
+  updatedBy        String?             @db.ObjectId
+
+  // Relations
+  clinic           Clinic              @relation(fields: [clinicId], references: [id])
+  provider         StaffProfile?       @relation("BookingTemplates", fields: [providerId], references: [id])
+  applications     TemplateApplication[]
+
+  @@index([clinicId])
+  @@index([templateType])
+  @@index([isActive])
+  @@map("booking_templates")
+}
+
+enum BookingTemplateType {
+  DAY               // Single day template
+  WEEK              // Full week template
+  HALF_DAY_AM       // Morning only
+  HALF_DAY_PM       // Afternoon only
+}
+
+/// TemplateApplication - Record of when a template was applied to the calendar
+model TemplateApplication {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String              @db.ObjectId
+  templateId       String              @db.ObjectId
+  providerId       String?             @db.ObjectId  // Optional - null for clinic-wide applications
+
+  // Application details
+  appliedDate      DateTime            @db.Date  // The date template was applied to
+  dateRangeStart   DateTime?           @db.Date  // For bulk applications
+  dateRangeEnd     DateTime?           @db.Date
+
+  // Settings
+  overrideExisting Boolean             @default(false)
+
+  // Stats
+  slotsCreated     Int                 @default(0)
+  slotsSkipped     Int                 @default(0)
+
+  // Timestamps
+  appliedAt        DateTime            @default(now())
+  appliedBy        String              @db.ObjectId
+
+  // Relations
+  clinic           Clinic              @relation(fields: [clinicId], references: [id])
+  template         BookingTemplate     @relation(fields: [templateId], references: [id])
+  provider         StaffProfile?       @relation("TemplateApplications", fields: [providerId], references: [id])
+
+  @@index([clinicId])
+  @@index([templateId])
+  @@index([providerId])
+  @@index([appliedDate])
+  @@map("template_applications")
+}
+
+/// RecurringAppointment - Recurring appointment series definition
+model RecurringAppointment {
+  id                   String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId             String              @db.ObjectId
+  patientId            String              @db.ObjectId
+
+  // Series details
+  name                 String?             // Optional series name
+  appointmentTypeId    String              @db.ObjectId
+  providerId           String              @db.ObjectId
+  chairId              String?             @db.ObjectId
+  duration             Int                 // Duration in minutes
+
+  // Preferred time
+  preferredTime        String              // "09:00" format
+  preferredDayOfWeek   Int?                // 0-6 for weekly recurrence
+
+  // Recurrence pattern
+  pattern              RecurrencePattern
+  interval             Int                 @default(1)  // Every X weeks/months
+  daysOfWeek           Int[]               // For weekly: which days [1, 3, 5] = Mon, Wed, Fri
+  dayOfMonth           Int?                // For monthly: day of month
+  weekOfMonth          Int?                // For monthly: which week (1-4, -1 for last)
+
+  // Series bounds
+  startDate            DateTime            @db.Date
+  endDate              DateTime?           @db.Date
+  maxOccurrences       Int?
+
+  // Status tracking
+  status               RecurringStatus     @default(ACTIVE)
+  occurrencesCreated   Int                 @default(0)
+  lastGeneratedDate    DateTime?           @db.Date
+
+  // Notes
+  notes                String?
+
+  // Timestamps
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  createdBy            String              @db.ObjectId
+  cancelledAt          DateTime?
+  cancelledBy          String?             @db.ObjectId
+
+  // Relations
+  clinic               Clinic              @relation(fields: [clinicId], references: [id])
+  patient              Patient             @relation(fields: [patientId], references: [id])
+  appointmentType      AppointmentType     @relation(fields: [appointmentTypeId], references: [id])
+  provider             StaffProfile        @relation("RecurringAppointments", fields: [providerId], references: [id])
+  occurrences          RecurringOccurrence[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([providerId])
+  @@index([status])
+  @@map("recurring_appointments")
+}
+
+enum RecurrencePattern {
+  DAILY             // Every day
+  WEEKLY            // Every week
+  BIWEEKLY          // Every 2 weeks
+  MONTHLY           // Every month
+  CUSTOM            // Custom interval
+}
+
+enum RecurringStatus {
+  ACTIVE            // Series is active
+  PAUSED            // Temporarily paused
+  COMPLETED         // All occurrences generated
+  CANCELLED         // Series cancelled
+}
+
+/// RecurringOccurrence - Links a recurring series to generated appointments
+model RecurringOccurrence {
+  id                   String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId             String              @db.ObjectId
+  recurringId          String              @db.ObjectId
+  appointmentId        String?             @db.ObjectId  // null if not yet created
+
+  // Occurrence details
+  occurrenceNumber     Int                 // 1st, 2nd, 3rd, etc.
+  scheduledDate        DateTime            @db.Date
+  scheduledTime        String              // "09:00"
+
+  // Status
+  status               OccurrenceStatus    @default(PENDING)
+  skippedReason        String?
+
+  // Modification tracking
+  isModified           Boolean             @default(false)
+  modifiedAt           DateTime?
+  modifiedBy           String?             @db.ObjectId
+
+  // Timestamps
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  // Relations
+  clinic               Clinic              @relation(fields: [clinicId], references: [id])
+  recurring            RecurringAppointment @relation(fields: [recurringId], references: [id], onDelete: Cascade)
+
+  @@unique([recurringId, occurrenceNumber])
+  @@index([clinicId])
+  @@index([recurringId])
+  @@index([appointmentId])
+  @@index([scheduledDate])
+  @@map("recurring_occurrences")
+}
+
+enum OccurrenceStatus {
+  PENDING           // Not yet created as appointment
+  SCHEDULED         // Appointment created
+  MODIFIED          // This occurrence was modified
+  SKIPPED           // Skipped (holiday, conflict)
+  CANCELLED         // Individual occurrence cancelled
+}
+
+/// OpeningNotification - Notification sent for cancelled appointment opening
+model OpeningNotification {
+  id                   String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId             String              @db.ObjectId
+
+  // Opening details (from cancellation)
+  cancellationId       String              @db.ObjectId
+  openingDateTime      DateTime            // When the opening is
+  duration             Int                 // Duration in minutes
+  appointmentTypeId    String              @db.ObjectId
+  providerId           String              @db.ObjectId
+
+  // Waitlist targeting
+  waitlistEntryId      String              @db.ObjectId  // Who was notified
+  patientId            String              @db.ObjectId
+
+  // Notification
+  channel              ReminderChannel     // SMS, EMAIL
+  sentAt               DateTime?
+  deliveredAt          DateTime?
+  messageContent       String?
+
+  // Response
+  status               OpeningNotificationStatus @default(PENDING)
+  respondedAt          DateTime?
+  response             OpeningResponse?
+  holdExpiresAt        DateTime?           // Hold expiration if accepted
+
+  // Result
+  bookedAppointmentId  String?             @db.ObjectId  // If booked
+
+  // Timestamps
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  // Relations
+  clinic               Clinic              @relation(fields: [clinicId], references: [id])
+  waitlistEntry        WaitlistEntry       @relation(fields: [waitlistEntryId], references: [id])
+  patient              Patient             @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([cancellationId])
+  @@index([waitlistEntryId])
+  @@index([status])
+  @@map("opening_notifications")
+}
+
+enum OpeningNotificationStatus {
+  PENDING             // Not yet sent
+  SENT                // Sent, awaiting response
+  DELIVERED           // Confirmed delivered
+  ACCEPTED            // Patient accepted
+  DECLINED            // Patient declined
+  EXPIRED             // No response in time
+  BOOKED              // Successfully booked
+  FAILED              // Failed to send
+}
+
+enum OpeningResponse {
+  YES                 // Patient wants the slot
+  NO                  // Patient declined
+  MAYBE               // Interested but not committed
+}
+
+/// ReEngagementCampaign - Campaign to re-engage inactive patients
+model ReEngagementCampaign {
+  id                   String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId             String              @db.ObjectId
+
+  // Campaign info
+  name                 String
+  description          String?
+  status               CampaignStatus      @default(DRAFT)
+
+  // Target criteria
+  inactiveDays         Int                 // Days since last appointment
+  appointmentTypeIds   String[]            @db.ObjectId  // Empty = any type
+  excludePatientIds    String[]            @db.ObjectId  // Exclusion list
+
+  // Outreach settings
+  channels             ReminderChannel[]   // SMS, EMAIL
+  messages             Json                // Array of CampaignMessage
+
+  // Schedule
+  scheduledStartDate   DateTime?
+  scheduledEndDate     DateTime?
+  sendTime             String?             // "09:00" - preferred send time
+
+  // Limits
+  maxPatientsPerDay    Int?
+  maxTotalPatients     Int?
+
+  // Stats
+  patientsTargeted     Int                 @default(0)
+  messagesSent         Int                 @default(0)
+  messagesDelivered    Int                 @default(0)
+  responses            Int                 @default(0)
+  appointmentsBooked   Int                 @default(0)
+
+  // Timestamps
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  createdBy            String              @db.ObjectId
+  launchedAt           DateTime?
+  completedAt          DateTime?
+
+  // Relations
+  clinic               Clinic              @relation(fields: [clinicId], references: [id])
+  patients             CampaignPatient[]
+
+  @@index([clinicId])
+  @@index([status])
+  @@map("re_engagement_campaigns")
+}
+
+enum CampaignStatus {
+  DRAFT               // Being created
+  SCHEDULED           // Ready to run
+  ACTIVE              // Currently running
+  PAUSED              // Temporarily paused
+  COMPLETED           // Finished
+  CANCELLED           // Cancelled
+}
+
+/// CampaignPatient - Patient included in a re-engagement campaign
+model CampaignPatient {
+  id                   String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId             String              @db.ObjectId
+  campaignId           String              @db.ObjectId
+  patientId            String              @db.ObjectId
+
+  // Patient status in campaign
+  status               CampaignPatientStatus @default(PENDING)
+  daysSinceLastVisit   Int
+
+  // Outreach tracking
+  messagesSent         Int                 @default(0)
+  lastMessageAt        DateTime?
+  lastChannel          ReminderChannel?
+
+  // Response
+  respondedAt          DateTime?
+  response             CampaignPatientResponse?
+  appointmentBooked    Boolean             @default(false)
+  bookedAppointmentId  String?             @db.ObjectId
+
+  // Timestamps
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  // Relations
+  clinic               Clinic              @relation(fields: [clinicId], references: [id])
+  campaign             ReEngagementCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  patient              Patient             @relation(fields: [patientId], references: [id])
+
+  @@unique([campaignId, patientId])
+  @@index([clinicId])
+  @@index([campaignId])
+  @@index([patientId])
+  @@index([status])
+  @@map("campaign_patients")
+}
+
+enum CampaignPatientStatus {
+  PENDING             // Not yet contacted
+  CONTACTED           // Message(s) sent
+  RESPONDED           // Patient responded
+  BOOKED              // Appointment booked
+  OPTED_OUT           // Patient opted out
+  FAILED              // Failed to reach
+  EXCLUDED            // Manually excluded
+}
+
+enum CampaignPatientResponse {
+  INTERESTED          // Wants to book
+  NOT_INTERESTED      // Not interested now
+  UNSUBSCRIBE         // Opt out of future campaigns
+  NO_RESPONSE         // No response received
 }
