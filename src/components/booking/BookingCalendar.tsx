@@ -1,14 +1,23 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import type { EventClickArg, DateSelectArg, DatesSetArg, EventDropArg } from '@fullcalendar/core';
+import type { EventClickArg, DateSelectArg, DatesSetArg, EventDropArg, EventInput, EventMountArg } from '@fullcalendar/core';
 import type { EventResizeDoneArg } from '@fullcalendar/interaction';
 
+import { Loader2, AlertCircle } from 'lucide-react';
+
 import '@/styles/fullcalendar.css';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /**
  * Calendar event extended props
@@ -48,6 +57,33 @@ export interface CalendarEvent {
 }
 
 /**
+ * Booking zone extended props
+ */
+export interface BookingZoneExtendedProps {
+  type: 'booking-zone';
+  templateId: string;
+  templateName: string;
+  appointmentTypeIds: string[];
+  appointmentTypeNames: string[];
+  isBlocked: boolean;
+  blockReason: string | null;
+  label: string | null;
+}
+
+/**
+ * Booking zone event type (background event)
+ */
+export interface BookingZoneEvent {
+  id: string;
+  start: string;
+  end: string;
+  display: 'background';
+  backgroundColor: string;
+  borderColor: string;
+  extendedProps: BookingZoneExtendedProps;
+}
+
+/**
  * Props for the BookingCalendar component
  */
 interface BookingCalendarProps {
@@ -56,7 +92,7 @@ interface BookingCalendarProps {
   /** Callback when an event is clicked */
   onEventClick?: (appointmentId: string, event: CalendarEvent) => void;
   /** Callback when a date/time is selected for creating an appointment */
-  onDateSelect?: (startTime: Date, endTime: Date) => void;
+  onDateSelect?: (startTime: Date, endTime: Date, zone?: BookingZoneExtendedProps) => void;
   /** Callback when an event is dragged/dropped (for rescheduling) */
   onEventDrop?: (appointmentId: string, newStart: Date, newEnd: Date) => Promise<boolean>;
   /** Callback when an event is resized */
@@ -75,6 +111,10 @@ interface BookingCalendarProps {
   slotDuration?: number;
   /** Initial date to display */
   initialDate?: Date;
+  /** Whether to show booking zones as background events */
+  showZones?: boolean;
+  /** Callback when booking zone mismatch occurs */
+  onZoneMismatch?: (zone: BookingZoneExtendedProps, selectedTypeId: string) => void;
 }
 
 /**
@@ -101,9 +141,12 @@ export function BookingCalendar({
   },
   slotDuration = 15,
   initialDate,
+  showZones = true,
+  onZoneMismatch,
 }: BookingCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [zones, setZones] = useState<BookingZoneEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -124,13 +167,26 @@ export function BookingCalendar({
         params.set('providerIds', providerIds.join(','));
       }
 
-      const response = await fetch(`/api/booking/calendar?${params}`);
-      const result = await response.json();
+      // Fetch appointments and zones in parallel
+      const [eventsResponse, zonesResponse] = await Promise.all([
+        fetch(`/api/booking/calendar?${params}`),
+        showZones ? fetch(`/api/booking/calendar/zones?${params}`) : Promise.resolve(null),
+      ]);
 
-      if (result.success) {
-        setEvents(result.data);
+      const eventsResult = await eventsResponse.json();
+
+      if (eventsResult.success) {
+        setEvents(eventsResult.data);
       } else {
-        setError(result.error?.message || 'Failed to load appointments');
+        setError(eventsResult.error?.message || 'Failed to load appointments');
+      }
+
+      // Handle zones
+      if (zonesResponse) {
+        const zonesResult = await zonesResponse.json();
+        if (zonesResult.success) {
+          setZones(zonesResult.data);
+        }
       }
     } catch (err) {
       setError('Failed to connect to server');
@@ -138,7 +194,7 @@ export function BookingCalendar({
     } finally {
       setIsLoading(false);
     }
-  }, [providerIds]);
+  }, [providerIds, showZones]);
 
   /**
    * Handle date range changes (when user navigates)
@@ -168,14 +224,33 @@ export function BookingCalendar({
   }, [onEventClick]);
 
   /**
+   * Find the zone that contains a specific time slot
+   */
+  const findZoneForTime = useCallback((start: Date, end: Date): BookingZoneExtendedProps | undefined => {
+    // Find a zone that overlaps with the selected time
+    for (const zone of zones) {
+      const zoneStart = new Date(zone.start);
+      const zoneEnd = new Date(zone.end);
+
+      // Check if the selected time falls within this zone
+      if (start >= zoneStart && end <= zoneEnd) {
+        return zone.extendedProps;
+      }
+    }
+    return undefined;
+  }, [zones]);
+
+  /**
    * Handle date selection (for creating new appointments)
    */
   const handleDateSelect = useCallback((arg: DateSelectArg) => {
-    onDateSelect?.(arg.start, arg.end);
+    // Find the zone for this time slot
+    const zone = findZoneForTime(arg.start, arg.end);
+    onDateSelect?.(arg.start, arg.end, zone);
     // Clear the selection
     const calendarApi = calendarRef.current?.getApi();
     calendarApi?.unselect();
-  }, [onDateSelect]);
+  }, [onDateSelect, findZoneForTime]);
 
   /**
    * Handle event drop (drag and drop rescheduling)
@@ -227,21 +302,150 @@ export function BookingCalendar({
     }
   }, [onEventResize]);
 
+  /**
+   * Add tooltips to booking zone background events
+   */
+  const handleEventDidMount = useCallback((arg: EventMountArg) => {
+    const extendedProps = arg.event.extendedProps;
+
+    // Only add tooltip to booking zones (background events)
+    if (extendedProps?.type === 'booking-zone') {
+      const zoneProps = extendedProps as BookingZoneExtendedProps;
+
+      // Build tooltip text
+      let tooltipText = '';
+      if (zoneProps.isBlocked) {
+        tooltipText = zoneProps.blockReason || 'Blocked';
+      } else if (zoneProps.label) {
+        tooltipText = zoneProps.label;
+      } else if (zoneProps.appointmentTypeNames.length > 0) {
+        tooltipText = zoneProps.appointmentTypeNames.join(', ');
+      } else {
+        tooltipText = 'Open slot';
+      }
+
+      // Add template name
+      tooltipText += `\nTemplate: ${zoneProps.templateName}`;
+
+      // Set native title attribute for hover tooltip
+      arg.el.setAttribute('title', tooltipText);
+      arg.el.style.cursor = 'help';
+    }
+  }, []);
+
+  /**
+   * Get unique zone types for legend
+   */
+  const zoneLegend = useMemo(() => {
+    if (!showZones || zones.length === 0) return [];
+
+    const legendItems = new Map<string, { label: string; color: string; count: number }>();
+
+    for (const zone of zones) {
+      const props = zone.extendedProps;
+      let key: string;
+      let label: string;
+
+      if (props.isBlocked) {
+        key = props.blockReason || 'Blocked';
+        label = props.blockReason || 'Blocked';
+      } else if (props.appointmentTypeNames.length > 0) {
+        key = props.appointmentTypeNames.join(', ');
+        label = props.appointmentTypeNames.join(', ');
+      } else if (props.label) {
+        key = props.label;
+        label = props.label;
+      } else {
+        key = 'Open';
+        label = 'Open slot';
+      }
+
+      const existing = legendItems.get(key);
+      if (existing) {
+        existing.count++;
+      } else {
+        legendItems.set(key, {
+          label,
+          color: zone.borderColor,
+          count: 1,
+        });
+      }
+    }
+
+    return Array.from(legendItems.values()).slice(0, 6); // Limit to 6 items
+  }, [zones, showZones]);
+
+  /**
+   * Combine regular events with zone background events
+   */
+  const allEvents = useMemo((): EventInput[] => {
+    const combined: EventInput[] = [...events];
+
+    if (showZones) {
+      for (const zone of zones) {
+        combined.push({
+          id: zone.id,
+          start: zone.start,
+          end: zone.end,
+          display: 'background',
+          backgroundColor: zone.backgroundColor,
+          borderColor: zone.borderColor,
+          extendedProps: zone.extendedProps,
+        });
+      }
+    }
+
+    return combined;
+  }, [events, zones, showZones]);
+
   return (
-    <div className="booking-calendar relative">
-      {isLoading && (
-        <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      )}
+    <TooltipProvider>
+      <div className="booking-calendar relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
 
-      {error && (
-        <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-md mb-4">
-          {error}
-        </div>
-      )}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      <FullCalendar
+        {/* Zone Legend */}
+        {zoneLegend.length > 0 && (
+          <div className="flex items-center gap-4 mb-3 px-1 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground">Booking Zones:</span>
+            {zoneLegend.map((item, idx) => (
+              <Tooltip key={idx}>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 cursor-help">
+                    <div
+                      className="w-3 h-3 rounded-sm border-l-[3px]"
+                      style={{
+                        backgroundColor: `${item.color}50`,
+                        borderColor: item.color,
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                      {item.label}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-medium">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.count} time slot{item.count !== 1 ? 's' : ''} this week
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        )}
+
+        <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView={initialView}
@@ -251,7 +455,7 @@ export function BookingCalendar({
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,timeGridDay',
         }}
-        events={events}
+        events={allEvents}
         editable={editable}
         selectable={!!onDateSelect}
         selectMirror={true}
@@ -279,7 +483,9 @@ export function BookingCalendar({
         eventDisplay="block"
         eventOverlap={false}
         slotEventOverlap={false}
+        eventDidMount={handleEventDidMount}
       />
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

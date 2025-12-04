@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, addMinutes, parseISO } from 'date-fns';
-import { Search, Calendar, Clock, User, MapPin, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, User, MapPin, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PhiProtected } from '@/components/ui/phi-protected';
-import { getFakeName, getFakePhone, getFakeEmail } from '@/lib/fake-data';
+import { getFakeName, getFakePhone } from '@/lib/fake-data';
+import { PatientSearchCombobox, type PatientSearchResult } from '@/components/booking/PatientSearchCombobox';
 import {
   createAppointmentSchema,
   type CreateAppointmentInput,
@@ -42,15 +43,6 @@ interface AppointmentFormProps {
     email: string | null;
     phone: string | null;
   };
-}
-
-interface Patient {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phone: string | null;
-  email: string | null;
-  dateOfBirth: string | null;
 }
 
 interface AppointmentType {
@@ -107,14 +99,9 @@ export function AppointmentForm({
   const [error, setError] = useState<string | null>(null);
 
   // Data loading states
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [recentPatients, setRecentPatients] = useState<Patient[]>([]);
-  const [patientSearch, setPatientSearch] = useState('');
-  const [loadingPatients, setLoadingPatients] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
+  const [selectedPatient, setSelectedPatient] = useState<PatientSearchResult | null>(
     initialPatient ? { ...initialPatient, dateOfBirth: null } : null
   );
-  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
 
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
@@ -161,47 +148,6 @@ export function AppointmentForm({
   const watchedValues = watch();
   const selectedTypeId = watchedValues.appointmentTypeId;
   const selectedType = appointmentTypes.find((t) => t.id === selectedTypeId);
-
-  // Load recent patients on mount (for showing in dropdown before search)
-  useEffect(() => {
-    const fetchRecentPatients = async () => {
-      try {
-        const response = await fetch('/api/patients?pageSize=5&sortBy=createdAt&sortOrder=desc');
-        const result = await response.json();
-        if (result.success) {
-          setRecentPatients(result.data.items || []);
-        }
-      } catch {
-        // Silent fail
-      }
-    };
-    fetchRecentPatients();
-  }, []);
-
-  // Search patients with debounce
-  useEffect(() => {
-    if (patientSearch.length < 2) {
-      setPatients([]);
-      return;
-    }
-
-    const timeoutId = setTimeout(async () => {
-      setLoadingPatients(true);
-      try {
-        const response = await fetch(`/api/patients?search=${encodeURIComponent(patientSearch)}&pageSize=10`);
-        const result = await response.json();
-        if (result.success) {
-          setPatients(result.data.items || []);
-        }
-      } catch {
-        // Silent fail
-      } finally {
-        setLoadingPatients(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [patientSearch]);
 
   // Load appointment types
   useEffect(() => {
@@ -312,12 +258,10 @@ export function AppointmentForm({
     initialData?.id,
   ]);
 
-  // Select patient
-  const handleSelectPatient = (patient: Patient) => {
+  // Handle patient selection from combobox
+  const handlePatientSelect = (patient: PatientSearchResult) => {
     setSelectedPatient(patient);
     setValue('patientId', patient.id);
-    setPatients([]);
-    setPatientSearch('');
   };
 
   const onSubmit = async (data: CreateAppointmentInput) => {
@@ -413,123 +357,41 @@ export function AppointmentForm({
         </CardHeader>
         <CardContent className="space-y-4">
           {selectedPatient ? (
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div>
-                <p className="font-medium">
-                  <PhiProtected fakeData={getFakeName()}>
-                    {selectedPatient.firstName} {selectedPatient.lastName}
-                  </PhiProtected>
-                </p>
-                {selectedPatient.phone && (
-                  <p className="text-sm text-muted-foreground">
-                    <PhiProtected fakeData={getFakePhone()}>
-                      {selectedPatient.phone}
+            <Card variant="ghost">
+              <CardContent className="flex items-center justify-between p-3">
+                <div>
+                  <p className="font-medium">
+                    <PhiProtected fakeData={getFakeName()}>
+                      {selectedPatient.firstName} {selectedPatient.lastName}
                     </PhiProtected>
                   </p>
-                )}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedPatient(null);
-                  setValue('patientId', '');
-                }}
-              >
-                Change
-              </Button>
-            </div>
+                  {selectedPatient.phone && (
+                    <p className="text-sm text-muted-foreground">
+                      <PhiProtected fakeData={getFakePhone()}>
+                        {selectedPatient.phone}
+                      </PhiProtected>
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPatient(null);
+                    setValue('patientId', '');
+                  }}
+                >
+                  Change
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <FormField label="Search Patient" required error={errors.patientId?.message}>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                <Input
-                  value={patientSearch}
-                  onChange={(e) => setPatientSearch(e.target.value)}
-                  onFocus={() => setShowPatientDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowPatientDropdown(false), 300)}
-                  placeholder="Search by name, phone, or email..."
-                  className="pl-10"
-                />
-                {loadingPatients && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    Loading...
-                  </span>
-                )}
-                {/* Show search results or recent patients */}
-                {showPatientDropdown && (patients.length > 0 || (patientSearch.length < 2 && recentPatients.length > 0)) && (
-                  <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
-                    {patientSearch.length < 2 && recentPatients.length > 0 && (
-                      <>
-                        <div className="px-4 py-2 text-xs font-medium text-muted-foreground border-b">
-                          Recent Patients
-                        </div>
-                        {recentPatients.map((patient) => (
-                          <button
-                            key={patient.id}
-                            type="button"
-                            className="w-full px-4 py-2 text-left hover:bg-muted/50 focus:bg-muted/50 cursor-pointer"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleSelectPatient(patient);
-                            }}
-                          >
-                            <p className="font-medium">
-                              <PhiProtected fakeData={getFakeName()}>
-                                {patient.firstName} {patient.lastName}
-                              </PhiProtected>
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {patient.phone && (
-                                <PhiProtected fakeData={getFakePhone()}>
-                                  {patient.phone}
-                                </PhiProtected>
-                              )}
-                              {patient.phone && patient.email && ' • '}
-                              {patient.email && (
-                                <PhiProtected fakeData={getFakeEmail()}>
-                                  {patient.email}
-                                </PhiProtected>
-                              )}
-                            </p>
-                          </button>
-                        ))}
-                      </>
-                    )}
-                    {patients.length > 0 && patients.map((patient) => (
-                      <button
-                        key={patient.id}
-                        type="button"
-                        className="w-full px-4 py-2 text-left hover:bg-muted/50 focus:bg-muted/50 cursor-pointer"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleSelectPatient(patient);
-                        }}
-                      >
-                        <p className="font-medium">
-                          <PhiProtected fakeData={getFakeName()}>
-                            {patient.firstName} {patient.lastName}
-                          </PhiProtected>
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {patient.phone && (
-                            <PhiProtected fakeData={getFakePhone()}>
-                              {patient.phone}
-                            </PhiProtected>
-                          )}
-                          {patient.phone && patient.email && ' • '}
-                          {patient.email && (
-                            <PhiProtected fakeData={getFakeEmail()}>
-                              {patient.email}
-                            </PhiProtected>
-                          )}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <PatientSearchCombobox
+                onSelect={handlePatientSelect}
+                placeholder="Search by name, phone, or email..."
+              />
             </FormField>
           )}
         </CardContent>

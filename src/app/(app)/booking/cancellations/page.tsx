@@ -40,12 +40,14 @@ import {
 } from "@/components/ui/table";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import { PhiProtected } from "@/components/ui/phi-protected";
 import { getFakeName, getFakePhone, getFakeEmail } from "@/lib/fake-data";
@@ -516,45 +518,47 @@ export default function CancellationsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedCancellation && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted/50">
-                <p className="font-medium">
-                  <PhiProtected fakeData={getFakeName()}>
-                    {selectedCancellation.patient.firstName} {selectedCancellation.patient.lastName}
-                  </PhiProtected>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Originally scheduled: {format(parseISO(selectedCancellation.originalStartTime), "PPp")}
-                </p>
-              </div>
+          <DialogBody>
+            {selectedCancellation && (
+              <div className="space-y-4">
+                <Card variant="ghost">
+                  <CardContent className="p-4">
+                    <p className="font-medium">
+                      <PhiProtected fakeData={getFakeName()}>
+                        {selectedCancellation.patient.firstName} {selectedCancellation.patient.lastName}
+                      </PhiProtected>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Originally scheduled: {format(parseISO(selectedCancellation.originalStartTime), "PPp")}
+                    </p>
+                  </CardContent>
+                </Card>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Result</label>
-                <Select value={recoveryResult} onValueChange={setRecoveryResult}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDING">Still Pending</SelectItem>
-                    <SelectItem value="NO_RESPONSE">No Response</SelectItem>
-                    <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
-                    <SelectItem value="DECLINED">Declined</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <FormField label="Result">
+                  <Select value={recoveryResult} onValueChange={setRecoveryResult}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PENDING">Still Pending</SelectItem>
+                      <SelectItem value="NO_RESPONSE">No Response</SelectItem>
+                      <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
+                      <SelectItem value="DECLINED">Declined</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Notes</label>
-                <Textarea
-                  value={recoveryNotes}
-                  onChange={(e) => setRecoveryNotes(e.target.value)}
-                  placeholder="Add notes about this recovery attempt..."
-                  rows={3}
-                />
+                <FormField label="Notes">
+                  <Textarea
+                    value={recoveryNotes}
+                    onChange={(e) => setRecoveryNotes(e.target.value)}
+                    placeholder="Add notes about this recovery attempt..."
+                    rows={3}
+                  />
+                </FormField>
               </div>
-            </div>
-          )}
+            )}
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setRecoveryDialogOpen(false)}>

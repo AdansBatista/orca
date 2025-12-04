@@ -42,12 +42,14 @@ import {
 } from "@/components/ui/table";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import { PhiProtected } from "@/components/ui/phi-protected";
 import { getFakeName, getFakePhone, getFakeEmail } from "@/lib/fake-data";
@@ -527,64 +529,65 @@ export default function AtRiskPatientsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedRiskScore && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted/50">
-                <p className="font-medium">
-                  <PhiProtected fakeData={getFakeName()}>
-                    {selectedRiskScore.patient.firstName} {selectedRiskScore.patient.lastName}
-                  </PhiProtected>
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-sm text-muted-foreground">Risk Score:</span>
-                  <span className="font-bold">{Math.round(selectedRiskScore.riskScore)}</span>
-                  <Badge variant={RISK_LEVEL_VARIANTS[selectedRiskScore.riskLevel]}>
-                    {selectedRiskScore.riskLevel}
-                  </Badge>
-                </div>
-              </div>
+          <DialogBody>
+            {selectedRiskScore && (
+              <div className="space-y-4">
+                <Card variant="ghost">
+                  <CardContent className="p-4">
+                    <p className="font-medium">
+                      <PhiProtected fakeData={getFakeName()}>
+                        {selectedRiskScore.patient.firstName} {selectedRiskScore.patient.lastName}
+                      </PhiProtected>
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-muted-foreground">Risk Score:</span>
+                      <span className="font-bold">{Math.round(selectedRiskScore.riskScore)}</span>
+                      <Badge variant={RISK_LEVEL_VARIANTS[selectedRiskScore.riskLevel]}>
+                        {selectedRiskScore.riskLevel}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              {/* Recommended Actions */}
-              {selectedRiskScore.recommendedActions.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Recommended Actions</label>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    {selectedRiskScore.recommendedActions.map((action, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 mt-0.5 text-primary" />
-                        {action}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                {/* Recommended Actions */}
+                {selectedRiskScore.recommendedActions.length > 0 && (
+                  <FormField label="Recommended Actions">
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      {selectedRiskScore.recommendedActions.map((action, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 mt-0.5 text-primary" />
+                          {action}
+                        </li>
+                      ))}
+                    </ul>
+                  </FormField>
+                )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Intervention Status</label>
-                <Select value={interventionStatus} onValueChange={setInterventionStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="SUCCESSFUL">Successful</SelectItem>
-                    <SelectItem value="UNSUCCESSFUL">Unsuccessful</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <FormField label="Intervention Status">
+                  <Select value={interventionStatus} onValueChange={setInterventionStatus}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                      <SelectItem value="SUCCESSFUL">Successful</SelectItem>
+                      <SelectItem value="UNSUCCESSFUL">Unsuccessful</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Notes</label>
-                <Textarea
-                  value={interventionNotes}
-                  onChange={(e) => setInterventionNotes(e.target.value)}
-                  placeholder="Document the intervention attempt, outcomes, and next steps..."
-                  rows={4}
-                />
+                <FormField label="Notes">
+                  <Textarea
+                    value={interventionNotes}
+                    onChange={(e) => setInterventionNotes(e.target.value)}
+                    placeholder="Document the intervention attempt, outcomes, and next steps..."
+                    rows={4}
+                  />
+                </FormField>
               </div>
-            </div>
-          )}
+            )}
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setInterventionDialogOpen(false)}>

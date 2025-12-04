@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   Plus,
-  Search,
   Filter,
   User,
   MoreHorizontal,
@@ -52,6 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -59,6 +59,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FormField } from '@/components/ui/form-field';
+import { PatientSearchCombobox, type PatientSearchResult } from '@/components/booking/PatientSearchCombobox';
 import { PhiProtected } from '@/components/ui/phi-protected';
 import { getFakeName, getFakePhone } from '@/lib/fake-data';
 import { toast } from 'sonner';
@@ -100,12 +101,6 @@ interface PaginatedResponse {
   page: number;
   pageSize: number;
   totalPages: number;
-}
-
-interface Patient {
-  id: string;
-  firstName: string;
-  lastName: string;
 }
 
 const emergencyTypeConfig: Record<string, { label: string; variant: 'default' | 'warning' | 'error' }> = {
@@ -168,9 +163,7 @@ export default function EmergenciesPage() {
     notes: '',
     requestChannel: 'PHONE',
   });
-  const [patientSearch, setPatientSearch] = useState('');
-  const [patientResults, setPatientResults] = useState<Patient[]>([]);
-  const [searchingPatients, setSearchingPatients] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<PatientSearchResult | null>(null);
 
   // Triage form
   const [triageData, setTriageData] = useState({
@@ -214,31 +207,11 @@ export default function EmergenciesPage() {
     fetchData();
   }, [fetchData]);
 
-  // Search patients
-  const searchPatients = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setPatientResults([]);
-      return;
-    }
-
-    setSearchingPatients(true);
-    try {
-      const response = await fetch(`/api/patients?search=${encodeURIComponent(query)}&pageSize=10`);
-      const result = await response.json();
-      if (result.success) {
-        setPatientResults(result.data.items || []);
-      }
-    } catch {
-      // Silent fail
-    } finally {
-      setSearchingPatients(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => searchPatients(patientSearch), 300);
-    return () => clearTimeout(timer);
-  }, [patientSearch, searchPatients]);
+  // Handle patient selection for new emergency
+  const handlePatientSelect = (patient: PatientSearchResult) => {
+    setSelectedPatient(patient);
+    setNewFormData({ ...newFormData, patientId: patient.id });
+  };
 
   // Create emergency
   const handleCreate = async () => {
@@ -268,7 +241,7 @@ export default function EmergenciesPage() {
           notes: '',
           requestChannel: 'PHONE',
         });
-        setPatientSearch('');
+        setSelectedPatient(null);
         fetchData();
       } else {
         toast.error(result.error?.message || 'Failed to create emergency');
@@ -631,130 +604,132 @@ export default function EmergenciesPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* Patient Search */}
-            <FormField label="Patient" required>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search patient name..."
-                  value={patientSearch}
-                  onChange={(e) => setPatientSearch(e.target.value)}
-                  className="pl-9"
+          <DialogBody>
+            <div className="space-y-4">
+              {/* Patient Search */}
+              <FormField label="Patient" required>
+                {selectedPatient ? (
+                  <Card variant="ghost">
+                    <CardContent className="flex items-center justify-between p-3">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <PhiProtected fakeData={getFakeName()}>
+                          {selectedPatient.firstName} {selectedPatient.lastName}
+                        </PhiProtected>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPatient(null);
+                          setNewFormData({ ...newFormData, patientId: '' });
+                        }}
+                      >
+                        Change
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <PatientSearchCombobox
+                    onSelect={handlePatientSelect}
+                    placeholder="Search patient name..."
+                    showRecent={false}
+                  />
+                )}
+              </FormField>
+
+              {/* Emergency Type */}
+              <FormField label="Emergency Type" required>
+                <Select
+                  value={newFormData.emergencyType}
+                  onValueChange={(v) => setNewFormData({ ...newFormData, emergencyType: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PAIN">Pain</SelectItem>
+                    <SelectItem value="BROKEN_BRACKET">Broken Bracket</SelectItem>
+                    <SelectItem value="LOOSE_WIRE">Loose Wire</SelectItem>
+                    <SelectItem value="LOST_RETAINER">Lost Retainer</SelectItem>
+                    <SelectItem value="SWELLING">Swelling</SelectItem>
+                    <SelectItem value="TRAUMA">Trauma</SelectItem>
+                    <SelectItem value="INFECTION">Infection</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              {/* Severity */}
+              <FormField label="Initial Severity">
+                <Select
+                  value={newFormData.severity}
+                  onValueChange={(v) => setNewFormData({ ...newFormData, severity: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CRITICAL">Critical</SelectItem>
+                    <SelectItem value="HIGH">High</SelectItem>
+                    <SelectItem value="MEDIUM">Medium</SelectItem>
+                    <SelectItem value="LOW">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              {/* Chief Complaint */}
+              <FormField label="Chief Complaint" required>
+                <Textarea
+                  placeholder="Describe the emergency..."
+                  value={newFormData.chiefComplaint}
+                  onChange={(e) => setNewFormData({ ...newFormData, chiefComplaint: e.target.value })}
+                  rows={3}
                 />
-              </div>
-              {patientResults.length > 0 && (
-                <div className="mt-2 border rounded-lg max-h-40 overflow-y-auto">
-                  {patientResults.map((p) => (
-                    <button
-                      key={p.id}
-                      className="w-full p-2 text-left hover:bg-muted/50 flex items-center gap-2"
-                      onClick={() => {
-                        setNewFormData({ ...newFormData, patientId: p.id });
-                        setPatientSearch(`${p.firstName} ${p.lastName}`);
-                        setPatientResults([]);
-                      }}
-                    >
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <PhiProtected fakeData={getFakeName()}>
-                        {p.firstName} {p.lastName}
-                      </PhiProtected>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </FormField>
+              </FormField>
 
-            {/* Emergency Type */}
-            <FormField label="Emergency Type" required>
-              <Select
-                value={newFormData.emergencyType}
-                onValueChange={(v) => setNewFormData({ ...newFormData, emergencyType: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PAIN">Pain</SelectItem>
-                  <SelectItem value="BROKEN_BRACKET">Broken Bracket</SelectItem>
-                  <SelectItem value="LOOSE_WIRE">Loose Wire</SelectItem>
-                  <SelectItem value="LOST_RETAINER">Lost Retainer</SelectItem>
-                  <SelectItem value="SWELLING">Swelling</SelectItem>
-                  <SelectItem value="TRAUMA">Trauma</SelectItem>
-                  <SelectItem value="INFECTION">Infection</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
+              {/* Pain Level */}
+              <FormField label="Pain Level (0-10)">
+                <Input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={newFormData.painLevel}
+                  onChange={(e) => setNewFormData({ ...newFormData, painLevel: parseInt(e.target.value) || 0 })}
+                />
+              </FormField>
 
-            {/* Severity */}
-            <FormField label="Initial Severity">
-              <Select
-                value={newFormData.severity}
-                onValueChange={(v) => setNewFormData({ ...newFormData, severity: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CRITICAL">Critical</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                  <SelectItem value="MEDIUM">Medium</SelectItem>
-                  <SelectItem value="LOW">Low</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
+              {/* Request Channel */}
+              <FormField label="Request Channel">
+                <Select
+                  value={newFormData.requestChannel}
+                  onValueChange={(v) => setNewFormData({ ...newFormData, requestChannel: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PHONE">Phone</SelectItem>
+                    <SelectItem value="PORTAL">Patient Portal</SelectItem>
+                    <SelectItem value="IN_PERSON">In Person</SelectItem>
+                    <SelectItem value="SMS">SMS</SelectItem>
+                    <SelectItem value="EMAIL">Email</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
 
-            {/* Chief Complaint */}
-            <FormField label="Chief Complaint" required>
-              <Textarea
-                placeholder="Describe the emergency..."
-                value={newFormData.chiefComplaint}
-                onChange={(e) => setNewFormData({ ...newFormData, chiefComplaint: e.target.value })}
-                rows={3}
-              />
-            </FormField>
-
-            {/* Pain Level */}
-            <FormField label="Pain Level (0-10)">
-              <Input
-                type="number"
-                min={0}
-                max={10}
-                value={newFormData.painLevel}
-                onChange={(e) => setNewFormData({ ...newFormData, painLevel: parseInt(e.target.value) || 0 })}
-              />
-            </FormField>
-
-            {/* Request Channel */}
-            <FormField label="Request Channel">
-              <Select
-                value={newFormData.requestChannel}
-                onValueChange={(v) => setNewFormData({ ...newFormData, requestChannel: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PHONE">Phone</SelectItem>
-                  <SelectItem value="PORTAL">Patient Portal</SelectItem>
-                  <SelectItem value="IN_PERSON">In Person</SelectItem>
-                  <SelectItem value="SMS">SMS</SelectItem>
-                  <SelectItem value="EMAIL">Email</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-
-            {/* Notes */}
-            <FormField label="Additional Notes">
-              <Textarea
-                placeholder="Any additional information..."
-                value={newFormData.notes}
-                onChange={(e) => setNewFormData({ ...newFormData, notes: e.target.value })}
-                rows={2}
-              />
-            </FormField>
-          </div>
+              {/* Notes */}
+              <FormField label="Additional Notes">
+                <Textarea
+                  placeholder="Any additional information..."
+                  value={newFormData.notes}
+                  onChange={(e) => setNewFormData({ ...newFormData, notes: e.target.value })}
+                  rows={2}
+                />
+              </FormField>
+            </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewDialog(false)}>
@@ -775,51 +750,53 @@ export default function EmergenciesPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {selectedEmergency && (
-              <Card variant="ghost">
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <p className="font-medium">
-                      <PhiProtected fakeData={getFakeName()}>
-                        {selectedEmergency.patient.firstName} {selectedEmergency.patient.lastName}
-                      </PhiProtected>
-                    </p>
-                    <p className="text-sm text-muted-foreground">{selectedEmergency.chiefComplaint}</p>
-                    {selectedEmergency.painLevel !== null && (
-                      <p className="text-sm">Pain Level: {selectedEmergency.painLevel}/10</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          <DialogBody>
+            <div className="space-y-4">
+              {selectedEmergency && (
+                <Card variant="ghost">
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <p className="font-medium">
+                        <PhiProtected fakeData={getFakeName()}>
+                          {selectedEmergency.patient.firstName} {selectedEmergency.patient.lastName}
+                        </PhiProtected>
+                      </p>
+                      <p className="text-sm text-muted-foreground">{selectedEmergency.chiefComplaint}</p>
+                      {selectedEmergency.painLevel !== null && (
+                        <p className="text-sm">Pain Level: {selectedEmergency.painLevel}/10</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-            <FormField label="Assessed Severity">
-              <Select
-                value={triageData.severity}
-                onValueChange={(v) => setTriageData({ ...triageData, severity: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CRITICAL">Critical - Immediate attention</SelectItem>
-                  <SelectItem value="HIGH">High - Same day</SelectItem>
-                  <SelectItem value="MEDIUM">Medium - Within 24-48 hours</SelectItem>
-                  <SelectItem value="LOW">Low - Routine scheduling</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
+              <FormField label="Assessed Severity">
+                <Select
+                  value={triageData.severity}
+                  onValueChange={(v) => setTriageData({ ...triageData, severity: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CRITICAL">Critical - Immediate attention</SelectItem>
+                    <SelectItem value="HIGH">High - Same day</SelectItem>
+                    <SelectItem value="MEDIUM">Medium - Within 24-48 hours</SelectItem>
+                    <SelectItem value="LOW">Low - Routine scheduling</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
 
-            <FormField label="Triage Notes">
-              <Textarea
-                placeholder="Assessment notes..."
-                value={triageData.notes}
-                onChange={(e) => setTriageData({ ...triageData, notes: e.target.value })}
-                rows={3}
-              />
-            </FormField>
-          </div>
+              <FormField label="Triage Notes">
+                <Textarea
+                  placeholder="Assessment notes..."
+                  value={triageData.notes}
+                  onChange={(e) => setTriageData({ ...triageData, notes: e.target.value })}
+                  rows={3}
+                />
+              </FormField>
+            </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTriageDialog(false)}>
@@ -840,35 +817,37 @@ export default function EmergenciesPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <FormField label="Resolution">
-              <Select
-                value={resolveData.resolution}
-                onValueChange={(v) => setResolveData({ ...resolveData, resolution: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TREATED">Treated</SelectItem>
-                  <SelectItem value="SCHEDULED">Scheduled for later</SelectItem>
-                  <SelectItem value="REFERRED">Referred out</SelectItem>
-                  <SelectItem value="SELF_RESOLVED">Self-resolved</SelectItem>
-                  <SelectItem value="NO_SHOW">No show</SelectItem>
-                  <SelectItem value="FALSE_ALARM">False alarm</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
+          <DialogBody>
+            <div className="space-y-4">
+              <FormField label="Resolution">
+                <Select
+                  value={resolveData.resolution}
+                  onValueChange={(v) => setResolveData({ ...resolveData, resolution: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TREATED">Treated</SelectItem>
+                    <SelectItem value="SCHEDULED">Scheduled for later</SelectItem>
+                    <SelectItem value="REFERRED">Referred out</SelectItem>
+                    <SelectItem value="SELF_RESOLVED">Self-resolved</SelectItem>
+                    <SelectItem value="NO_SHOW">No show</SelectItem>
+                    <SelectItem value="FALSE_ALARM">False alarm</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
 
-            <FormField label="Resolution Notes">
-              <Textarea
-                placeholder="What was done to resolve this emergency..."
-                value={resolveData.notes}
-                onChange={(e) => setResolveData({ ...resolveData, notes: e.target.value })}
-                rows={3}
-              />
-            </FormField>
-          </div>
+              <FormField label="Resolution Notes">
+                <Textarea
+                  placeholder="What was done to resolve this emergency..."
+                  value={resolveData.notes}
+                  onChange={(e) => setResolveData({ ...resolveData, notes: e.target.value })}
+                  rows={3}
+                />
+              </FormField>
+            </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowResolveDialog(false)}>

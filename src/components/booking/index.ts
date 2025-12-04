@@ -6,3 +6,6 @@ export { AppointmentTypeList } from './AppointmentTypeList';
 export { AppointmentTypeForm } from './AppointmentTypeForm';
 export { AppointmentQuickView } from './AppointmentQuickView';
 export { AppointmentForm } from './AppointmentForm';
+export { ProviderScheduleManager } from './ProviderScheduleManager';
+export { PatientSearchCombobox } from './PatientSearchCombobox';
+export type { PatientSearchResult } from './PatientSearchCombobox';
