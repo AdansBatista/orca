@@ -188,17 +188,33 @@ export const POST = withAuth(
       );
     }
 
+    // Normalize effectiveFrom to null if undefined (for consistent MongoDB queries)
+    const normalizedEffectiveFrom = effectiveFrom ?? null;
+
     // Upsert each day's schedule
     const results = await Promise.all(
       schedules.map(async (schedule) => {
         // Try to find existing schedule for this day
+        // Handle MongoDB null semantics: check both isSet: false and null value
+        const whereClause: Record<string, unknown> = {
+          providerId,
+          dayOfWeek: schedule.dayOfWeek,
+          ...getClinicFilter(session),
+        };
+
+        // For null effectiveFrom, match records where field is unset or explicitly null
+        if (normalizedEffectiveFrom === null) {
+          whereClause.OR = [
+            { effectiveFrom: { isSet: false } },
+            { effectiveFrom: null },
+          ];
+        } else {
+          // For non-null values, just match directly
+          whereClause.effectiveFrom = normalizedEffectiveFrom;
+        }
+
         const existing = await db.providerSchedule.findFirst({
-          where: {
-            providerId,
-            dayOfWeek: schedule.dayOfWeek,
-            effectiveFrom: effectiveFrom ?? null,
-            ...getClinicFilter(session),
-          },
+          where: whereClause,
         });
 
         if (existing) {
@@ -213,7 +229,7 @@ export const POST = withAuth(
               lunchStartTime: schedule.lunchStartTime,
               lunchEndTime: schedule.lunchEndTime,
               autoBlockLunch: schedule.autoBlockLunch,
-              effectiveTo: effectiveTo,
+              effectiveTo: effectiveTo ?? null,
               updatedBy: session.user.id,
             },
           });
@@ -231,8 +247,8 @@ export const POST = withAuth(
               lunchStartTime: schedule.lunchStartTime,
               lunchEndTime: schedule.lunchEndTime,
               autoBlockLunch: schedule.autoBlockLunch,
-              effectiveFrom: effectiveFrom,
-              effectiveTo: effectiveTo,
+              effectiveFrom: normalizedEffectiveFrom,
+              effectiveTo: effectiveTo ?? null,
               createdBy: session.user.id,
             },
           });
@@ -241,12 +257,23 @@ export const POST = withAuth(
     );
 
     // Fetch complete schedules with provider info
+    // Use same MongoDB null handling as above
+    const fetchWhereClause: Record<string, unknown> = {
+      providerId,
+      ...getClinicFilter(session),
+    };
+
+    if (normalizedEffectiveFrom === null) {
+      fetchWhereClause.OR = [
+        { effectiveFrom: { isSet: false } },
+        { effectiveFrom: null },
+      ];
+    } else {
+      fetchWhereClause.effectiveFrom = normalizedEffectiveFrom;
+    }
+
     const updatedSchedules = await db.providerSchedule.findMany({
-      where: {
-        providerId,
-        effectiveFrom: effectiveFrom ?? null,
-        ...getClinicFilter(session),
-      },
+      where: fetchWhereClause,
       include: {
         provider: {
           select: {

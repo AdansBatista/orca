@@ -224,8 +224,8 @@ export const scheduleBlockQuerySchema = z.object({
 // Schedule block schema (for visual time blocks in templates)
 // This is the NEW structure for large colored time blocks
 const scheduleBlockSchema = z.object({
-  id: z.string().min(1), // UUID for drag operations
-  dayOfWeek: dayOfWeekSchema, // 0=Sunday, 1=Monday, ..., 6=Saturday
+  id: z.string().min(1).optional(), // UUID for drag operations (optional for updates)
+  dayOfWeek: dayOfWeekSchema.optional(), // Optional: only required for WEEK templates
   startTime: timeSchema,
   endTime: timeSchema,
 

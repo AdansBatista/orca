@@ -16,7 +16,16 @@
       "Bash(npm run build:*)",
       "Bash(ls:*)",
       "Bash(git commit:*)",
-      "Bash(npx prisma db push:*)"
+      "Bash(npx prisma db push:*)",
+      "Bash(if exist \".next\" rmdir /s /q \".next\")",
+      "Bash(if exist \"node_modules\\.prisma\" rmdir /s /q \"node_modules\\.prisma\")",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(wmic process where \"name=''node.exe''\" get ProcessId,CommandLine)",
+      "Bash(timeout:*)",
+      "Bash(wmic process where \"name=''''node.exe''''\" get ProcessId)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(wmic process where \"name=''node.exe''\" get ProcessId)"
     ],
     "deny": [],
     "ask": []
