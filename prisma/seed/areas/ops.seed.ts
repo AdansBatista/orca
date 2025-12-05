@@ -103,6 +103,31 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
     if (!existingFloorPlan && rooms.length > 0 && chairs.length > 0) {
       const floorPlanLayout = getDefaultFloorPlan(rooms, chairs);
 
+      // Extract all chairs from rooms into a flat array
+      const allChairs = floorPlanLayout.rooms.flatMap(room =>
+        (room.chairs || []).map(chair => ({
+          chairId: chair.chairId,
+          name: chair.name,
+          x: room.x + chair.x, // Make position relative to canvas, not room
+          y: room.y + chair.y,
+          rotation: chair.rotation || 0,
+        }))
+      );
+
+      // Prepare layout data with both rooms and chairs at top level
+      const layoutData = {
+        rooms: floorPlanLayout.rooms.map(room => ({
+          roomId: room.roomId,
+          name: room.name,
+          x: room.x,
+          y: room.y,
+          width: room.width,
+          height: room.height,
+          rotation: room.rotation || 0,
+        })),
+        chairs: allChairs,
+      };
+
       await db.floorPlanConfig.create({
         data: {
           clinicId,
@@ -111,7 +136,7 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
           gridColumns: floorPlanLayout.gridColumns,
           gridRows: floorPlanLayout.gridRows,
           cellSize: floorPlanLayout.cellSize,
-          layout: JSON.parse(JSON.stringify(floorPlanLayout.rooms)),
+          layout: layoutData,
           updatedBy: ownerId,
         },
       });
@@ -189,29 +214,31 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
 
         let occupancyCount = 0;
         for (const occData of occupancyData) {
-          // Check if occupancy already exists for this chair
-          if (occData.chairId) {
-            const existingOcc = await db.resourceOccupancy.findFirst({
-              where: { clinicId, chairId: occData.chairId },
-            });
+          // Check if occupancy already exists for this appointment
+          const existing = await db.resourceOccupancy.findFirst({
+            where: {
+              OR: [
+                { appointmentId: occData.appointmentId },
+                { clinicId, chairId: occData.chairId },
+              ],
+            },
+          });
 
-            if (!existingOcc) {
-              await db.resourceOccupancy.create({
-                data: {
-                  clinicId: occData.clinicId,
-                  chairId: occData.chairId,
-                  roomId: occData.roomId,
-                  status: occData.status,
-                  appointmentId: occData.appointmentId,
-                  patientId: occData.patientId,
-                  occupiedAt: occData.occupiedAt,
-                  expectedFreeAt: occData.expectedFreeAt,
-                  blockReason: occData.blockReason,
-                },
-              });
-              occupancyCount++;
-              totalCreated++;
-            }
+          if (!existing) {
+            await db.resourceOccupancy.create({
+              data: {
+                clinicId: occData.clinicId,
+                chairId: occData.chairId,
+                roomId: occData.roomId,
+                status: occData.status,
+                appointmentId: occData.appointmentId,
+                patientId: occData.patientId,
+                occupiedAt: occData.occupiedAt,
+                expectedFreeAt: occData.expectedFreeAt,
+              },
+            });
+            occupancyCount++;
+            totalCreated++;
           }
         }
 

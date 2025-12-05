@@ -12,11 +12,20 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | 🔄 In Progress |
 | **Priority** | High |
 | **Phase** | 2 - Core Operations |
 | **Dependencies** | Phase 1 (Auth, Staff, Resources), Booking & Scheduling |
-| **Last Updated** | 2024-11-27 |
+| **Last Updated** | 2024-12-05 |
+
+---
+
+## 📊 Implementation Tracking
+
+For detailed implementation progress, current work, and session continuity:
+
+- **[IMPLEMENTATION-PROGRESS.md](./IMPLEMENTATION-PROGRESS.md)** - Complete implementation status, progress tracking, and session context
+- **[enhanced-floor-plan-spec.md](./enhanced-floor-plan-spec.md)** - Current feature: Enhanced Floor Plan technical specification
 
 ---
 
@@ -48,9 +57,9 @@ In busy orthodontic practices with multiple providers and treatment chairs, coor
 
 | # | Sub-Area | Description | Status | Priority |
 |---|----------|-------------|--------|----------|
-| 1 | [Operations Dashboard](./sub-areas/operations-dashboard/) | Day/week/month dashboards and views | 📋 Planned | Critical |
-| 2 | [Patient Flow Management](./sub-areas/patient-flow/) | Queue management and patient journey tracking | 📋 Planned | Critical |
-| 3 | [Resource Coordination](./sub-areas/resource-coordination/) | Chair/room and staff assignments | 📋 Planned | High |
+| 1 | [Operations Dashboard](./sub-areas/operations-dashboard/) | Day/week/month dashboards and views | 🔄 In Progress (60%) | Critical |
+| 2 | [Patient Flow Management](./sub-areas/patient-flow/) | Queue management and patient journey tracking | ✅ Complete | Critical |
+| 3 | [Resource Coordination](./sub-areas/resource-coordination/) | Chair/room and staff assignments | 🔄 In Progress (70%) | High |
 | 4 | [AI Manager](./sub-areas/ai-manager/) | AI-powered insights and recommendations | 📋 Planned | Medium |
 
 ---
@@ -673,6 +682,49 @@ docs/areas/practice-orchestration/
 
 ---
 
-**Status**: 📋 Planned
-**Last Updated**: 2024-11-27
+## 🚀 Quick Start for Development
+
+### For New Claude Sessions
+
+1. **Read First**: [IMPLEMENTATION-PROGRESS.md](./IMPLEMENTATION-PROGRESS.md) - Get current status and context
+2. **Check Current Work**: See "Phase 2: Enhanced Features" section for active tasks
+3. **Review Specs**: [enhanced-floor-plan-spec.md](./enhanced-floor-plan-spec.md) for current feature details
+4. **Code Standards**: Consult [TECH-STACK.md](../../guides/TECH-STACK.md) and [STYLING-GUIDE.md](../../guides/STYLING-GUIDE.md)
+
+### Key Files to Reference
+
+```
+docs/areas/practice-orchestration/
+├── README.md                          # This file - Feature overview
+├── IMPLEMENTATION-PROGRESS.md         # ⭐ Current status & progress
+├── enhanced-floor-plan-spec.md        # ⭐ Current feature spec
+└── integrations.md                    # Integration requirements
+
+src/app/(app)/ops/
+├── page.tsx                           # Main operations dashboard
+├── floor-plan/page.tsx                # Floor plan (to be enhanced)
+└── tasks/page.tsx                     # Tasks management
+
+src/components/ops/
+├── PatientFlowBoard.tsx               # Kanban board ✅
+├── QueueDisplay.tsx                   # Queue view ✅
+├── PatientDetailSheet.tsx             # Patient details ✅
+└── ChairSelectionDialog.tsx           # Chair selection ✅
+
+src/app/api/ops/
+├── flow/                              # Patient flow endpoints ✅
+├── chairs/                            # Chair management endpoints ✅
+├── dashboard/                         # Dashboard data endpoints ✅
+└── tasks/                             # Task management endpoints ✅
+```
+
+### Recent Commits
+
+- `2cb4a10` - "mid_state orchestration feature" (Initial implementation)
+
+---
+
+**Status**: 🔄 In Progress
+**Last Updated**: 2024-12-05
+**Current Focus**: Enhanced Floor Plan (Phase 2)
 **Owner**: Development Team

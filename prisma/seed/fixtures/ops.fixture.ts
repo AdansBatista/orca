@@ -301,33 +301,11 @@ export function generateResourceOccupancy(
         occupiedAt: new Date(now.getTime() - 15 * 60000), // Started 15 min ago
         expectedFreeAt: new Date(now.getTime() + 30 * 60000), // Expected 30 min from now
       });
-    } else {
-      // Random status for available chairs
-      const random = Math.random();
-      if (random < 0.1) {
-        // 10% chance of maintenance
-        occupancy.push({
-          clinicId,
-          chairId: chair.id,
-          status: 'MAINTENANCE',
-          blockReason: 'Scheduled maintenance',
-        });
-      } else if (random < 0.15) {
-        // 5% chance of blocked
-        occupancy.push({
-          clinicId,
-          chairId: chair.id,
-          status: 'BLOCKED',
-          blockReason: 'Reserved for emergency',
-        });
-      } else {
-        occupancy.push({
-          clinicId,
-          chairId: chair.id,
-          status: 'AVAILABLE',
-        });
-      }
     }
+    // Note: We don't create ResourceOccupancy records for MAINTENANCE, BLOCKED, or AVAILABLE chairs
+    // because those states don't have appointments, and appointmentId is required to be unique.
+    // The application should handle those states differently (e.g., a separate ChairStatus table)
+    // or treat absence of occupancy record as "available"
   }
 
   return occupancy;
