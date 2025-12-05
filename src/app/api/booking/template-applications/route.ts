@@ -257,3 +257,68 @@ export const POST = withAuth(
   },
   { permissions: ['booking:write'] }
 );
+
+/**
+ * DELETE /api/booking/template-applications
+ * Remove template applications from a date range
+ * Query params: providerId, templateId, startDate, endDate
+ */
+export const DELETE = withAuth(
+  async (req, session) => {
+    const { searchParams } = new URL(req.url);
+
+    const providerId = searchParams.get('providerId') ?? undefined;
+    const templateId = searchParams.get('templateId') ?? undefined;
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+
+    // Build where clause
+    const where: Record<string, unknown> = {
+      ...getClinicFilter(session),
+    };
+
+    if (providerId) {
+      where.providerId = providerId;
+    }
+
+    if (templateId) {
+      where.templateId = templateId;
+    }
+
+    // Require at least a date range or specific template
+    if (!startDate || !endDate) {
+      if (!templateId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Must provide either a date range or templateId',
+            },
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (startDate && endDate) {
+      where.appliedDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    }
+
+    // Delete the applications
+    const result = await db.templateApplication.deleteMany({
+      where,
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        deletedCount: result.count,
+      },
+    });
+  },
+  { permissions: ['booking:write'] }
+);

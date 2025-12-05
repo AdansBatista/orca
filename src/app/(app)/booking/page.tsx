@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Settings, Plus, Filter, RefreshCw, List } from 'lucide-react';
+import { Settings, Plus, Filter, RefreshCw, List, Settings2, ChevronLeft, ChevronRight } from 'lucide-react';
+import type FullCalendar from '@fullcalendar/react';
 
 import { PageHeader, PageContent } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { BookingCalendar, CalendarEvent } from '@/components/booking';
+import { CalendarViewSettingsDialog } from '@/components/booking/CalendarViewSettingsDialog';
 import { AppointmentQuickView } from '@/components/booking/AppointmentQuickView';
 import { toast } from 'sonner';
 
@@ -38,6 +40,16 @@ export default function BookingPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showQuickView, setShowQuickView] = useState(false);
   const [calendarKey, setCalendarKey] = useState(0); // Force calendar refresh
+
+  // View controls state
+  const [slotDuration, setSlotDuration] = useState(15);
+  const [density, setDensity] = useState<'condensed' | 'regular'>('regular');
+  const [showViewSettings, setShowViewSettings] = useState(false);
+  const [currentView, setCurrentView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
+  const [weekendDisplay, setWeekendDisplay] = useState<'normal' | 'narrow' | 'hidden'>('normal');
+
+  // Ref to access calendar API
+  const calendarRef = useRef<FullCalendar>(null);
 
   // Fetch providers on mount
   useEffect(() => {
@@ -148,6 +160,22 @@ export default function BookingPage() {
     handleRefreshCalendar();
   }, [handleRefreshCalendar]);
 
+  // Navigation handlers for calendar
+  const handlePrevious = useCallback(() => {
+    const calendarApi = calendarRef.current?.getApi();
+    calendarApi?.prev();
+  }, []);
+
+  const handleNext = useCallback(() => {
+    const calendarApi = calendarRef.current?.getApi();
+    calendarApi?.next();
+  }, []);
+
+  const handleToday = useCallback(() => {
+    const calendarApi = calendarRef.current?.getApi();
+    calendarApi?.today();
+  }, []);
+
   // Get provider IDs for filtering
   const providerIds = selectedProvider && selectedProvider !== 'all' ? [selectedProvider] : undefined;
 
@@ -186,21 +214,20 @@ export default function BookingPage() {
 
       <PageContent density="comfortable">
         <div className="space-y-4">
-          {/* Quick filters bar */}
+          {/* Filters and View Controls - Single Row */}
           <Card variant="ghost">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Filter:</span>
-                  </div>
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Provider Filter */}
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Filter:</span>
                   <Select
                     value={selectedProvider}
                     onValueChange={setSelectedProvider}
                     disabled={loadingProviders}
                   >
-                    <SelectTrigger className="w-[200px]">
+                    <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder={loadingProviders ? 'Loading...' : 'All Providers'} />
                     </SelectTrigger>
                     <SelectContent>
@@ -223,36 +250,53 @@ export default function BookingPage() {
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {/* Legend */}
-                  <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-[#3B82F6]" />
-                      <span>Arrived</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-[#F59E0B]" />
-                      <span>In Progress</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-[#10B981]" />
-                      <span>Completed</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-[#9CA3AF]" />
-                      <span>Cancelled</span>
-                    </div>
-                  </div>
+                {/* Navigation Controls */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={handlePrevious}
+                    title="Previous"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleToday}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={handleNext}
+                    title="Next"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
+
+                {/* View Settings Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowViewSettings(true)}
+                  className="ml-auto"
+                >
+                  <Settings2 className="h-4 w-4 mr-2" />
+                  View Settings
+                </Button>
               </div>
             </CardContent>
           </Card>
 
           {/* Calendar */}
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-0">
               <BookingCalendar
                 key={calendarKey}
+                ref={calendarRef}
                 providerIds={providerIds}
                 onEventClick={handleEventClick}
                 onDateSelect={handleDateSelect}
@@ -260,11 +304,31 @@ export default function BookingPage() {
                 onEventResize={handleEventResize}
                 editable={true}
                 initialView="timeGridWeek"
+                slotDuration={slotDuration}
+                density={density}
+                currentView={currentView}
+                onViewChange={setCurrentView}
+                hideHeader={true}
+                weekendDisplay={weekendDisplay}
               />
             </CardContent>
           </Card>
         </div>
       </PageContent>
+
+      {/* View Settings Dialog */}
+      <CalendarViewSettingsDialog
+        open={showViewSettings}
+        onOpenChange={setShowViewSettings}
+        slotDuration={slotDuration}
+        onSlotDurationChange={setSlotDuration}
+        density={density}
+        onDensityChange={setDensity}
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        weekendDisplay={weekendDisplay}
+        onWeekendDisplayChange={setWeekendDisplay}
+      />
 
       {/* Appointment Quick View Sheet */}
       <Sheet open={showQuickView} onOpenChange={setShowQuickView}>

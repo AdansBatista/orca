@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState, useMemo } from 'react';
+import { useCallback, useRef, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -115,6 +115,16 @@ interface BookingCalendarProps {
   showZones?: boolean;
   /** Callback when booking zone mismatch occurs */
   onZoneMismatch?: (zone: BookingZoneExtendedProps, selectedTypeId: string) => void;
+  /** View density mode */
+  density?: 'condensed' | 'regular';
+  /** Current calendar view type */
+  currentView?: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth';
+  /** Callback when view type changes */
+  onViewChange?: (view: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth') => void;
+  /** Hide the built-in calendar header toolbar */
+  hideHeader?: boolean;
+  /** Weekend display mode */
+  weekendDisplay?: 'normal' | 'narrow' | 'hidden';
 }
 
 /**
@@ -126,7 +136,7 @@ interface BookingCalendarProps {
  * - Drag and drop (reschedule)
  * - Resize events (change duration)
  */
-export function BookingCalendar({
+export const BookingCalendar = forwardRef<FullCalendar, BookingCalendarProps>(function BookingCalendar({
   providerIds,
   onEventClick,
   onDateSelect,
@@ -143,8 +153,16 @@ export function BookingCalendar({
   initialDate,
   showZones = true,
   onZoneMismatch,
-}: BookingCalendarProps) {
+  density = 'regular',
+  currentView,
+  onViewChange,
+  hideHeader = false,
+  weekendDisplay = 'normal',
+}: BookingCalendarProps, ref) {
   const calendarRef = useRef<FullCalendar>(null);
+
+  // Expose the calendar ref to parent
+  useImperativeHandle(ref, () => calendarRef.current!);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [zones, setZones] = useState<BookingZoneEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -201,7 +219,10 @@ export function BookingCalendar({
    */
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     fetchEvents(arg.start, arg.end);
-  }, [fetchEvents]);
+    // Also notify of view changes if callback provided
+    const viewType = arg.view.type as 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth';
+    onViewChange?.(viewType);
+  }, [fetchEvents, onViewChange]);
 
   /**
    * Handle event click
@@ -398,9 +419,43 @@ export function BookingCalendar({
     return combined;
   }, [events, zones, showZones]);
 
+  // Calculate dynamic time bounds based on business hours
+  // Show working hours plus one 15-minute buffer before and after
+  const timeBounds = useMemo(() => {
+    if (!businessHours?.startTime || !businessHours?.endTime) {
+      return { min: '06:00:00', max: '21:00:00' };
+    }
+
+    const startParts = businessHours.startTime.split(':');
+    const endParts = businessHours.endTime.split(':');
+
+    // Subtract 15 minutes from start
+    let startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]) - 15;
+    if (startMinutes < 0) startMinutes = 0; // Don't go before midnight
+    const minHours = Math.floor(startMinutes / 60);
+    const minMins = startMinutes % 60;
+
+    // Add 15 minutes to end
+    let endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]) + 15;
+    if (endMinutes > 1440) endMinutes = 1440; // Don't go past 24:00
+    const maxHours = Math.floor(endMinutes / 60);
+    const maxMins = endMinutes % 60;
+
+    return {
+      min: `${minHours.toString().padStart(2, '0')}:${minMins.toString().padStart(2, '0')}:00`,
+      max: `${maxHours.toString().padStart(2, '0')}:${maxMins.toString().padStart(2, '0')}:00`,
+    };
+  }, [businessHours]);
+
+  // Determine slot label interval based on slot duration
+  const slotLabelInterval = slotDuration === 30 ? '00:30:00' : '01:00:00';
+
+  // Adjust aspect ratio based on density
+  const aspectRatio = density === 'condensed' ? 2.0 : 1.8;
+
   return (
     <TooltipProvider>
-      <div className="booking-calendar relative">
+      <div className={`booking-calendar density-${density} weekend-${weekendDisplay} relative`}>
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -416,7 +471,7 @@ export function BookingCalendar({
 
         {/* Zone Legend */}
         {zoneLegend.length > 0 && (
-          <div className="flex items-center gap-4 mb-3 px-1 flex-wrap">
+          <div className="flex items-center gap-4 my-2 px-4 flex-wrap">
             <span className="text-xs font-medium text-muted-foreground">Booking Zones:</span>
             {zoneLegend.map((item, idx) => (
               <Tooltip key={idx}>
@@ -448,9 +503,9 @@ export function BookingCalendar({
         <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView={initialView}
+        initialView={currentView || initialView}
         initialDate={initialDate}
-        headerToolbar={{
+        headerToolbar={hideHeader ? false : {
           left: 'prev,next today',
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,timeGridDay',
@@ -460,12 +515,12 @@ export function BookingCalendar({
         selectable={!!onDateSelect}
         selectMirror={true}
         dayMaxEvents={true}
-        weekends={true}
+        weekends={weekendDisplay !== 'hidden'}
         businessHours={businessHours}
         slotDuration={`00:${slotDuration.toString().padStart(2, '0')}:00`}
-        slotLabelInterval="01:00:00"
-        slotMinTime="06:00:00"
-        slotMaxTime="21:00:00"
+        slotLabelInterval={slotLabelInterval}
+        slotMinTime={timeBounds.min}
+        slotMaxTime={timeBounds.max}
         allDaySlot={false}
         nowIndicator={true}
         eventClick={handleEventClick}
@@ -474,7 +529,7 @@ export function BookingCalendar({
         eventResize={handleEventResize}
         datesSet={handleDatesSet}
         height="auto"
-        aspectRatio={1.8}
+        aspectRatio={aspectRatio}
         eventTimeFormat={{
           hour: 'numeric',
           minute: '2-digit',
@@ -488,4 +543,4 @@ export function BookingCalendar({
       </div>
     </TooltipProvider>
   );
-}
+});

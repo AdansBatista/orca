@@ -340,3 +340,93 @@
 .dark .fc-event:hover {
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
 }
+
+/* ====== DENSITY MODES ====== */
+
+/* Condensed Density - More compact, fits more content */
+.booking-calendar.density-condensed .fc-timegrid-slot {
+  height: 1.75rem; /* Reduced from 2.5rem - ~30% smaller */
+}
+
+.booking-calendar.density-condensed .fc-col-header-cell {
+  padding: 0.5rem 0; /* Reduced from 0.75rem */
+  font-size: 0.8125rem; /* Slightly smaller (13px) */
+}
+
+.booking-calendar.density-condensed .fc-event {
+  padding: 0.0625rem 0.25rem; /* Tighter padding */
+  font-size: 0.6875rem; /* Smaller text (11px) */
+  line-height: 1.2;
+}
+
+.booking-calendar.density-condensed .fc-timegrid-slot-label {
+  font-size: 0.75rem; /* Smaller time labels (12px) */
+  padding: 0 0.25rem;
+}
+
+.booking-calendar.density-condensed .fc-event .fc-event-time {
+  font-size: 0.625rem; /* Extra small time (10px) */
+}
+
+.booking-calendar.density-condensed .fc-timegrid-event .fc-event-main {
+  padding: 0.125rem 0.25rem; /* Tighter event padding */
+}
+
+.booking-calendar.density-condensed .fc .fc-toolbar {
+  margin-bottom: 0.75rem; /* Reduced from 1rem */
+}
+
+/* Regular Density - Standard comfortable spacing (default) */
+.booking-calendar.density-regular .fc-timegrid-slot {
+  height: 2.5rem; /* Current default */
+}
+
+.booking-calendar.density-regular .fc-col-header-cell {
+  padding: 0.75rem 0;
+  font-size: 0.875rem;
+}
+
+.booking-calendar.density-regular .fc-event {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+}
+
+/* Smooth transitions for density changes */
+.booking-calendar .fc-timegrid-slot,
+.booking-calendar .fc-col-header-cell,
+.booking-calendar .fc-event {
+  transition: all 0.2s ease;
+}
+
+/* ====== WEEKEND DISPLAY MODES ====== */
+
+/* Narrow Weekend Mode - Show weekends at reduced width */
+.booking-calendar.weekend-narrow .fc-day-sat,
+.booking-calendar.weekend-narrow .fc-day-sun {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+}
+
+.booking-calendar.weekend-narrow .fc-col-header-cell.fc-day-sat,
+.booking-calendar.weekend-narrow .fc-col-header-cell.fc-day-sun {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  font-size: 0.7rem;
+  padding: 0.5rem 0.25rem;
+}
+
+/* Make weekend columns visually distinct when narrow */
+.booking-calendar.weekend-narrow .fc-day-sat,
+.booking-calendar.weekend-narrow .fc-day-sun {
+  background-color: hsl(var(--muted) / 0.3);
+}
+
+/* Normal mode - default width (no special styling needed) */
+.booking-calendar.weekend-normal .fc-day-sat,
+.booking-calendar.weekend-normal .fc-day-sun {
+  /* Default styling - full width */
+}
+
+/* Hidden mode - handled by FullCalendar weekends={false} prop */

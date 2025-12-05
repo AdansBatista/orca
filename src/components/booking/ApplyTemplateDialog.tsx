@@ -156,11 +156,11 @@ export function ApplyTemplateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 px-6 py-4">
           {/* Provider Selection (if clinic-wide templates) */}
           {providers.length > 0 && (
-            <div className="space-y-2">
-              <Label>Apply to</Label>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Apply to</Label>
               <Select value={providerId} onValueChange={setProviderId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select scope" />
@@ -178,15 +178,16 @@ export function ApplyTemplateDialog({
           )}
 
           {/* Quick Range Presets */}
-          <div className="space-y-2">
-            <Label>Quick Range</Label>
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-1.5">
+            <Label className="text-sm">Date Range</Label>
+            <div className="grid grid-cols-4 gap-2">
               {RANGE_PRESETS.map((preset) => (
                 <Button
                   key={preset.months}
-                  variant="outline"
+                  variant="soft"
                   size="sm"
                   onClick={() => applyPreset(preset.months)}
+                  className="h-8"
                 >
                   {preset.label}
                 </Button>
@@ -194,21 +195,24 @@ export function ApplyTemplateDialog({
             </div>
           </div>
 
-          {/* Date Range Pickers */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Start Date</Label>
+          {/* Date Range Pickers - Compact */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Start</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    size="sm"
                     className={cn(
-                      'w-full justify-start text-left font-normal',
+                      'w-full justify-start text-left font-normal h-9',
                       !startDate && 'text-muted-foreground'
                     )}
                   >
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, 'MMM d, yyyy') : 'Select start'}
+                    <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
+                    <span className="text-xs">
+                      {startDate ? format(startDate, 'MMM d, yyyy') : 'Select'}
+                    </span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -223,19 +227,22 @@ export function ApplyTemplateDialog({
               </Popover>
             </div>
 
-            <div className="space-y-2">
-              <Label>End Date</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">End</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    size="sm"
                     className={cn(
-                      'w-full justify-start text-left font-normal',
+                      'w-full justify-start text-left font-normal h-9',
                       !endDate && 'text-muted-foreground'
                     )}
                   >
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, 'MMM d, yyyy') : 'Select end'}
+                    <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
+                    <span className="text-xs">
+                      {endDate ? format(endDate, 'MMM d, yyyy') : 'Select'}
+                    </span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -253,36 +260,39 @@ export function ApplyTemplateDialog({
             </div>
           </div>
 
-          {/* Summary */}
+          {/* Summary - More Prominent */}
           {startDate && endDate && affectedWeeks > 0 && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">
-                  {format(startDate, 'MMM d, yyyy')} → {format(endDate, 'MMM d, yyyy')}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Template will be applied to {affectedWeeks} week{affectedWeeks !== 1 ? 's' : ''}
-                </p>
-              </div>
-              <Badge variant="outline">{affectedWeeks} weeks</Badge>
-            </div>
+            <Alert>
+              <ChevronRight className="h-4 w-4" />
+              <AlertDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">
+                      {format(startDate, 'MMM d')} – {format(endDate, 'MMM d, yyyy')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {affectedWeeks} week{affectedWeeks !== 1 ? 's' : ''} will be updated
+                    </p>
+                  </div>
+                  <Badge>{affectedWeeks}</Badge>
+                </div>
+              </AlertDescription>
+            </Alert>
           )}
 
-          {/* Override Option */}
-          <div className="flex items-start gap-3 p-3 rounded-lg border">
+          {/* Override Option - Compact */}
+          <div className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
             <Checkbox
               id="override"
               checked={overrideExisting}
               onCheckedChange={(checked) => setOverrideExisting(checked === true)}
             />
-            <div className="space-y-1">
-              <Label htmlFor="override" className="font-medium cursor-pointer">
-                Override existing zone assignments
+            <div className="flex-1">
+              <Label htmlFor="override" className="text-sm font-normal cursor-pointer">
+                Override existing zones
               </Label>
-              <p className="text-xs text-muted-foreground">
-                If checked, any existing booking zones for the selected dates will be replaced.
-                Otherwise, only days without zone assignments will be updated.
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Replace any existing zone assignments
               </p>
             </div>
           </div>

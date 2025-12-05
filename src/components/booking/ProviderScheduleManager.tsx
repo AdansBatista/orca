@@ -291,9 +291,9 @@ export function ProviderScheduleManager() {
         </div>
       </div>
 
-      {/* Week schedule grid */}
+      {/* Week schedule grid - optimized for wide screens */}
       {selectedProviderId && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-3">
           {DAYS_OF_WEEK.map((day) => {
             const schedule = getScheduleForDay(day.value);
             const isWeekend = day.value === 0 || day.value === 6;
@@ -304,29 +304,30 @@ export function ProviderScheduleManager() {
                 variant={schedule.isWorkingDay ? 'default' : 'ghost'}
                 className={!schedule.isWorkingDay ? 'opacity-60' : ''}
               >
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-2 px-3 pt-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-1.5">
                       {isWeekend ? (
-                        <Moon className="h-4 w-4 text-muted-foreground" />
+                        <Moon className="h-3.5 w-3.5 text-muted-foreground" />
                       ) : (
-                        <Sun className="h-4 w-4 text-primary" />
+                        <Sun className="h-3.5 w-3.5 text-primary" />
                       )}
                       {day.label}
                     </CardTitle>
                     <Badge
                       variant={schedule.isWorkingDay ? 'success' : 'secondary'}
-                      className="text-xs"
+                      className="text-xs px-1.5 py-0"
+                      dot
                     >
-                      {schedule.isWorkingDay ? 'Working' : 'Off'}
+                      {schedule.isWorkingDay ? 'On' : 'Off'}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 px-3 pb-3">
                   {/* Working day toggle */}
                   <div className="flex items-center justify-between">
-                    <Label htmlFor={`working-${day.value}`} className="text-xs">
-                      Working Day
+                    <Label htmlFor={`working-${day.value}`} className="text-xs font-normal">
+                      Working
                     </Label>
                     <Switch
                       id={`working-${day.value}`}
@@ -341,37 +342,36 @@ export function ProviderScheduleManager() {
                     <>
                       <Separator />
 
-                      {/* Working hours */}
-                      <div className="space-y-2">
-                        <Label className="text-xs flex items-center gap-1">
+                      {/* Working hours - compact */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs flex items-center gap-1 font-normal text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           Hours
                         </Label>
-                        <div className="flex items-center gap-2">
+                        <div className="grid grid-cols-2 gap-1.5">
                           <Input
                             type="time"
                             value={schedule.startTime}
                             onChange={(e) =>
                               updateDaySchedule(day.value, { startTime: e.target.value })
                             }
-                            className="text-xs h-8"
+                            className="text-xs h-7 px-2"
                           />
-                          <span className="text-xs text-muted-foreground">to</span>
                           <Input
                             type="time"
                             value={schedule.endTime}
                             onChange={(e) =>
                               updateDaySchedule(day.value, { endTime: e.target.value })
                             }
-                            className="text-xs h-8"
+                            className="text-xs h-7 px-2"
                           />
                         </div>
                       </div>
 
-                      {/* Lunch break */}
-                      <div className="space-y-2">
+                      {/* Lunch break - compact */}
+                      <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <Label className="text-xs flex items-center gap-1">
+                          <Label className="text-xs flex items-center gap-1 font-normal text-muted-foreground">
                             <Coffee className="h-3 w-3" />
                             Lunch
                           </Label>
@@ -383,23 +383,22 @@ export function ProviderScheduleManager() {
                           />
                         </div>
                         {schedule.autoBlockLunch && (
-                          <div className="flex items-center gap-2">
+                          <div className="grid grid-cols-2 gap-1.5">
                             <Input
                               type="time"
                               value={schedule.lunchStartTime || '12:00'}
                               onChange={(e) =>
                                 updateDaySchedule(day.value, { lunchStartTime: e.target.value })
                               }
-                              className="text-xs h-8"
+                              className="text-xs h-7 px-2"
                             />
-                            <span className="text-xs text-muted-foreground">to</span>
                             <Input
                               type="time"
                               value={schedule.lunchEndTime || '13:00'}
                               onChange={(e) =>
                                 updateDaySchedule(day.value, { lunchEndTime: e.target.value })
                               }
-                              className="text-xs h-8"
+                              className="text-xs h-7 px-2"
                             />
                           </div>
                         )}
@@ -410,10 +409,10 @@ export function ProviderScheduleManager() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="w-full text-xs"
+                          className="w-full text-xs h-7 mt-1"
                           onClick={() => copyToWeekdays(day.value)}
                         >
-                          Copy to all weekdays
+                          Copy to weekdays
                         </Button>
                       )}
                     </>

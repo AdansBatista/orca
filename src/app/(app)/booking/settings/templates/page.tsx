@@ -15,6 +15,7 @@ import {
   Pencil,
   Calendar,
   CalendarRange,
+  List,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { type ScheduleBlock, type AppointmentType } from '@/components/booking/ScheduleBlockBuilder';
 import { ApplyTemplateDialog } from '@/components/booking/ApplyTemplateDialog';
+import { ManageTemplateApplicationsDialog } from '@/components/booking/ManageTemplateApplicationsDialog';
 
 interface BookingTemplate {
   id: string;
@@ -155,6 +157,10 @@ export default function TemplatesPage() {
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [templateToApply, setTemplateToApply] = useState<BookingTemplate | null>(null);
 
+  // Manage applications dialog state
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [templateToManage, setTemplateToManage] = useState<BookingTemplate | null>(null);
+
   // Fetch templates
   const fetchTemplates = useCallback(async () => {
     setLoading(true);
@@ -238,6 +244,12 @@ export default function TemplatesPage() {
   const openApplyDialog = (template: BookingTemplate) => {
     setTemplateToApply(template);
     setApplyDialogOpen(true);
+  };
+
+  // Open manage applications dialog
+  const openManageDialog = (template: BookingTemplate) => {
+    setTemplateToManage(template);
+    setManageDialogOpen(true);
   };
 
   // Delete template
@@ -429,6 +441,18 @@ export default function TemplatesPage() {
                               <CalendarRange className="h-4 w-4 mr-2" />
                               Apply to Calendar
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openManageDialog(template)}
+                              disabled={template._count.applications === 0}
+                            >
+                              <List className="h-4 w-4 mr-2" />
+                              Manage Applications
+                              {template._count.applications > 0 && (
+                                <Badge variant="secondary" className="ml-2">
+                                  {template._count.applications}
+                                </Badge>
+                              )}
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => handleDelete(template.id)}
@@ -494,6 +518,17 @@ export default function TemplatesPage() {
           templateName={templateToApply.name}
           providers={providers}
           onApply={handleApplyTemplate}
+        />
+      )}
+
+      {/* Manage Applications Dialog */}
+      {templateToManage && (
+        <ManageTemplateApplicationsDialog
+          open={manageDialogOpen}
+          onOpenChange={setManageDialogOpen}
+          templateId={templateToManage.id}
+          templateName={templateToManage.name}
+          onApplicationsChange={fetchTemplates}
         />
       )}
     </>

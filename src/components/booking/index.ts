@@ -9,3 +9,6 @@ export { AppointmentForm } from './AppointmentForm';
 export { ProviderScheduleManager } from './ProviderScheduleManager';
 export { PatientSearchCombobox } from './PatientSearchCombobox';
 export type { PatientSearchResult } from './PatientSearchCombobox';
+export { ManageTemplateApplicationsDialog } from './ManageTemplateApplicationsDialog';
+export { CalendarViewControls } from './CalendarViewControls';
+export { CalendarViewSettingsDialog } from './CalendarViewSettingsDialog';
