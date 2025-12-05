@@ -50,6 +50,10 @@ import {
   AlertTriangle,
   Siren,
   Bell,
+  Gauge,
+  Map,
+  CheckSquare,
+  LayoutGrid,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -154,6 +158,16 @@ const defaultNavGroups: NavGroup[] = [
           { label: "Emergencies", href: "/booking/emergencies", icon: Siren },
           { label: "Reminders", href: "/booking/reminders", icon: Bell },
           { label: "Appointment Types", href: "/booking/settings/appointment-types", icon: Settings },
+        ],
+      },
+      {
+        label: "Operations",
+        href: "/ops",
+        icon: Gauge,
+        children: [
+          { label: "Dashboard", href: "/ops", icon: LayoutGrid },
+          { label: "Floor Plan", href: "/ops/floor-plan", icon: Map },
+          { label: "Tasks", href: "/ops/tasks", icon: CheckSquare },
         ],
       },
       { label: "Treatments", href: "/treatments", icon: ClipboardList },

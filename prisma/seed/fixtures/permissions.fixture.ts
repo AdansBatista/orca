@@ -27,6 +27,8 @@ export const PERMISSION_RESOURCES = [
   'sterilization',
   // Booking & Scheduling
   'booking',
+  // Practice Orchestration
+  'ops',
 ] as const;
 
 export const PERMISSION_ACTIONS = [
@@ -70,6 +72,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'sterilization:*',
     // Booking & Scheduling
     'booking:*',
+    // Practice Orchestration
+    'ops:*',
   ],
 
   doctor: [
@@ -93,6 +97,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'booking:read',
     'booking:create',
     'booking:update',
+    // Practice Orchestration (view dashboard, manage flow)
+    'ops:read',
+    'ops:update',
   ],
 
   clinical_staff: [
@@ -118,6 +125,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'booking:read',
     'booking:create',
     'booking:update',
+    // Practice Orchestration (view dashboard, manage flow)
+    'ops:read',
+    'ops:update',
   ],
 
   front_desk: [
@@ -133,6 +143,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'rooms:read',
     // Booking & Scheduling (full access for scheduling duties)
     'booking:*',
+    // Practice Orchestration (full access for front desk duties)
+    'ops:*',
   ],
 
   billing: [

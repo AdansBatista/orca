@@ -64,6 +64,14 @@ model Clinic {
   reEngagementCampaigns      ReEngagementCampaign[]
   campaignPatients           CampaignPatient[]
 
+  // Practice Orchestration relations
+  patientFlowStates          PatientFlowState[]
+  resourceOccupancy          ResourceOccupancy[]
+  staffAssignments           StaffAssignment[]
+  operationsTasks            OperationsTask[]
+  dailyMetrics               DailyMetrics[]
+  floorPlanConfig            FloorPlanConfig?
+
   @@map("clinics")
 }
 
@@ -289,6 +297,10 @@ model Patient {
   openingNotifications       OpeningNotification[]
   campaignPatients           CampaignPatient[]
 
+  // Practice Orchestration relations
+  patientFlowStates          PatientFlowState[]
+  resourceOccupancy          ResourceOccupancy[]
+
   @@index([clinicId])
   @@index([lastName, firstName])
   @@map("patients")
@@ -388,6 +400,13 @@ model StaffProfile {
   bookingTemplates       BookingTemplate[] @relation("BookingTemplates")
   templateApplications   TemplateApplication[] @relation("TemplateApplications")
   recurringAppointments  RecurringAppointment[] @relation("RecurringAppointments")
+
+  // Practice Orchestration relations
+  patientFlowStates      PatientFlowState[] @relation("FlowProvider")
+  staffAssignments       StaffAssignment[]
+  assignedTasks          OperationsTask[]   @relation("TaskAssignee")
+  ownedTasks             OperationsTask[]   @relation("TaskOwner")
+  chairAssignments       ResourceOccupancy[] @relation("ChairAssignedStaff")
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -2037,6 +2056,9 @@ model Room {
   // Booking relations
   appointments    Appointment[]
 
+  // Practice Orchestration relations
+  resourceOccupancy ResourceOccupancy[]
+
   @@unique([clinicId, roomNumber])
   @@index([clinicId])
   @@index([roomType])
@@ -2110,6 +2132,10 @@ model TreatmentChair {
 
   // Booking relations
   appointments    Appointment[]
+
+  // Practice Orchestration relations
+  patientFlowStates PatientFlowState[]
+  resourceOccupancy ResourceOccupancy[]
 
   @@unique([clinicId, chairNumber])
   @@index([clinicId])
@@ -3796,6 +3822,11 @@ model Appointment {
   room                 Room?              @relation(fields: [roomId], references: [id])
   reminders            AppointmentReminder[]
 
+  // Practice Orchestration relations
+  patientFlowState     PatientFlowState?
+  resourceOccupancy    ResourceOccupancy?
+  staffAssignments     StaffAssignment[]
+
   @@index([clinicId])
   @@index([patientId])
   @@index([providerId])
@@ -5190,4 +5221,356 @@ enum CampaignPatientResponse {
   NOT_INTERESTED      // Not interested now
   UNSUBSCRIBE         // Opt out of future campaigns
   NO_RESPONSE         // No response received
+}
+
+// =============================================================================
+// PRACTICE ORCHESTRATION AREA - Operations dashboard, patient flow, resources
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Patient Flow - Real-time patient journey tracking through the clinic
+// -----------------------------------------------------------------------------
+
+/// FlowStage - Stages in the patient journey
+enum FlowStage {
+  SCHEDULED           // Appointment on calendar, patient not arrived
+  CHECKED_IN          // Patient arrived and checked in
+  WAITING             // In waiting room
+  CALLED              // Called back to clinical area
+  IN_CHAIR            // Seated in treatment chair
+  COMPLETED           // Treatment finished
+  CHECKED_OUT         // Checkout processed
+  DEPARTED            // Left the office
+  NO_SHOW             // Did not arrive (auto or manual)
+  CANCELLED           // Appointment cancelled
+}
+
+/// FlowPriority - Priority levels for patient flow
+enum FlowPriority {
+  LOW                 // Routine, can wait
+  NORMAL              // Standard priority
+  HIGH                // Should be seen soon
+  URGENT              // Needs immediate attention
+}
+
+/// PatientFlowState - Real-time tracking of patient journey through clinic
+model PatientFlowState {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  appointmentId   String         @unique @db.ObjectId
+  patientId       String         @db.ObjectId
+
+  // Current state
+  stage           FlowStage      @default(SCHEDULED)
+  chairId         String?        @db.ObjectId
+  providerId      String?        @db.ObjectId
+
+  // Timestamps for each stage
+  scheduledAt     DateTime       // When appointment was scheduled for
+  checkedInAt     DateTime?      // When patient checked in
+  calledAt        DateTime?      // When patient was called
+  seatedAt        DateTime?      // When patient was seated
+  completedAt     DateTime?      // When treatment completed
+  checkedOutAt    DateTime?      // When checkout completed
+  departedAt      DateTime?      // When patient left
+
+  // Current wait time tracking
+  currentWaitStartedAt DateTime? // When current wait started
+
+  // Notes and priority
+  notes           String?
+  priority        FlowPriority   @default(NORMAL)
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?        @db.ObjectId
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  appointment     Appointment    @relation(fields: [appointmentId], references: [id])
+  patient         Patient        @relation(fields: [patientId], references: [id])
+  chair           TreatmentChair? @relation(fields: [chairId], references: [id])
+  provider        StaffProfile?  @relation("FlowProvider", fields: [providerId], references: [id])
+  stageHistory    FlowStageHistory[]
+
+  @@index([clinicId, stage])
+  @@index([clinicId, scheduledAt])
+  @@index([patientId])
+  @@map("patient_flow_states")
+}
+
+/// FlowStageHistory - Historical record of stage transitions
+model FlowStageHistory {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  flowStateId     String         @db.ObjectId
+
+  // Stage info
+  stage           FlowStage
+  enteredAt       DateTime       @default(now())
+  exitedAt        DateTime?
+  duration        Int?           // Duration in minutes
+
+  // Who triggered the transition
+  triggeredBy     String?        @db.ObjectId
+  notes           String?
+
+  // Relations
+  flowState       PatientFlowState @relation(fields: [flowStateId], references: [id], onDelete: Cascade)
+
+  @@index([flowStateId, stage])
+  @@map("flow_stage_history")
+}
+
+// -----------------------------------------------------------------------------
+// Resource Occupancy - Real-time status of chairs and rooms
+// -----------------------------------------------------------------------------
+
+/// OccupancyStatus - Status of a resource (chair/room)
+enum OccupancyStatus {
+  AVAILABLE           // Ready for use
+  OCCUPIED            // Currently in use
+  BLOCKED             // Blocked (e.g., lunch, meeting)
+  MAINTENANCE         // Under maintenance
+  CLEANING            // Being cleaned/sterilized
+}
+
+/// ChairActivitySubStage - Detailed sub-stages within IN_CHAIR flow stage
+/// Used to track what's happening at each chair in real-time
+enum ChairActivitySubStage {
+  SETUP              // Patient being seated, bib on, chart review
+  ASSISTANT_WORKING  // Assistant performing procedures (wire changes, etc.)
+  READY_FOR_DOCTOR   // 🔔 Waiting for doctor - PROMINENT indicator
+  DOCTOR_CHECKING    // Doctor actively checking patient
+  FINISHING          // Final steps before completion
+  CLEANING           // Post-treatment cleanup (chair turnover)
+}
+
+/// ResourceOccupancy - Real-time occupancy tracking for chairs/rooms
+model ResourceOccupancy {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+
+  // Resource reference (either chairId or roomId)
+  chairId         String?        @db.ObjectId
+  roomId          String?        @db.ObjectId
+
+  // Current state
+  status          OccupancyStatus @default(AVAILABLE)
+
+  // If occupied, which appointment/patient
+  appointmentId   String?        @unique @db.ObjectId
+  patientId       String?        @db.ObjectId
+
+  // Timing
+  occupiedAt      DateTime?
+  expectedFreeAt  DateTime?
+
+  // Block info (if status = BLOCKED or MAINTENANCE)
+  blockReason     String?
+  blockedBy       String?        @db.ObjectId
+  blockedUntil    DateTime?
+
+  // Chair activity sub-stage tracking (when status = OCCUPIED)
+  // Tracks detailed workflow: Setup → Assistant → Ready for Doctor → Doctor Checking → Finishing
+  activitySubStage    ChairActivitySubStage?  // Current sub-stage within the appointment
+  subStageStartedAt   DateTime?               // When current sub-stage began
+  assignedStaffId     String?        @db.ObjectId  // Staff currently working at this chair
+  procedureNotes      String?                 // Quick procedure notes for the session
+
+  // Timestamps
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  chair           TreatmentChair? @relation(fields: [chairId], references: [id])
+  room            Room?          @relation(fields: [roomId], references: [id])
+  appointment     Appointment?   @relation(fields: [appointmentId], references: [id])
+  patient         Patient?       @relation(fields: [patientId], references: [id])
+  assignedStaff   StaffProfile?  @relation("ChairAssignedStaff", fields: [assignedStaffId], references: [id])
+
+  @@unique([clinicId, chairId])
+  @@index([clinicId, status])
+  @@index([clinicId, activitySubStage])
+  @@map("resource_occupancy")
+}
+
+// -----------------------------------------------------------------------------
+// Staff Assignments - Staff assigned to appointments
+// -----------------------------------------------------------------------------
+
+/// StaffAssignment - Staff member assigned to an appointment
+model StaffAssignment {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  staffId         String         @db.ObjectId
+  appointmentId   String         @db.ObjectId
+
+  // Role in this appointment
+  role            String         // provider, assistant, hygienist
+  notes           String?        // Assignment notes
+
+  // Assignment info
+  assignedAt      DateTime       @default(now())
+  assignedBy      String?        @db.ObjectId
+  unassignedAt    DateTime?
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  staff           StaffProfile   @relation(fields: [staffId], references: [id])
+  appointment     Appointment    @relation(fields: [appointmentId], references: [id])
+
+  @@unique([appointmentId, staffId])
+  @@index([clinicId, staffId])
+  @@index([appointmentId])
+  @@map("staff_assignments")
+}
+
+// -----------------------------------------------------------------------------
+// Operations Tasks - Daily tasks for staff
+// -----------------------------------------------------------------------------
+
+/// TaskType - Type of operations task
+enum OpsTaskType {
+  MANUAL              // Manually created by staff
+  AI_GENERATED        // Generated by AI Manager
+  SYSTEM              // System-generated (e.g., maintenance reminders)
+}
+
+/// TaskStatus - Status of an operations task
+enum OpsTaskStatus {
+  PENDING             // Not started
+  IN_PROGRESS         // Being worked on
+  COMPLETED           // Done
+  CANCELLED           // Cancelled
+}
+
+/// TaskPriority - Priority of an operations task
+enum OpsTaskPriority {
+  LOW                 // Can wait
+  NORMAL              // Standard
+  HIGH                // Should be done soon
+  URGENT              // Needs immediate attention
+}
+
+/// OperationsTask - Daily operational tasks for staff
+model OperationsTask {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+
+  // Task details
+  title           String
+  description     String?
+  type            OpsTaskType    @default(MANUAL)
+
+  // Assignment
+  assigneeId      String?        @db.ObjectId
+  ownerId         String         @db.ObjectId
+
+  // Timing
+  dueAt           DateTime?
+  completedAt     DateTime?
+
+  // Status
+  status          OpsTaskStatus  @default(PENDING)
+  priority        OpsTaskPriority @default(NORMAL)
+
+  // Related entity (optional link to appointment, patient, etc.)
+  relatedType     String?        // appointment, patient, resource
+  relatedId       String?        @db.ObjectId
+
+  // Timestamps & Audit
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?        @db.ObjectId
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  assignee        StaffProfile?  @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  owner           StaffProfile   @relation("TaskOwner", fields: [ownerId], references: [id])
+
+  @@index([clinicId, status])
+  @@index([clinicId, assigneeId])
+  @@index([clinicId, dueAt])
+  @@map("operations_tasks")
+}
+
+// -----------------------------------------------------------------------------
+// Daily Metrics - Aggregated daily statistics
+// -----------------------------------------------------------------------------
+
+/// DailyMetrics - Aggregated metrics for a day
+model DailyMetrics {
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String        @db.ObjectId
+  date             DateTime      @db.Date
+
+  // Patient counts
+  scheduledCount   Int           @default(0)
+  checkedInCount   Int           @default(0)
+  completedCount   Int           @default(0)
+  noShowCount      Int           @default(0)
+  cancelledCount   Int           @default(0)
+  walkInCount      Int           @default(0)
+
+  // Time metrics (in minutes)
+  avgWaitMinutes   Float?        // Average wait time (check-in to chair)
+  avgChairMinutes  Float?        // Average chair time
+  totalWaitMinutes Int?          // Total wait time
+  totalChairMinutes Int?         // Total chair time
+
+  // Performance metrics
+  onTimePercentage Float?        // % of appointments started on time
+  chairUtilization Float?        // % chair utilization
+
+  // Provider-specific (JSON for flexibility)
+  providerMetrics  Json?         // { providerId: { patients, avgTime, onTime } }
+
+  // Timestamps
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  // Relations
+  clinic           Clinic        @relation(fields: [clinicId], references: [id])
+
+  @@unique([clinicId, date])
+  @@index([clinicId])
+  @@map("daily_metrics")
+}
+
+// -----------------------------------------------------------------------------
+// Floor Plan Configuration - Layout for floor plan view
+// -----------------------------------------------------------------------------
+
+/// FloorPlanConfig - Floor plan layout configuration for a clinic
+model FloorPlanConfig {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @unique @db.ObjectId
+
+  // Identification
+  name            String         @default("Main Floor")
+  isDefault       Boolean        @default(true)
+
+  // Layout settings
+  gridColumns     Int            @default(20)  // Number of columns
+  gridRows        Int            @default(12)  // Number of rows
+  cellSize        Int            @default(40)  // Pixels per grid cell
+
+  // Background image (optional)
+  backgroundImage String?
+
+  // Item positions (JSON array of positioned room items)
+  // [{ roomId, name, x, y, width, height, rotation, chairs: [{ chairId, name, x, y, rotation }] }]
+  layout          Json           @default("[]")
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  updatedBy       String?        @db.ObjectId
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+
+  @@map("floor_plan_configs")
 }

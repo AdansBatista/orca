@@ -9,6 +9,7 @@ import { seedPerformance, clearPerformance } from './performance.seed';
 import { seedResources, clearResources } from './resources.seed';
 import { seedPatients, clearPatients } from './patients.seed';
 import { seedBooking, clearBooking } from './booking.seed';
+import { seedOps, clearOps } from './ops.seed';
 
 /**
  * Registry of all seedable areas with their dependencies.
@@ -107,6 +108,14 @@ export const areaRegistry: SeedArea[] = [
     dependencies: ['core', 'auth:users', 'staff', 'resources', 'patients'],
     seed: seedBooking,
     clear: clearBooking,
+  },
+  {
+    id: 'ops',
+    name: 'Practice Orchestration (Patient Flow & Dashboard)',
+    phase: 2,
+    dependencies: ['core', 'auth:users', 'staff', 'resources', 'patients', 'booking'],
+    seed: seedOps,
+    clear: clearOps,
   },
 
   // ============================================================================

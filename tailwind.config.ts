@@ -215,6 +215,23 @@ const config: Config = {
   			'collapsible-up': {
   				from: { height: 'var(--radix-collapsible-content-height)', opacity: '1' },
   				to: { height: '0', opacity: '0' }
+  			},
+  			// Floor Plan - Ready for Doctor attention animations
+  			'glow-pulse': {
+  				'0%, 100%': { boxShadow: '0 0 20px rgba(251, 191, 36, 0.4)' },
+  				'50%': { boxShadow: '0 0 40px rgba(251, 191, 36, 0.6)' }
+  			},
+  			'bell-ring': {
+  				'0%': { transform: 'rotate(0deg)' },
+  				'10%': { transform: 'rotate(14deg)' },
+  				'20%': { transform: 'rotate(-8deg)' },
+  				'30%': { transform: 'rotate(14deg)' },
+  				'40%': { transform: 'rotate(-4deg)' },
+  				'50%, 100%': { transform: 'rotate(0deg)' }
+  			},
+  			'shimmer-banner': {
+  				'0%': { transform: 'translateX(-100%)' },
+  				'100%': { transform: 'translateX(100%)' }
   			}
   		},
   		animation: {
@@ -225,7 +242,11 @@ const config: Config = {
   			'fade-in': 'fade-in 0.3s ease-out',
   			'fade-up': 'fade-up 0.4s ease-out',
   			'scale-in': 'scale-in 0.2s ease-out',
-  			shimmer: 'shimmer 2s infinite'
+  			shimmer: 'shimmer 2s infinite',
+  			// Floor Plan animations
+  			'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
+  			'bell-ring': 'bell-ring 1s ease-in-out',
+  			'shimmer-banner': 'shimmer-banner 2s ease-in-out infinite'
   		},
   		spacing: {
   			'18': '4.5rem',

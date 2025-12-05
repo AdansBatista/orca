@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PhiFogProvider } from "@/contexts/phi-fog-context";
+import { ChairSidebarProvider } from "@/contexts/chair-sidebar-context";
 import { SessionProvider } from "@/components/providers";
 import "./globals.css";
 
@@ -26,7 +27,9 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <PhiFogProvider>
-              {children}
+              <ChairSidebarProvider>
+                {children}
+              </ChairSidebarProvider>
               <Toaster richColors position="top-right" />
             </PhiFogProvider>
           </ThemeProvider>
