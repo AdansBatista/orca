@@ -1,70 +1,37 @@
 'use client';
 
-import { useState } from 'react';
-import {
-	Bell,
-	ChevronRight,
-	Clock,
-	CheckCircle2,
-	XCircle,
-	Wrench,
-	User,
-	Stethoscope,
-	Sparkles,
-	Settings2,
-	X,
-	AlertTriangle,
-} from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { PhiProtected } from '@/components/ui/phi-protected';
-import { getFakeName } from '@/lib/fake-data';
+import { toast } from 'sonner';
 import {
 	ChairStatus,
 	ChairStatusSummary,
 	ChairActivitySubStage,
-	getChairColor,
-	getTimeRemaining,
-	getSubStageTime,
 } from './hooks/useChairStatus';
+import { ChairCard } from './ChairCard';
 
 interface FullCardsViewProps {
 	chairs: ChairStatus[];
 	summary: ChairStatusSummary | null;
 	onCollapse: () => void;
 	onClose: () => void;
+	onRefresh?: () => void;
 }
 
 type FilterTab = 'all' | 'occupied' | 'ready' | 'available';
 
-// Sub-stage configuration (matching FloorPlanView)
-const SUB_STAGE_CONFIG: Record<
-	ChairActivitySubStage,
-	{
-		icon: typeof Settings2;
-		label: string;
-		badge: 'ghost' | 'secondary' | 'warning' | 'success' | 'info';
-	}
-> = {
-	SETUP: { icon: Settings2, label: 'Setup', badge: 'ghost' },
-	ASSISTANT_WORKING: { icon: User, label: 'Assistant', badge: 'secondary' },
-	READY_FOR_DOCTOR: { icon: Bell, label: 'Ready for Dr.', badge: 'warning' },
-	DOCTOR_CHECKING: { icon: Stethoscope, label: 'Dr. Checking', badge: 'success' },
-	FINISHING: { icon: Sparkles, label: 'Finishing', badge: 'info' },
-	CLEANING: { icon: Clock, label: 'Cleaning', badge: 'warning' },
-};
-
 /**
  * Fully expanded state (Level 2) of the Chair Status Sidebar
- * Shows full chair cards with all details
+ * Shows full chair cards with all details and actions
  */
 export function FullCardsView({
 	chairs,
 	summary,
 	onCollapse,
 	onClose,
+	onRefresh,
 }: FullCardsViewProps) {
 	const [filter, setFilter] = useState<FilterTab>('all');
 
@@ -94,6 +61,26 @@ export function FullCardsView({
 	});
 
 	const readyCount = summary?.readyForDoctor ?? 0;
+
+	// Handle sub-stage update
+	const handleSubStageUpdate = useCallback(async (chair: ChairStatus, subStage: ChairActivitySubStage) => {
+		try {
+			const response = await fetch(`/api/ops/chairs/${chair.id}/sub-stage`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ subStage }),
+			});
+			const result = await response.json();
+			if (result.success) {
+				toast.success(`${chair.name} updated`);
+				onRefresh?.();
+			} else {
+				toast.error(result.error?.message || 'Failed to update');
+			}
+		} catch {
+			toast.error('Failed to update chair status');
+		}
+	}, [onRefresh]);
 
 	return (
 		<div className="w-80 h-full flex flex-col bg-card border-l border-border/50">
@@ -165,7 +152,10 @@ export function FullCardsView({
 						<ChairCard
 							key={chair.id}
 							chair={chair}
+							compact
+							onSubStageUpdate={handleSubStageUpdate}
 							style={{ animationDelay: `${index * 50}ms` }}
+							className="animate-fade-up"
 						/>
 					))
 				)}
@@ -197,188 +187,5 @@ function FilterButton({ active, onClick, count, highlight, children }: FilterBut
 			{children}
 			<span className="ml-1 opacity-60">{count}</span>
 		</button>
-	);
-}
-
-interface ChairCardProps {
-	chair: ChairStatus;
-	style?: React.CSSProperties;
-}
-
-function ChairCard({ chair, style }: ChairCardProps) {
-	const color = getChairColor(chair);
-	const isOccupied = chair.status === 'OCCUPIED';
-	const isReadyForDoctor = chair.activitySubStage === 'READY_FOR_DOCTOR';
-	const subStageConfig = chair.activitySubStage
-		? SUB_STAGE_CONFIG[chair.activitySubStage]
-		: null;
-	const timeRemaining = getTimeRemaining(chair.expectedFreeAt);
-	const isOverdue = timeRemaining === 'Overdue';
-	const stageTime = getSubStageTime(chair.subStageStartedAt);
-
-	// Calculate progress
-	const getProgress = () => {
-		if (!chair.appointment?.startTime || !chair.appointment?.endTime) return 0;
-		const start = new Date(chair.appointment.startTime).getTime();
-		const end = new Date(chair.appointment.endTime).getTime();
-		const now = Date.now();
-		return Math.min(Math.max(((now - start) / (end - start)) * 100, 0), 100);
-	};
-
-	const formatTime = (dateString: string | undefined) => {
-		if (!dateString) return '';
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true,
-		});
-	};
-
-	const getStatusIcon = () => {
-		switch (chair.status) {
-			case 'AVAILABLE':
-				return CheckCircle2;
-			case 'BLOCKED':
-				return XCircle;
-			case 'MAINTENANCE':
-				return Wrench;
-			case 'CLEANING':
-				return Clock;
-			default:
-				return subStageConfig?.icon || User;
-		}
-	};
-
-	const StatusIcon = getStatusIcon();
-
-	return (
-		<div
-			className={cn(
-				'rounded-xl border-2 overflow-hidden',
-				'transition-all duration-200 animate-fade-up',
-				'hover:shadow-md',
-				isReadyForDoctor && [
-					'ring-2 ring-amber-400/40 ring-offset-1 ring-offset-background',
-					'shadow-md shadow-amber-200/30 dark:shadow-amber-900/20',
-				]
-			)}
-			style={{
-				borderColor: color,
-				...style,
-			}}
-		>
-			{/* Header */}
-			<div
-				className="px-3 py-2 flex items-center justify-between"
-				style={{ backgroundColor: `${color}15` }}
-			>
-				<div className="flex items-center gap-2">
-					<div
-						className="w-6 h-6 rounded-md flex items-center justify-center"
-						style={{ backgroundColor: color }}
-					>
-						<StatusIcon className="h-3.5 w-3.5 text-white" />
-					</div>
-					<span className="font-semibold text-sm">{chair.name}</span>
-				</div>
-				{isReadyForDoctor && (
-					<Bell className="h-4 w-4 text-amber-500" />
-				)}
-			</div>
-
-			{/* Content */}
-			<div className="p-3 space-y-2 bg-background">
-				{/* Sub-stage or Status badge */}
-				<div className="flex items-center gap-2">
-					{subStageConfig ? (
-						<Badge variant={subStageConfig.badge} size="sm">
-							{subStageConfig.label}
-						</Badge>
-					) : (
-						<Badge
-							variant={chair.status === 'AVAILABLE' ? 'success' : 'ghost'}
-							size="sm"
-						>
-							{chair.status === 'AVAILABLE' ? 'Available' : chair.status.toLowerCase()}
-						</Badge>
-					)}
-					{stageTime && (
-						<span className="text-xs text-muted-foreground">{stageTime}</span>
-					)}
-				</div>
-
-				{/* Patient info */}
-				{isOccupied && chair.patient && (
-					<div className="space-y-1">
-						<p className="text-sm font-medium truncate">
-							<PhiProtected fakeData={getFakeName()}>
-								{chair.patient.firstName} {chair.patient.lastName}
-							</PhiProtected>
-						</p>
-						{chair.appointment?.appointmentType && (
-							<p className="text-xs text-muted-foreground truncate">
-								{chair.appointment.appointmentType.name}
-							</p>
-						)}
-						{/* Staff/Provider */}
-						<p className="text-xs text-muted-foreground">
-							{chair.assignedStaff && (
-								<span>
-									{chair.assignedStaff.firstName} {chair.assignedStaff.lastName[0]}.
-								</span>
-							)}
-							{chair.assignedStaff && chair.appointment?.provider && ' • '}
-							{chair.appointment?.provider && (
-								<span>Dr. {chair.appointment.provider.lastName}</span>
-							)}
-						</p>
-					</div>
-				)}
-
-				{/* Available state */}
-				{chair.status === 'AVAILABLE' && (
-					<p className="text-xs text-muted-foreground">Ready for patient</p>
-				)}
-
-				{/* Blocked state */}
-				{chair.status === 'BLOCKED' && chair.blockReason && (
-					<p className="text-xs text-muted-foreground">{chair.blockReason}</p>
-				)}
-
-				{/* Progress bar for occupied */}
-				{isOccupied && chair.appointment && (
-					<div className="pt-2 space-y-1">
-						<div className="flex justify-between text-[10px]">
-							<span className="text-muted-foreground">
-								{formatTime(chair.appointment.startTime)}
-							</span>
-							{timeRemaining && (
-								<span
-									className={cn(
-										'font-medium flex items-center gap-0.5',
-										isOverdue ? 'text-error-600' : 'text-muted-foreground'
-									)}
-								>
-									{isOverdue && <AlertTriangle className="h-2.5 w-2.5" />}
-									<Clock className="h-2.5 w-2.5" />
-									{timeRemaining}
-								</span>
-							)}
-							<span className="text-muted-foreground">
-								{formatTime(chair.appointment.endTime)}
-							</span>
-						</div>
-						<Progress
-							value={getProgress()}
-							className={cn(
-								'h-1',
-								isReadyForDoctor && '[&>div]:bg-amber-500',
-								isOverdue && '[&>div]:bg-error-500'
-							)}
-						/>
-					</div>
-				)}
-			</div>
-		</div>
 	);
 }

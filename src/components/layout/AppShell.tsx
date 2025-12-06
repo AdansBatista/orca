@@ -31,14 +31,16 @@ interface AppShellProps {
  */
 function AppShellContent({ children, className }: AppShellProps) {
   const { isCollapsed } = useSidebar();
-  const { level: chairSidebarLevel } = useChairSidebar();
+  const { level: chairLevel } = useChairSidebar();
 
-  // Calculate right margin based on chair sidebar expansion level
-  // Level 0: 50px, Level 1: 50px, Level 2: 320px (w-80)
+  // Add right margin only when chair sidebar panel is open
+  // Level 0: floating button (no margin)
+  // Level 1: thin panel (50px margin)
+  // Level 2: wide panel (320px margin)
   const rightMargin =
-    chairSidebarLevel === 0
-      ? "md:mr-[50px]"
-      : chairSidebarLevel === 1
+    chairLevel === 0
+      ? ""
+      : chairLevel === 1
         ? "md:mr-[50px]"
         : "md:mr-80";
 
@@ -54,7 +56,7 @@ function AppShellContent({ children, className }: AppShellProps) {
       >
         {children}
       </main>
-      {/* Chair Status Sidebar - Right side */}
+      {/* Chair Status Sidebar - Floating button at top-right, expands to panel */}
       <ChairStatusSidebar />
     </div>
   );

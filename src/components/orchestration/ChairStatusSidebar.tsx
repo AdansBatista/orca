@@ -8,28 +8,31 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { hasPermission } from '@/lib/auth';
 import { useChairSidebar } from '@/contexts/chair-sidebar-context';
 import { useChairStatus } from './hooks/useChairStatus';
-import { CollapsedView } from './CollapsedView';
+import { ChairStatusCircle } from './ChairStatusCircle';
 import { VerticalStackView } from './VerticalStackView';
 import { FullCardsView } from './FullCardsView';
 
 /**
  * Global Chair Status Sidebar
  *
- * A fixed sidebar on the right edge of the screen that provides
- * at-a-glance visibility into all chair statuses.
+ * A floating button that expands into a panel when clicked.
+ * Does not take up screen space when collapsed.
  *
- * Three expansion levels:
- * - Level 0 (Collapsed): Donut chart showing status overview
- * - Level 1 (Semi-expanded): Vertical stack with chair segments
- * - Level 2 (Fully expanded): Full chair cards with details
+ * States:
+ * - Collapsed: Floating button showing chair count and ready-for-doctor indicator
+ * - Expanded (Level 1): Vertical stack with chair segments
+ * - Fully Expanded (Level 2): Full chair cards with details
  *
  * Permission-gated: Only visible to users with 'ops:read' permission
  * Responsive: Hidden on mobile (< md breakpoint)
  */
 export function ChairStatusSidebar() {
 	const { data: session, status: sessionStatus } = useSession();
-	const { level, setLevel, collapse, semiExpand, expand } = useChairSidebar();
-	const { chairs, summary, loading, error } = useChairStatus();
+	const { level, collapse, semiExpand, expand } = useChairSidebar();
+	const { chairs, summary, loading, error, refetch } = useChairStatus();
+
+	// Derive isOpen from context level - level > 0 means panel is open
+	const isOpen = level > 0;
 
 	// Check permission - need ops:read
 	const hasOpsPermission =
@@ -42,62 +45,65 @@ export function ChairStatusSidebar() {
 	// Calculate if any chairs are ready for doctor
 	const hasReadyChairs = (summary?.readyForDoctor ?? 0) > 0;
 
-	// Width based on expansion level
-	const getWidth = () => {
-		switch (level) {
-			case 0:
-				return 'w-[50px]';
-			case 1:
-				return 'w-[50px]';
-			case 2:
-				return 'w-80';
-			default:
-				return 'w-[50px]';
-		}
-	};
-
 	// Handle chair click from vertical stack - expand and potentially scroll
-	const handleChairClick = (chairId: string) => {
+	const handleChairClick = () => {
 		expand();
-		// Could scroll to specific chair in full view if needed
 	};
 
+	const handleOpen = () => {
+		semiExpand(); // Sets level to 1
+	};
+
+	const handleClose = () => {
+		collapse(); // Sets level to 0
+	};
+
+	// Floating button when closed - positioned at top-right, aligned with header actions
+	if (!isOpen) {
+		return (
+			<div className="fixed right-1.5 top-1.5 z-40 hidden md:block">
+				<div
+					className={cn(
+						'transition-all duration-200 hover:scale-110 cursor-pointer',
+						hasReadyChairs && 'animate-pulse'
+					)}
+					onClick={handleOpen}
+				>
+					{loading ? (
+						<Skeleton className="w-10 h-10 rounded-full" />
+					) : error ? (
+						<div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center">
+							<Armchair className="h-4 w-4 text-muted-foreground" />
+						</div>
+					) : (
+						<ChairStatusCircle
+							chairs={chairs}
+							size={40}
+							strokeWidth={5}
+						/>
+					)}
+				</div>
+			</div>
+		);
+	}
+
+	// Expanded panel
 	return (
 		<aside
 			className={cn(
 				'fixed right-0 top-0 z-30 h-screen',
-				'hidden md:flex', // Hidden on mobile
+				'hidden md:flex',
 				'transition-all duration-300 ease-out',
-				getWidth()
+				level === 2 ? 'w-80' : 'w-[50px]'
 			)}
 		>
 			{/* Loading state */}
-			{loading && level === 0 && (
+			{loading && level === 1 && (
 				<div className="w-[50px] h-full flex flex-col items-center py-4 bg-card border-l border-border/50">
 					<Skeleton className="w-10 h-10 rounded-full" />
 					<Skeleton className="w-6 h-3 mt-4" />
 					<Skeleton className="w-4 h-2 mt-1" />
 				</div>
-			)}
-
-			{/* Error state - show minimal indicator */}
-			{error && !loading && level === 0 && (
-				<div className="w-[50px] h-full flex flex-col items-center justify-center bg-card border-l border-border/50">
-					<div className="w-10 h-10 rounded-full bg-muted/30 flex items-center justify-center">
-						<Armchair className="h-5 w-5 text-muted-foreground" />
-					</div>
-					<span className="text-[9px] text-muted-foreground mt-2">--</span>
-				</div>
-			)}
-
-			{/* Collapsed view (Level 0) */}
-			{!loading && !error && level === 0 && (
-				<CollapsedView
-					chairs={chairs}
-					summary={summary}
-					onExpand={semiExpand}
-					hasReadyChairs={hasReadyChairs}
-				/>
 			)}
 
 			{/* Vertical stack view (Level 1) */}
@@ -106,7 +112,7 @@ export function ChairStatusSidebar() {
 					chairs={chairs}
 					summary={summary}
 					onChairClick={handleChairClick}
-					onCollapse={collapse}
+					onCollapse={handleClose}
 				/>
 			)}
 
@@ -116,7 +122,8 @@ export function ChairStatusSidebar() {
 					chairs={chairs}
 					summary={summary}
 					onCollapse={semiExpand}
-					onClose={collapse}
+					onClose={handleClose}
+					onRefresh={refetch}
 				/>
 			)}
 		</aside>

@@ -150,10 +150,13 @@ export function ChairStatusCircle({
 					</div>
 				</button>
 			</TooltipTrigger>
-			<TooltipContent side="left" className="max-w-[200px]">
+			<TooltipContent
+				side="left"
+				className="rounded-md border border-border bg-card text-card-foreground shadow-lg px-3 py-2 max-w-[200px]"
+			>
 				<div className="text-sm">
-					<p className="font-medium mb-1">Chair Status</p>
-					<div className="space-y-0.5 text-xs text-muted-foreground">
+					<p className="font-semibold text-foreground mb-1.5">Chair Status</p>
+					<div className="space-y-1 text-sm text-muted-foreground">
 						{readyCount > 0 && (
 							<p className="text-amber-600 font-medium">
 								{readyCount} ready for doctor
@@ -166,7 +169,7 @@ export function ChairStatusCircle({
 							{chairs.filter((c) => c.status === 'AVAILABLE').length} available
 						</p>
 					</div>
-					<p className="text-xs text-muted-foreground mt-1">Click to expand</p>
+					<p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/50">Click to expand</p>
 				</div>
 			</TooltipContent>
 		</Tooltip>

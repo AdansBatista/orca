@@ -191,69 +191,34 @@ interface FloorPlanTemplate {
 
 #### Technical Approach
 
-**Real-Time Strategy**: Server-Sent Events (SSE)
+**Auto-Polling Strategy**: Simple interval-based polling (30 seconds)
 
 ```typescript
-// Server: /api/ops/floor-plan/stream
-export async function GET(req: Request) {
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    start(controller) {
-      // Send initial state
-      const initialData = await getFloorPlanState();
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialData)}\n\n`));
-
-      // Poll for changes every 5 seconds
-      const interval = setInterval(async () => {
-        const updates = await getFloorPlanUpdates();
-        if (updates.length > 0) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(updates)}\n\n`));
-        }
-      }, 5000);
-
-      // Cleanup
-      req.signal.addEventListener('abort', () => {
-        clearInterval(interval);
-        controller.close();
-      });
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  });
-}
-
-// Client: Hook for SSE connection
-function useFloorPlanRealtime() {
+// Client: Hook for auto-polling
+function useFloorPlanPolling(refreshInterval = 30000) {
   const [chairStatuses, setChairStatuses] = useState<ChairStatus[]>([]);
-  const [connected, setConnected] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/ops/floor-plan/stream');
-
-    eventSource.onopen = () => setConnected(true);
-
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setChairStatuses(prev => mergeUpdates(prev, data));
+    const fetchStatuses = async () => {
+      const res = await fetch('/api/ops/resources/status');
+      const data = await res.json();
+      if (data.success) {
+        setChairStatuses(data.data.chairs);
+        setLastUpdated(new Date());
+      }
     };
 
-    eventSource.onerror = () => {
-      setConnected(false);
-      eventSource.close();
-      // Fallback to polling
-      startPolling();
-    };
+    // Initial fetch
+    fetchStatuses();
 
-    return () => eventSource.close();
-  }, []);
+    // Set up polling interval
+    const interval = setInterval(fetchStatuses, refreshInterval);
 
-  return { chairStatuses, connected };
+    return () => clearInterval(interval);
+  }, [refreshInterval]);
+
+  return { chairStatuses, lastUpdated };
 }
 ```
 
@@ -873,9 +838,6 @@ GET    /api/ops/floor-plan/templates        // Get layout templates
 POST   /api/ops/floor-plan/templates        // Create template from current
 DELETE /api/ops/floor-plan/templates/[id]   // Delete template
 
-// Real-Time Updates
-GET    /api/ops/floor-plan/stream            // SSE stream for updates
-
 // Chair Management
 POST   /api/ops/chairs/[id]/block            // Block chair
 POST   /api/ops/chairs/[id]/unblock          // Unblock chair
@@ -906,8 +868,6 @@ src/
 │           │   │   ├── route.ts                # NEW: List templates
 │           │   │   └── [id]/
 │           │   │       └── route.ts            # NEW: Get/delete template
-│           │   ├── stream/
-│           │   │   └── route.ts                # NEW: SSE endpoint
 │           │   └── analytics/
 │           │       ├── route.ts                # NEW: Utilization data
 │           │       └── export/
@@ -940,7 +900,7 @@ src/
 │           ├── BlockChairDialog.tsx            # NEW: Block dialog
 │           └── hooks/
 │               ├── useFloorPlanLayout.ts       # NEW: Layout state
-│               ├── useFloorPlanRealtime.ts     # NEW: SSE connection
+│               ├── useFloorPlanPolling.ts      # NEW: Auto-polling for updates
 │               ├── useFloorPlanActions.ts      # NEW: Action handlers
 │               ├── useFloorPlanFilters.ts      # NEW: Filter logic
 │               └── useChairUtilization.ts      # NEW: Analytics
@@ -986,14 +946,12 @@ src/
 - [ ] Basic drag-and-drop functionality
 - [ ] Save/load layout API
 
-### Phase 2: Real-Time Updates (Week 1-2)
-- [ ] SSE endpoint for floor plan stream
-- [ ] Client-side SSE hook
-- [ ] Real-time status color updates
-- [ ] Polling fallback
-- [ ] Connection status indicator
+### Phase 2: Auto-Polling Updates
+- [ ] Add 30-second auto-polling for chair status
+- [ ] Show "Last updated" timestamp
+- [ ] Keep manual refresh button as override
 
-### Phase 3: Interactions (Week 2)
+### Phase 3: Interactions
 - [ ] Quick actions overlay
 - [ ] Context menu
 - [ ] Keyboard shortcuts

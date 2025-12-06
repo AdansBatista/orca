@@ -107,9 +107,9 @@ export function PageHeader({
               )}
             </div>
 
-            {/* Actions */}
+            {/* Actions - with right padding for floating chair status button */}
             {actions && (
-              <div className="flex items-center gap-2 shrink-0">{actions}</div>
+              <div className="flex items-center gap-2 shrink-0 mr-12">{actions}</div>
             )}
           </div>
         </div>
@@ -165,9 +165,9 @@ export function PageHeader({
             )}
           </div>
 
-          {/* Actions */}
+          {/* Actions - with right padding for floating chair status button */}
           {actions && (
-            <div className="flex items-center gap-2 shrink-0">{actions}</div>
+            <div className="flex items-center gap-2 shrink-0 mr-12">{actions}</div>
           )}
         </div>
       </div>

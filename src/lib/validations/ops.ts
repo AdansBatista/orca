@@ -165,6 +165,23 @@ export const addChairNoteSchema = z.object({
   appendToExisting: z.boolean().optional().default(true),
 });
 
+/**
+ * Block a chair (cleaning, maintenance, or other)
+ */
+export const blockChairSchema = z.object({
+  reason: z.string().min(1, 'Reason is required').max(200),
+  blockType: z.enum(['BLOCKED', 'CLEANING', 'MAINTENANCE']).default('BLOCKED'),
+  blockedUntil: z.string().datetime().optional(),
+  durationMinutes: z.number().min(1).max(1440).optional(), // Max 24 hours
+});
+
+/**
+ * Unblock a chair
+ */
+export const unblockChairSchema = z.object({
+  notes: z.string().max(200).optional(),
+});
+
 // =============================================================================
 // STAFF ASSIGNMENT SCHEMAS
 // =============================================================================

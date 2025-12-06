@@ -4,7 +4,7 @@
 >
 > **Purpose**: Track implementation progress, decisions, and status across all sub-areas
 >
-> **Last Updated**: 2024-12-05
+> **Last Updated**: 2024-12-06
 
 ---
 
@@ -12,12 +12,37 @@
 
 | Sub-Area | Status | Progress | Current Phase |
 |----------|--------|----------|---------------|
-| Operations Dashboard | 🔄 In Progress | 60% | Phase 1: Basic Day View ✅, Week/Month Views 📋 |
+| Operations Dashboard | ✅ Complete | 100% | Day ✅, Week ✅, Month ✅ |
 | Patient Flow Management | ✅ Complete | 100% | Phase 1: Core Flow ✅ |
-| Resource Coordination | 🔄 In Progress | 85% | Phase 1: Basic Status ✅, Enhanced Floor Plan Phase 1 ✅ |
-| AI Manager | 📋 Planned | 0% | Not started |
+| Resource Coordination | ✅ Complete | 100% | Card-based floor plan ✅ |
+| AI Manager | 📋 Planned | 0% | Not started (deferred) |
 
 **Legend**: 📋 Planned | 🔄 In Progress | ✅ Complete | 🚫 Blocked
+
+---
+
+## Important: Floor Plan Implementation Decision (2024-12-06)
+
+**Decision**: After implementing a canvas/grid-based floor plan with drag-drop features, the approach was rolled back in favor of the original **card-based `FloorPlanView` component**.
+
+**Rationale**:
+- The grid-based view sacrificed clinical usability for layout editing features
+- Clinical staff need to see patient information at a glance without clicking
+- The card-based view shows: patient names, times, progress bars, "Ready for Doctor" alerts
+- The canvas view only showed icons - required clicking to see patient info
+
+**Result**:
+- Floor plan page (`/ops/floor-plan`) now uses `FloorPlanView` component only
+- Canvas/grid components have been deleted
+- The `FloorPlanView` already has 30-second auto-polling built in
+
+**Files Deleted**:
+- `src/components/ops/floor-plan/` directory (all files)
+- `src/types/floor-plan.ts`
+- `src/lib/utils/floor-plan.ts`
+
+**Files Kept**:
+- `src/components/ops/FloorPlanView.tsx` - The card-based operational view
 
 ---
 
@@ -120,312 +145,34 @@
 
 ---
 
-## Phase 2: Enhanced Features (Current)
+## Phase 2: Dashboard Views (Complete)
 
-### 🔄 IN PROGRESS: Enhanced Floor Plan
+### ✅ Week View Dashboard
+**Status**: Complete
 
-**Start Date**: 2024-12-05
-**Target Completion**: TBD
-**Current Status**: Phase 1 Complete - Interactive Foundation ✅
+#### Features Implemented
+- ✅ `GET /api/ops/dashboard/week` - 7-day view with daily breakdown
+- ✅ `WeekView` component with navigation
+- ✅ Weekly summary stats (scheduled, completed, cancelled, rate)
+- ✅ 7-day calendar with appointment density bars
+- ✅ Day-over-day comparison with trends
+- ✅ Provider performance stats
 
-#### Objectives
-Transform the basic floor plan into a fully interactive, real-time command center for managing clinic resources.
+### ✅ Month View Dashboard
+**Status**: Complete
 
-#### Features to Implement
+#### Features Implemented
+- ✅ `GET /api/ops/dashboard/month` - Monthly calendar with daily summaries
+- ✅ `MonthView` component with navigation
+- ✅ Monthly summary stats (scheduled, completed, avg/day, busiest day)
+- ✅ Calendar grid with density coloring
+- ✅ Weekly trends chart
+- ✅ Appointment type distribution
+- ✅ Provider summary stats
 
-##### 1. Interactive Layout Management ✅
-- [x] Drag-and-drop chair/room positioning
-- [x] Grid-based layout system with snap-to-grid
-- [x] Room boundary editing (move)
-- [x] Save/load floor plan configurations
-- [x] Undo/redo for layout changes with full history
-- [x] Keyboard shortcuts (Ctrl+Z undo, Ctrl+Y redo, Ctrl+S save, Ctrl+E edit mode)
-- [x] Zoom controls (50% - 200%)
-- [ ] Room boundary resizing and rotation
-- [ ] Add/remove chairs and rooms from UI
-- [ ] Layout templates (small clinic, medium clinic, large clinic)
-
-**Technical Decisions**:
-- ✅ Library: `@dnd-kit/core` for drag-drop (installed)
-- ✅ Storage: Save to `FloorPlanConfig.layout` JSON field
-- ✅ Grid: Configurable cell size (default 50px)
-- ✅ Coordinates: Store as grid units, render as pixels
-- ✅ Animations: Framer Motion for smooth transitions
-
-**Components Created**:
-- ✅ `FloorPlanCanvas` - Main canvas with grid system and DnD context
-- ✅ `DraggableChair` - Interactive chair component with status display
-- ✅ `DraggableRoom` - Interactive room component
-- ✅ `FloorPlanControls` - Edit mode, undo/redo, zoom, save controls
-- ✅ `useFloorPlanLayout` hook - State management with history
-
-**API Endpoints Created**:
-- ✅ `GET /api/ops/floor-plan/layout` - Load floor plan configuration
-- ✅ `PUT /api/ops/floor-plan/layout` - Save floor plan configuration
-
-**Utilities Created**:
-- ✅ `src/lib/utils/floor-plan.ts` - Grid calculations, collision detection, status colors
-- ✅ `src/lib/validations/floor-plan.ts` - Zod schemas for floor plan data
-- ✅ `src/types/floor-plan.ts` - TypeScript types
-
-##### 2. Real-Time Status Visualization 🔄
-- [x] Color-coded status indicators (implemented in DraggableChair)
-  - ✅ Available: Green
-  - ✅ Occupied: Blue
-  - ✅ Ready for Doctor: Yellow (pulsing)
-  - ✅ Cleaning: Purple
-  - ✅ Blocked: Red
-  - ✅ Maintenance: Gray
-- [x] Treatment progress indicators (time elapsed displayed)
-- [x] Staff assignment displayed (provider name)
-- [x] Visual alerts for extended waits (pulsing ring for >15min ready-for-doctor)
-- [x] Patient information displayed on chair (name, PHI protected)
-- [ ] Live chair status updates (WebSocket/SSE) - **NEXT PRIORITY**
-- [ ] Automatic polling for status updates
-- [ ] Patient information on hover tooltip
-
-**Technical Decisions**:
-- ✅ Status colors implemented with utility function `getChairDisplayColors()`
-- ✅ Framer Motion animations for smooth transitions
-- ✅ PHI protection using `<PhiProtected>` component
-- 📋 Real-time: Server-Sent Events (SSE) for live updates (planned)
-- 📋 Polling fallback: Every 10 seconds if SSE fails (planned)
-
-##### 3. Quick Actions & Interactions 🔄
-- [x] Click chair to see patient details (opens PatientDetailSheet)
-- [x] Keyboard shortcuts for edit mode:
-  - ✅ Ctrl+Z/Cmd+Z - Undo
-  - ✅ Ctrl+Y/Cmd+Y - Redo
-  - ✅ Ctrl+S/Cmd+S - Save
-  - ✅ Ctrl+E/Cmd+E - Toggle edit mode
-- [x] Edit mode toggle to prevent accidental changes
-- [ ] Quick action buttons on chair hover overlay
-- [ ] Right-click context menu for advanced actions
-- [ ] Multi-select chairs for batch operations
-- [ ] Keyboard navigation (arrow keys)
-
-##### 4. Advanced Filtering & Views 📋
-- [ ] Filter by:
-  - Chair status (available, occupied, etc.)
-  - Provider
-  - Treatment type
-  - Patient priority
-  - Time ranges (overdue, on-time, ahead)
-- [ ] Saved filter presets
-- [ ] View modes:
-  - Standard (all chairs)
-  - Active only (hide available)
-  - Provider-focused (group by provider)
-  - Priority view (highlight urgent)
-- [ ] Zoom in/out controls
-- [ ] Minimap for large floor plans
-
-##### 5. Resource Management Features 📋
-- [ ] Block/unblock chairs with reason
-- [ ] Schedule maintenance windows
-- [ ] Equipment status tracking per chair
-- [ ] Cleaning timer automation
-- [ ] Turn-over time tracking
-- [ ] Chair utilization heatmap
-
-##### 6. Staff Assignment Overlay 📋
-- [ ] Show staff currently assigned to each chair
-- [ ] Drag-and-drop staff reassignment
-- [ ] Staff workload indicators
-- [ ] Available staff pool display
-- [ ] Break schedule integration
-- [ ] Staff location tracking (optional)
-
-##### 7. Analytics & Insights 📋
-- [ ] Chair utilization percentages
-- [ ] Average treatment time by chair
-- [ ] Bottleneck detection (chairs with delays)
-- [ ] Peak usage times visualization
-- [ ] Export floor plan snapshot (image/PDF)
-- [ ] Historical playback (replay a day's activity)
-
-#### Implementation Plan
-
-**Step 1: Planning & Architecture** (Current)
-- [x] Create implementation tracking document
-- [ ] Design component architecture
-- [ ] Define data flow for real-time updates
-- [ ] Choose drag-and-drop library
-- [ ] Design state management approach
-- [ ] Create technical specification document
-
-**Step 2: Core Interactive Features**
-- [ ] Implement drag-and-drop for chairs
-- [ ] Grid system with snap-to-grid
-- [ ] Save/load layout functionality
-- [ ] Edit mode toggle
-- [ ] Undo/redo system
-
-**Step 3: Real-Time Updates**
-- [ ] Set up SSE endpoint for floor plan updates
-- [ ] Implement client-side SSE connection
-- [ ] Add polling fallback
-- [ ] Real-time status color updates
-- [ ] Live patient information updates
-
-**Step 4: Quick Actions**
-- [ ] Click-to-view patient details
-- [ ] Quick action buttons overlay
-- [ ] Context menu implementation
-- [ ] Keyboard shortcuts
-- [ ] Batch operations
-
-**Step 5: Advanced Views & Filters**
-- [ ] Filter panel UI
-- [ ] Filter logic implementation
-- [ ] View mode switcher
-- [ ] Saved presets
-- [ ] Zoom controls
-- [ ] Minimap component
-
-**Step 6: Resource Management**
-- [ ] Block/unblock UI and API
-- [ ] Maintenance scheduling
-- [ ] Cleaning timers
-- [ ] Equipment tracking
-- [ ] Utilization heatmap
-
-**Step 7: Polish & Testing**
-- [ ] Responsive design testing
-- [ ] Performance optimization
-- [ ] Accessibility improvements
-- [ ] User testing feedback
-- [ ] Documentation updates
-
-#### Technical Architecture
-
-**Components Structure**:
-```
-src/components/ops/floor-plan/
-├── FloorPlanCanvas.tsx          # Main canvas with grid
-├── FloorPlanControls.tsx        # Zoom, view modes, filters
-├── DraggableChair.tsx           # Draggable chair component
-├── DraggableRoom.tsx            # Draggable room component
-├── ChairQuickActions.tsx        # Quick action overlay
-├── StaffAssignmentOverlay.tsx   # Staff assignment UI
-├── FilterPanel.tsx              # Filtering controls
-├── MiniMap.tsx                  # Overview minimap
-├── LayoutTemplates.tsx          # Predefined layouts
-└── hooks/
-    ├── useFloorPlanLayout.ts    # Layout state management
-    ├── useFloorPlanRealtime.ts  # SSE/real-time updates
-    └── useFloorPlanActions.ts   # Action handlers
-```
-
-**API Endpoints to Add**:
-```
-PUT  /api/ops/floor-plan/layout      # Save floor plan layout
-GET  /api/ops/floor-plan/templates   # Get layout templates
-GET  /api/ops/floor-plan/stream      # SSE endpoint for updates
-POST /api/ops/chairs/[id]/block      # Block chair
-POST /api/ops/chairs/[id]/unblock    # Unblock chair
-GET  /api/ops/floor-plan/analytics   # Get utilization data
-```
-
-**State Management**:
-- Local state for layout editing (drag positions, grid)
-- Context for real-time floor plan data
-- React Query for API data fetching
-- Optimistic updates for actions
-
-#### Files to Create/Modify
-
-**New Files**:
-- [ ] `src/components/ops/floor-plan/FloorPlanCanvas.tsx`
-- [ ] `src/components/ops/floor-plan/FloorPlanControls.tsx`
-- [ ] `src/components/ops/floor-plan/DraggableChair.tsx`
-- [ ] `src/components/ops/floor-plan/DraggableRoom.tsx`
-- [ ] `src/components/ops/floor-plan/ChairQuickActions.tsx`
-- [ ] `src/components/ops/floor-plan/StaffAssignmentOverlay.tsx`
-- [ ] `src/components/ops/floor-plan/FilterPanel.tsx`
-- [ ] `src/components/ops/floor-plan/MiniMap.tsx`
-- [ ] `src/components/ops/floor-plan/LayoutTemplates.tsx`
-- [ ] `src/components/ops/floor-plan/hooks/useFloorPlanLayout.ts`
-- [ ] `src/components/ops/floor-plan/hooks/useFloorPlanRealtime.ts`
-- [ ] `src/components/ops/floor-plan/hooks/useFloorPlanActions.ts`
-- [ ] `src/app/api/ops/floor-plan/layout/route.ts`
-- [ ] `src/app/api/ops/floor-plan/templates/route.ts`
-- [ ] `src/app/api/ops/floor-plan/stream/route.ts`
-- [ ] `src/app/api/ops/chairs/[id]/block/route.ts`
-- [ ] `src/app/api/ops/chairs/[id]/unblock/route.ts`
-- [ ] `src/lib/validations/floor-plan.ts`
-- [ ] `docs/areas/practice-orchestration/enhanced-floor-plan-spec.md`
-
-**Files to Modify**:
-- [ ] `src/app/(app)/ops/floor-plan/page.tsx` - Replace with enhanced version
-- [ ] `src/lib/validations/ops.ts` - Add new validations
-- [ ] `prisma/schema.prisma` - Possible additions to FloorPlanConfig model
-
-#### Design Decisions Log
-
-**Decision 1**: Drag-and-Drop Library
-- **Date**: TBD
-- **Decision**: TBD (@dnd-kit vs react-beautiful-dnd vs react-dnd)
-- **Rationale**: TBD
-- **Alternatives Considered**: TBD
-
-**Decision 2**: Real-Time Updates
-- **Date**: TBD
-- **Decision**: Server-Sent Events (SSE) with polling fallback
-- **Rationale**: SSE is simpler than WebSocket for one-way server→client, polling ensures reliability
-- **Alternatives Considered**: WebSocket (more complex), polling only (less real-time)
-
-**Decision 3**: State Management
-- **Date**: TBD
-- **Decision**: TBD
-- **Rationale**: TBD
-
-#### Testing Checklist
-- [ ] Unit tests for drag-and-drop logic
-- [ ] Integration tests for floor plan API endpoints
-- [ ] E2E tests for common workflows
-- [ ] Real-time update reliability testing
-- [ ] Performance testing with large floor plans (50+ chairs)
-- [ ] Mobile responsiveness testing
-- [ ] Accessibility testing (keyboard navigation, screen readers)
-
-#### Known Issues & Technical Debt
-- None yet
-
-#### Dependencies & Blockers
-- None currently
-
----
-
-## Phase 3: Week/Month Views (Planned)
-
-### 📋 Week View Dashboard
-**Status**: Planned
-**Dependencies**: Day view complete ✅
-
-#### Features
-- [ ] 7-day calendar view
-- [ ] Day-over-day comparisons
-- [ ] Weekly metrics aggregation
-- [ ] Appointment density heatmap
-- [ ] Weekly trends visualization
-
-#### API Endpoints
-- [ ] `GET /api/ops/dashboard/week`
-
-### 📋 Month View Dashboard
-**Status**: Planned
-**Dependencies**: Week view
-
-#### Features
-- [ ] Monthly calendar grid
-- [ ] Daily summary cards
-- [ ] Month-over-month trends
-- [ ] Statistical analysis
-- [ ] Export monthly reports
-
-#### API Endpoints
-- [ ] `GET /api/ops/dashboard/month`
+### ✅ Dashboard Navigation
+- ✅ Day/Week/Month tabs on main operations dashboard
+- ✅ Click-to-navigate from week/month to day view
 
 ---
 
@@ -537,6 +284,107 @@ npm run db:seed -- --area ops
 
 ## Change Log
 
+### 2024-12-06 (Floor Plan Rollback - Card-Based View Restored)
+
+**Decision**: Rolled back the canvas/grid-based floor plan to the simpler card-based `FloorPlanView`.
+
+**Changes Made**:
+1. Created `/api/patients/[id]` endpoint - fixes "Failed to load patient data" error
+2. Simplified `/ops/floor-plan` page to use only `FloorPlanView` component
+3. Deleted unused canvas/grid files:
+   - `src/components/ops/floor-plan/` directory (all files)
+   - `src/types/floor-plan.ts`
+   - `src/lib/utils/floor-plan.ts`
+
+**Rationale**:
+- The canvas view showed only icons - clinical staff couldn't see patient info at a glance
+- The card-based `FloorPlanView` shows rich information: patient names, times, progress bars
+- "Ready for Doctor" alert banner is prominent and useful
+- Built-in 30-second auto-polling already exists in `FloorPlanView`
+
+**Files Affected**:
+- Created: `src/app/api/patients/[id]/route.ts`
+- Modified: `src/app/(app)/ops/floor-plan/page.tsx` (simplified)
+- Deleted: `src/components/ops/floor-plan/*`, `src/types/floor-plan.ts`, `src/lib/utils/floor-plan.ts`
+
+---
+
+### 2024-12-06 (Phase 2.2 & 3 Complete - Enhanced Floor Plan + Dashboard Views)
+- ✅ **Phase 2.2 Complete**: Enhanced Floor Plan Interactions
+- ✅ **Phase 3 Complete**: Week/Month Dashboard Views
+
+**Real-time Updates (Polling)**:
+- ✅ Removed SSE references from documentation - using 30-second polling only
+- ✅ Auto-polling with configurable toggle
+- ✅ Last updated timestamp display
+- ✅ Manual refresh button
+
+**Quick Actions & Context Menu**:
+- ✅ `ChairQuickActions` overlay component on hover
+- ✅ Quick action buttons: Block, Ready for Doctor, Complete, Unblock
+- ✅ `ChairContextMenu` for right-click actions
+- ✅ View Patient, Mark Ready, Add Note, Complete Treatment, Block/Unblock
+
+**Chair Blocking System**:
+- ✅ `POST /api/ops/chairs/[chairId]/block` - Block chair for cleaning/maintenance
+- ✅ `POST /api/ops/chairs/[chairId]/unblock` - Unblock chair
+- ✅ `BlockChairDialog` with type selection (Cleaning, Maintenance, Blocked)
+- ✅ Duration options (15min - indefinite)
+- ✅ Block reason tracking
+
+**Filtering & View Modes**:
+- ✅ `FilterPanel` component with collapsible sections
+- ✅ `useFloorPlanFilters` hook with localStorage persistence
+- ✅ Filter by: Status, Provider, Time Range
+- ✅ Quick preset buttons (Available Only, Occupied Only, Ready for Doctor)
+- ✅ `ViewModeToggle` component (Standard, Active, Priority, Heatmap)
+- ✅ Active filter summary with remove buttons
+
+**Week View Dashboard**:
+- ✅ `GET /api/ops/dashboard/week` - 7-day view with daily breakdown
+- ✅ `WeekView` component with navigation
+- ✅ Weekly summary stats (scheduled, completed, cancelled, rate)
+- ✅ 7-day calendar with appointment density bars
+- ✅ Day-over-day comparison with trends
+- ✅ Provider performance stats
+
+**Month View Dashboard**:
+- ✅ `GET /api/ops/dashboard/month` - Monthly calendar with daily summaries
+- ✅ `MonthView` component with navigation
+- ✅ Monthly summary stats (scheduled, completed, avg/day, busiest day)
+- ✅ Calendar grid with density coloring
+- ✅ Weekly trends chart
+- ✅ Appointment type distribution
+- ✅ Provider summary stats
+
+**Dashboard Navigation**:
+- ✅ Day/Week/Month tabs on main operations dashboard
+- ✅ Click-to-navigate from week/month to day view
+
+**Files Created** (14 new files):
+- `src/components/ops/floor-plan/ChairQuickActions.tsx`
+- `src/components/ops/floor-plan/ChairContextMenu.tsx`
+- `src/components/ops/floor-plan/BlockChairDialog.tsx`
+- `src/components/ops/floor-plan/FilterPanel.tsx`
+- `src/components/ops/floor-plan/ViewModeToggle.tsx`
+- `src/components/ops/floor-plan/hooks/useFloorPlanFilters.ts`
+- `src/app/api/ops/chairs/[chairId]/block/route.ts`
+- `src/app/api/ops/chairs/[chairId]/unblock/route.ts`
+- `src/app/api/ops/dashboard/week/route.ts`
+- `src/app/api/ops/dashboard/month/route.ts`
+- `src/components/ops/dashboard/WeekView.tsx`
+- `src/components/ops/dashboard/MonthView.tsx`
+- `src/components/ops/dashboard/index.ts`
+
+**Files Modified**:
+- `src/app/(app)/ops/floor-plan/page.tsx` - Added polling, filters, view modes
+- `src/app/(app)/ops/page.tsx` - Added Day/Week/Month tabs
+- `src/components/ops/floor-plan/DraggableChair.tsx` - Added quick actions integration
+- `src/components/ops/floor-plan/index.ts` - Updated exports
+- `src/lib/validations/ops.ts` - Added block/unblock schemas
+- `docs/areas/practice-orchestration/enhanced-floor-plan-spec.md` - Removed SSE references
+- `docs/areas/practice-orchestration/IMPLEMENTATION-PROGRESS.md` - Updated progress
+
 ### 2024-12-05 (Afternoon - Enhanced Floor Plan Implementation)
 - ✅ **Phase 2.1 Complete**: Interactive Floor Plan Foundation
 - ✅ Installed dependencies: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`, `framer-motion`
@@ -636,6 +484,6 @@ npm run db:seed -- --area ops
 
 ---
 
-**Last Updated**: 2024-12-05
-**Next Review**: After Enhanced Floor Plan completion
+**Last Updated**: 2024-12-06
+**Next Review**: After AI Manager implementation
 **Maintained By**: Development Team

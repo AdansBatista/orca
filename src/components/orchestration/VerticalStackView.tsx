@@ -185,13 +185,19 @@ function ChairSegment({ chair, onClick }: ChairSegmentProps) {
 					) : null}
 				</button>
 			</TooltipTrigger>
-			<TooltipContent side="left" className="text-xs">
+			<TooltipContent
+				side="left"
+				className="rounded-md border border-border bg-card text-card-foreground shadow-lg px-3 py-2"
+			>
 				{getTooltipContent().map((line, i) => (
-					<p key={i} className={i === 0 ? 'font-medium' : 'text-muted-foreground'}>
+					<p key={i} className={cn(
+						'text-sm',
+						i === 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
+					)}>
 						{line}
 					</p>
 				))}
-				<p className="text-muted-foreground mt-1">Click for details</p>
+				<p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/50">Click for details</p>
 			</TooltipContent>
 		</Tooltip>
 	);
