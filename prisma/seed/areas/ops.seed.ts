@@ -7,9 +7,10 @@ import {
   generateOperationsTasks,
   generateDailyMetrics,
 } from '../fixtures/ops.fixture';
+import { withSoftDelete } from '../utils/soft-delete';
 
 /**
- * Seed Practice Orchestration data
+ * Seed Practice Orchestration data for ALL clinics
  *
  * This creates:
  * 1. Floor plan configuration for each clinic
@@ -18,6 +19,8 @@ import {
  * 4. Staff assignments for active appointments
  * 5. Operations tasks
  * 6. Daily metrics (historical)
+ *
+ * Dependencies: core, auth:users, staff, resources, patients, booking
  */
 export async function seedOps(ctx: SeedContext): Promise<void> {
   const { db, config, idTracker, logger } = ctx;
@@ -25,11 +28,19 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
 
   logger.startArea('Practice Orchestration');
 
+  // Validate required dependencies
+  if (clinicIds.length === 0) {
+    logger.warn('No clinics found - core area must be seeded first. Skipping ops seeding.');
+    logger.endArea('Practice Orchestration', 0);
+    return;
+  }
+
   let totalCreated = 0;
 
-  for (const clinicId of clinicIds) {
+  for (let clinicIndex = 0; clinicIndex < clinicIds.length; clinicIndex++) {
+    const clinicId = clinicIds[clinicIndex];
     const clinic = await db.clinic.findUnique({ where: { id: clinicId } });
-    logger.info(`Seeding ops data for clinic: ${clinic?.name || clinicId}`);
+    logger.info(`\n=== Seeding ops data for clinic ${clinicIndex + 1}/${clinicIds.length}: ${clinic?.name || clinicId} ===`);
 
     // Get an admin user for ownership
     const adminUser = await db.user.findFirst({
@@ -43,18 +54,18 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
     }
 
     // ============================================================================
-    // 1. GET RELATED DATA
+    // 1. GET RELATED DATA (using standardized soft delete filter)
     // ============================================================================
 
     // Get rooms for this clinic
     const rooms = await db.room.findMany({
-      where: { clinicId: clinicId },
+      where: withSoftDelete({ clinicId }),
       select: { id: true, name: true },
     });
 
     // Get chairs for this clinic (via rooms)
     const chairs = await db.treatmentChair.findMany({
-      where: { room: { clinicId: clinicId } },
+      where: withSoftDelete({ room: { clinicId } }),
       select: { id: true, name: true, roomId: true },
     });
 
@@ -65,11 +76,10 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const appointments = await db.appointment.findMany({
-      where: {
+      where: withSoftDelete({
         clinicId,
         startTime: { gte: today, lt: tomorrow },
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
       select: {
         id: true,
         patientId: true,
@@ -82,7 +92,7 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
 
     // Get staff members for assignments
     const staff = await db.staffProfile.findMany({
-      where: { clinicId, status: 'ACTIVE' },
+      where: withSoftDelete({ clinicId, status: 'ACTIVE' as const }),
       select: { id: true, providerType: true },
     });
 
@@ -186,7 +196,7 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
               createdBy: ownerId,
             },
           });
-          idTracker.add('PatientFlowState', flowState.id);
+          idTracker.add('PatientFlowState', flowState.id, clinicId);
           flowCount++;
           totalCreated++;
 
@@ -324,7 +334,7 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
             createdBy: ownerId,
           },
         });
-        idTracker.add('OperationsTask', task.id);
+        idTracker.add('OperationsTask', task.id, clinicId);
         taskCount++;
         totalCreated++;
       }
@@ -374,6 +384,7 @@ export async function seedOps(ctx: SeedContext): Promise<void> {
     logger.info(`  Created ${metricsCount} daily metrics records`);
   }
 
+  logger.success(`\nOps seeding complete: ${totalCreated} records created across ${clinicIds.length} clinics`);
   logger.endArea('Practice Orchestration', totalCreated);
 }
 

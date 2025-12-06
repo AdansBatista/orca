@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { stockMovementQuerySchema } from '@/lib/validations/inventory';
 
@@ -56,11 +57,10 @@ export const GET = withAuth<{ id: string }>(
 
     // Verify item exists and belongs to clinic
     const inventoryItem = await db.inventoryItem.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       select: { id: true, name: true, sku: true },
     });
 

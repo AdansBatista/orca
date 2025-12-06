@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateStaffProfileSchema } from '@/lib/validations/staff';
@@ -14,11 +15,10 @@ export const GET = withAuth<{ id: string }>(
     const { id } = await context.params;
 
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         credentials: {
           orderBy: { expirationDate: 'asc' },
@@ -79,11 +79,10 @@ export const PATCH = withAuth<{ id: string }>(
 
     // Find existing staff profile
     const existing = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existing) {
@@ -120,12 +119,11 @@ export const PATCH = withAuth<{ id: string }>(
     // Check for duplicate employee number if changing
     if (updateData.employeeNumber && updateData.employeeNumber !== existing.employeeNumber) {
       const duplicate = await db.staffProfile.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           employeeNumber: updateData.employeeNumber,
-          deletedAt: null,
           id: { not: id },
-        },
+        }),
       });
 
       if (duplicate) {
@@ -145,12 +143,11 @@ export const PATCH = withAuth<{ id: string }>(
     // Check for duplicate email if changing
     if (updateData.email && updateData.email !== existing.email) {
       const duplicate = await db.staffProfile.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           email: updateData.email,
-          deletedAt: null,
           id: { not: id },
-        },
+        }),
       });
 
       if (duplicate) {
@@ -239,11 +236,10 @@ export const DELETE = withAuth<{ id: string }>(
 
     // Find existing staff profile
     const existing = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existing) {

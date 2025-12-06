@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createInventoryLotSchema, inventoryLotQuerySchema } from '@/lib/validations/inventory';
@@ -45,11 +46,10 @@ export const GET = withAuth<{ id: string }>(
 
     // Verify item exists and belongs to clinic
     const inventoryItem = await db.inventoryItem.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       select: { id: true, name: true, sku: true, trackLots: true, trackExpiry: true },
     });
 
@@ -187,11 +187,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify item exists and tracks lots
     const inventoryItem = await db.inventoryItem.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!inventoryItem) {

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import {
   createInstrumentSetSchema,
   instrumentSetQuerySchema,
@@ -54,10 +55,9 @@ export const GET = withAuth(
     } = queryResult.data;
 
     // Build where clause
-    const where: Record<string, unknown> = {
+    const where: Record<string, unknown> = withSoftDelete({
       ...getClinicFilter(session),
-      deletedAt: null,
-    };
+    });
 
     if (category) where.category = category;
     if (status) where.status = status;
@@ -125,11 +125,10 @@ export const POST = withAuth(
 
     // Check for duplicate set number in this clinic
     const existingSet = await db.instrumentSet.findFirst({
-      where: {
+      where: withSoftDelete({
         clinicId: session.user.clinicId,
         setNumber: data.setNumber,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (existingSet) {
@@ -163,7 +162,6 @@ export const POST = withAuth(
         notes: data.notes,
         createdBy: session.user.id,
         updatedBy: session.user.id,
-        deletedAt: null,
       },
     });
 

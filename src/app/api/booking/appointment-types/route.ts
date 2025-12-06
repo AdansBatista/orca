@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete, SOFT_DELETE_FILTER } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import {
@@ -54,7 +55,7 @@ export const GET = withAuth(
     // Build AND conditions for filtering
     const andConditions: Record<string, unknown>[] = [
       // Soft delete check (MongoDB-compatible)
-      { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
+      SOFT_DELETE_FILTER,
     ];
 
     if (isActive !== undefined) where.isActive = isActive;
@@ -132,13 +133,11 @@ export const POST = withAuth(
     const data = result.data;
 
     // Check for duplicate code in this clinic
-    // Note: MongoDB requires OR with isSet:false for null checks
     const existingByCode = await db.appointmentType.findFirst({
-      where: {
+      where: withSoftDelete({
         clinicId: session.user.clinicId,
         code: data.code,
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
     });
 
     if (existingByCode) {

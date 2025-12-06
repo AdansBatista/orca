@@ -309,19 +309,28 @@ export function generateSampleAppointments(
     return date;
   };
 
-  // Sample statuses distribution
-  const statuses: AppointmentStatus[] = ['SCHEDULED', 'CONFIRMED', 'COMPLETED'];
+  // Sample statuses distribution for future days
+  const futureStatuses: AppointmentStatus[] = ['SCHEDULED', 'CONFIRMED'];
   const sources: AppointmentSource[] = ['STAFF', 'PHONE', 'ONLINE'];
 
-  // Generate appointments for the next 7 days
-  for (let day = 0; day < 7; day++) {
-    // Skip weekends
-    const currentDay = new Date(now);
-    currentDay.setDate(currentDay.getDate() + day);
-    if (currentDay.getDay() === 0 || currentDay.getDay() === 6) continue;
+  // Always generate appointments for TODAY first (even weekends for demo purposes)
+  // Then generate for next 7 weekdays
+  const daysToGenerate: number[] = [0]; // Always include today
 
-    // Generate 5-10 appointments per day
-    const appointmentsPerDay = 5 + Math.floor(Math.random() * 6);
+  // Add future weekdays
+  for (let dayOffset = 1; dayOffset <= 14; dayOffset++) {
+    const futureDate = new Date(now);
+    futureDate.setDate(futureDate.getDate() + dayOffset);
+    // Only add weekdays for future appointments
+    if (futureDate.getDay() !== 0 && futureDate.getDay() !== 6) {
+      daysToGenerate.push(dayOffset);
+    }
+    if (daysToGenerate.length >= 8) break; // Today + 7 weekdays
+  }
+
+  for (const day of daysToGenerate) {
+    // Generate 8-12 appointments for today, 5-10 for other days
+    const appointmentsPerDay = day === 0 ? 8 + Math.floor(Math.random() * 5) : 5 + Math.floor(Math.random() * 6);
 
     for (let i = 0; i < appointmentsPerDay; i++) {
       const hour = 8 + Math.floor(Math.random() * 9); // 8 AM to 5 PM
@@ -338,7 +347,32 @@ export function generateSampleAppointments(
       const typeFixture = DEFAULT_APPOINTMENT_TYPES.find((t) => t.code === typeCode);
       const duration = typeFixture?.defaultDuration || 30;
 
-      const status: AppointmentStatus = day < 0 ? 'COMPLETED' : random(statuses);
+      // For today (day=0), generate realistic status based on appointment time
+      let status: AppointmentStatus;
+      if (day === 0) {
+        const appointmentTime = new Date(now);
+        appointmentTime.setHours(hour, minute, 0, 0);
+        const minutesDiff = (appointmentTime.getTime() - now.getTime()) / 60000;
+
+        if (minutesDiff < -60) {
+          // More than 1 hour ago - completed
+          status = 'COMPLETED';
+        } else if (minutesDiff < -30) {
+          // 30-60 min ago - in progress or completed
+          status = Math.random() < 0.5 ? 'IN_PROGRESS' : 'COMPLETED';
+        } else if (minutesDiff < 0) {
+          // Within last 30 min - arrived or in progress
+          status = Math.random() < 0.6 ? 'ARRIVED' : 'IN_PROGRESS';
+        } else if (minutesDiff < 30) {
+          // Within next 30 min - should be arriving
+          status = Math.random() < 0.7 ? 'ARRIVED' : 'CONFIRMED';
+        } else {
+          // Future - scheduled or confirmed
+          status = random(futureStatuses);
+        }
+      } else {
+        status = random(futureStatuses);
+      }
 
       appointments.push({
         patientId: random(patientIds),

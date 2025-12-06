@@ -88,6 +88,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'rooms:*',
     'sterilization:*',
     'inventory:*',
+    // Operations/Orchestration
+    'ops:*',
   ],
   doctor: [
     // Legacy levels
@@ -106,6 +108,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'booking:update',
     'equipment:read',
     'rooms:read',
+    // Operations/Orchestration
+    'ops:view_dashboard',
+    'ops:read',
   ],
   clinical_staff: [
     // Legacy levels
@@ -126,6 +131,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'sterilization:read',
     'sterilization:create',
     'sterilization:update',
+    // Operations/Orchestration
+    'ops:view_dashboard',
+    'ops:read',
   ],
   front_desk: [
     // Legacy levels
@@ -142,6 +150,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'booking:*',
     'equipment:read',
     'rooms:read',
+    // Operations/Orchestration
+    'ops:view_dashboard',
+    'ops:read',
   ],
   billing: [
     // Legacy levels

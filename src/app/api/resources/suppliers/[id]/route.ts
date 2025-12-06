@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateSupplierSchema } from '@/lib/validations/equipment';
@@ -14,11 +15,10 @@ export const GET = withAuth<{ id: string }>(
     const { id } = await params;
 
     const supplier = await db.supplier.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         _count: {
           select: {
@@ -62,11 +62,10 @@ export const PUT = withAuth<{ id: string }>(
 
     // Find the existing supplier
     const existing = await db.supplier.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existing) {
@@ -103,12 +102,11 @@ export const PUT = withAuth<{ id: string }>(
     // Check for duplicate code if being changed
     if (data.code && data.code !== existing.code) {
       const duplicateCode = await db.supplier.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           code: data.code,
           id: { not: id },
-          deletedAt: null,
-        },
+        }),
       });
 
       if (duplicateCode) {
@@ -167,11 +165,10 @@ export const DELETE = withAuth<{ id: string }>(
 
     // Find the existing supplier
     const existing = await db.supplier.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         _count: {
           select: {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { costAnalyticsQuerySchema } from '@/lib/validations/inventory';
 
@@ -48,11 +49,10 @@ export const GET = withAuth(
 
     // Get current inventory value
     const inventoryItems = await db.inventoryItem.findMany({
-      where: {
+      where: withSoftDelete({
         ...getClinicFilter(session),
-        deletedAt: null,
         ...(category ? { category } : {}),
-      },
+      }),
       select: {
         id: true,
         name: true,

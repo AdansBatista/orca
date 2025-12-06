@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateEquipmentSchema } from '@/lib/validations/equipment';
@@ -14,11 +15,10 @@ export const GET = withAuth<{ id: string }>(
     const { id } = await params;
 
     const equipment = await db.equipment.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         type: {
           select: {
@@ -108,11 +108,10 @@ export const PUT = withAuth<{ id: string }>(
 
     // Find the existing equipment
     const existing = await db.equipment.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existing) {
@@ -149,12 +148,11 @@ export const PUT = withAuth<{ id: string }>(
     // Check for duplicate equipment number if being changed
     if (data.equipmentNumber && data.equipmentNumber !== existing.equipmentNumber) {
       const duplicateNumber = await db.equipment.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           equipmentNumber: data.equipmentNumber,
           id: { not: id },
-          deletedAt: null,
-        },
+        }),
       });
 
       if (duplicateNumber) {
@@ -201,11 +199,10 @@ export const PUT = withAuth<{ id: string }>(
     // If vendor is being changed, verify it exists
     if (data.vendorId && data.vendorId !== existing.vendorId) {
       const vendor = await db.supplier.findFirst({
-        where: {
+        where: withSoftDelete({
           id: data.vendorId,
           clinicId: session.user.clinicId,
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!vendor) {
@@ -307,11 +304,10 @@ export const DELETE = withAuth<{ id: string }>(
 
     // Find the existing equipment
     const existing = await db.equipment.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existing) {

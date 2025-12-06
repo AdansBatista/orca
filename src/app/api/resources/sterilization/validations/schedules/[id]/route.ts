@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete, SOFT_DELETE_FILTER } from '@/lib/db/soft-delete';
 import { updateValidationScheduleSchema } from '@/lib/validations/sterilization';
 
 /**
@@ -132,8 +133,8 @@ export const PUT = withAuth<{ id: string }>(
         where: {
           id: data.equipmentId,
           clinicId: session.user.clinicId,
-          deletedAt: null,
           category: 'STERILIZATION',
+          ...SOFT_DELETE_FILTER,
         },
       });
 

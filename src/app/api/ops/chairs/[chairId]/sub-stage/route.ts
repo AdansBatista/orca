@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
 import { updateSubStageSchema } from '@/lib/validations/ops';
 
@@ -34,11 +35,10 @@ export const PUT = withAuth<{ chairId: string }>(
 
     // Verify chair exists and belongs to this clinic
     const chair = await db.treatmentChair.findFirst({
-      where: {
+      where: withSoftDelete({
         id: chairId,
         room: { clinicId },
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!chair) {

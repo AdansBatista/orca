@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete, SOFT_DELETE_FILTER } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import {
@@ -69,12 +70,8 @@ export const GET = withAuth(
       sortOrder,
     } = queryResult.data;
 
-    // Build where clause
-    // Note: MongoDB requires OR with isSet:false for null checks
-    const where: Record<string, unknown> = {
-      ...getClinicFilter(session),
-      OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-    };
+    // Build where clause with standardized soft delete filter
+    const where: Record<string, unknown> = withSoftDelete(getClinicFilter(session));
 
     // Apply filters
     if (patientId) where.patientId = patientId;
@@ -206,13 +203,11 @@ export const POST = withAuth(
     const data = result.data;
 
     // Verify patient exists and belongs to clinic
-    // Note: MongoDB requires OR with isSet:false for null checks
     const patient = await db.patient.findFirst({
-      where: {
+      where: withSoftDelete({
         id: data.patientId,
         ...getClinicFilter(session),
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
     });
 
     if (!patient) {
@@ -229,14 +224,12 @@ export const POST = withAuth(
     }
 
     // Verify appointment type exists
-    // Note: MongoDB requires OR with isSet:false for null checks
     const appointmentType = await db.appointmentType.findFirst({
-      where: {
+      where: withSoftDelete({
         id: data.appointmentTypeId,
         ...getClinicFilter(session),
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
         isActive: true,
-      },
+      }),
     });
 
     if (!appointmentType) {
@@ -279,13 +272,12 @@ export const POST = withAuth(
     const endTime = data.endTime ?? new Date(data.startTime.getTime() + duration * 60 * 1000);
 
     // Check for scheduling conflicts with provider
-    // Note: MongoDB requires OR with isSet:false for null checks, combined with AND for other OR conditions
     const providerConflict = await db.appointment.findFirst({
       where: {
         providerId: data.providerId,
         status: { notIn: ['CANCELLED', 'NO_SHOW'] },
         AND: [
-          { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
+          SOFT_DELETE_FILTER,
           {
             OR: [
               {
@@ -334,7 +326,7 @@ export const POST = withAuth(
           chairId: data.chairId,
           status: { notIn: ['CANCELLED', 'NO_SHOW'] },
           AND: [
-            { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
+            SOFT_DELETE_FILTER,
             {
               OR: [
                 {
@@ -379,7 +371,7 @@ export const POST = withAuth(
           roomId: data.roomId,
           status: { notIn: ['CANCELLED', 'NO_SHOW'] },
           AND: [
-            { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
+            SOFT_DELETE_FILTER,
             {
               OR: [
                 {

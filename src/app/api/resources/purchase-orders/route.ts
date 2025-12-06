@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import {
@@ -186,11 +187,10 @@ export const POST = withAuth(
 
     // Verify supplier exists
     const supplier = await db.supplier.findFirst({
-      where: {
+      where: withSoftDelete({
         id: data.supplierId,
         ...clinicFilter,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!supplier) {
@@ -212,11 +212,10 @@ export const POST = withAuth(
     // Verify all items exist and belong to the same clinic as the supplier
     const itemIds = data.items.map((item) => item.itemId);
     const items = await db.inventoryItem.findMany({
-      where: {
+      where: withSoftDelete({
         id: { in: itemIds },
         clinicId: targetClinicId,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (items.length !== itemIds.length) {

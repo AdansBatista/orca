@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { recordPackageUsageSchema, packageUsageQuerySchema } from '@/lib/validations/sterilization';
 
 /**
@@ -219,11 +220,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify patient exists
     const patient = await db.patient.findFirst({
-      where: {
+      where: withSoftDelete({
         id: data.patientId,
         clinicId: session.user.clinicId,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!patient) {

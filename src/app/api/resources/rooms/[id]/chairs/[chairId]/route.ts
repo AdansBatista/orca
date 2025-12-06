@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateTreatmentChairSchema } from '@/lib/validations/room';
@@ -14,12 +15,11 @@ export const GET = withAuth<{ id: string; chairId: string }>(
     const { id: roomId, chairId } = await context.params;
 
     const chair = await db.treatmentChair.findFirst({
-      where: {
+      where: withSoftDelete({
         id: chairId,
         roomId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         room: {
           select: {
@@ -77,12 +77,11 @@ export const PUT = withAuth<{ id: string; chairId: string }>(
 
     // Check if chair exists
     const existingChair = await db.treatmentChair.findFirst({
-      where: {
+      where: withSoftDelete({
         id: chairId,
         roomId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existingChair) {
@@ -103,12 +102,11 @@ export const PUT = withAuth<{ id: string; chairId: string }>(
     // Check for duplicate chair number if changing it
     if (data.chairNumber && data.chairNumber !== existingChair.chairNumber) {
       const duplicateChair = await db.treatmentChair.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           chairNumber: data.chairNumber,
           id: { not: chairId },
-          deletedAt: null,
-        },
+        }),
       });
 
       if (duplicateChair) {
@@ -128,11 +126,10 @@ export const PUT = withAuth<{ id: string; chairId: string }>(
     // If changing room, verify new room exists
     if (data.roomId && data.roomId !== roomId) {
       const newRoom = await db.room.findFirst({
-        where: {
+        where: withSoftDelete({
           id: data.roomId,
           ...getClinicFilter(session),
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!newRoom) {
@@ -196,12 +193,11 @@ export const DELETE = withAuth<{ id: string; chairId: string }>(
 
     // Check if chair exists
     const existingChair = await db.treatmentChair.findFirst({
-      where: {
+      where: withSoftDelete({
         id: chairId,
         roomId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existingChair) {

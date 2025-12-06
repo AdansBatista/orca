@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateRepairRecordSchema } from '@/lib/validations/equipment';
@@ -113,11 +114,10 @@ export const PUT = withAuth<{ id: string; repairId: string }>(
     // If vendor is being changed, verify it exists
     if (data.vendorId && data.vendorId !== existing.vendorId) {
       const vendor = await db.supplier.findFirst({
-        where: {
+        where: withSoftDelete({
           id: data.vendorId,
           clinicId: session.user.clinicId,
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!vendor) {

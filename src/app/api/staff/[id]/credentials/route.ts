@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createCredentialSchema } from '@/lib/validations/staff';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 
 /**
  * GET /api/staff/[id]/credentials
@@ -15,11 +16,10 @@ export const GET = withAuth<{ id: string }>(
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id: staffProfileId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!staffProfile) {
@@ -62,11 +62,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id: staffProfileId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!staffProfile) {

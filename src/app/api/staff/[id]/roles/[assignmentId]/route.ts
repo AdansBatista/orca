@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 
 /**
  * DELETE /api/staff/[id]/roles/[assignmentId]
@@ -14,11 +15,10 @@ export const DELETE = withAuth<{ id: string; assignmentId: string }>(
 
     // Verify the user exists and belongs to the clinic
     const user = await db.user.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       select: {
         id: true,
         firstName: true,

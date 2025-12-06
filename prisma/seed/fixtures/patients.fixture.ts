@@ -10,11 +10,19 @@
  * @see docs/areas/patients/README.md (when created)
  */
 
+export interface PatientData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: Date;
+}
+
 /**
- * Sample patients for development/testing
+ * Base sample patients for development/testing
  * Using realistic orthodontic patient demographics
  */
-export const SAMPLE_PATIENTS = [
+const BASE_PATIENTS: PatientData[] = [
   // Children/Teens (typical ortho patients)
   {
     firstName: 'Emma',
@@ -160,3 +168,121 @@ export const SAMPLE_PATIENTS = [
     dateOfBirth: new Date('2013-04-16'),
   },
 ];
+
+/**
+ * Additional patient names for generating more patients per clinic.
+ * These will be combined with clinic-specific email suffixes.
+ */
+const ADDITIONAL_NAMES: Array<{ firstName: string; lastName: string }> = [
+  { firstName: 'Zoe', lastName: 'King' },
+  { firstName: 'Daniel', lastName: 'Scott' },
+  { firstName: 'Lily', lastName: 'Green' },
+  { firstName: 'Jack', lastName: 'Baker' },
+  { firstName: 'Grace', lastName: 'Adams' },
+  { firstName: 'Owen', lastName: 'Nelson' },
+  { firstName: 'Chloe', lastName: 'Carter' },
+  { firstName: 'Logan', lastName: 'Mitchell' },
+  { firstName: 'Aria', lastName: 'Perez' },
+  { firstName: 'Aiden', lastName: 'Roberts' },
+  { firstName: 'Riley', lastName: 'Turner' },
+  { firstName: 'Jayden', lastName: 'Phillips' },
+  { firstName: 'Scarlett', lastName: 'Campbell' },
+  { firstName: 'Carter', lastName: 'Parker' },
+  { firstName: 'Madison', lastName: 'Evans' },
+  { firstName: 'Grayson', lastName: 'Edwards' },
+  { firstName: 'Layla', lastName: 'Collins' },
+  { firstName: 'Luke', lastName: 'Stewart' },
+  { firstName: 'Penelope', lastName: 'Sanchez' },
+  { firstName: 'Levi', lastName: 'Morris' },
+  { firstName: 'Nora', lastName: 'Rogers' },
+  { firstName: 'Isaac', lastName: 'Reed' },
+  { firstName: 'Zoey', lastName: 'Cook' },
+  { firstName: 'Lincoln', lastName: 'Morgan' },
+  { firstName: 'Hannah', lastName: 'Bell' },
+  { firstName: 'Asher', lastName: 'Murphy' },
+  { firstName: 'Addison', lastName: 'Bailey' },
+  { firstName: 'Leo', lastName: 'Rivera' },
+  { firstName: 'Eleanor', lastName: 'Cooper' },
+  { firstName: 'Mateo', lastName: 'Richardson' },
+];
+
+/**
+ * Generate a random date of birth for different age groups
+ */
+function generateDateOfBirth(ageGroup: 'child' | 'teen' | 'youngAdult' | 'adult'): Date {
+  const now = new Date();
+  const year = now.getFullYear();
+
+  switch (ageGroup) {
+    case 'child':
+      // 7-12 years old
+      return new Date(year - 7 - Math.floor(Math.random() * 5), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
+    case 'teen':
+      // 13-17 years old
+      return new Date(year - 13 - Math.floor(Math.random() * 4), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
+    case 'youngAdult':
+      // 18-25 years old
+      return new Date(year - 18 - Math.floor(Math.random() * 7), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
+    case 'adult':
+      // 26-45 years old
+      return new Date(year - 26 - Math.floor(Math.random() * 19), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
+  }
+}
+
+/**
+ * Generate patients for a specific clinic.
+ * Each clinic gets unique patients with clinic-specific email suffixes.
+ *
+ * @param clinicIndex - The index of the clinic (0, 1, 2, etc.)
+ * @param count - Number of patients to generate
+ * @returns Array of patient data for the clinic
+ */
+export function generatePatientsForClinic(clinicIndex: number, count: number): PatientData[] {
+  const patients: PatientData[] = [];
+  const clinicSuffix = clinicIndex === 0 ? '' : `-clinic${clinicIndex + 1}`;
+  const phonePrefix = `(555) ${100 + clinicIndex}`;
+
+  // First, use base patients (with clinic-specific modifications)
+  const basePatientsToUse = Math.min(count, BASE_PATIENTS.length);
+  for (let i = 0; i < basePatientsToUse; i++) {
+    const base = BASE_PATIENTS[i];
+    // Make email unique per clinic
+    const emailParts = base.email.split('@');
+    patients.push({
+      firstName: base.firstName,
+      lastName: base.lastName,
+      email: `${emailParts[0]}${clinicSuffix}@${emailParts[1]}`,
+      phone: `${phonePrefix}-${4000 + i + 1}`,
+      dateOfBirth: base.dateOfBirth,
+    });
+  }
+
+  // If we need more patients, generate from additional names
+  if (count > BASE_PATIENTS.length) {
+    const additionalCount = Math.min(count - BASE_PATIENTS.length, ADDITIONAL_NAMES.length);
+    const ageGroups: Array<'child' | 'teen' | 'youngAdult' | 'adult'> = ['child', 'teen', 'youngAdult', 'adult'];
+
+    for (let i = 0; i < additionalCount; i++) {
+      const name = ADDITIONAL_NAMES[i];
+      const ageGroup = ageGroups[i % ageGroups.length];
+      const emailBase = `${name.firstName.toLowerCase()}.${name.lastName.toLowerCase()}`;
+
+      patients.push({
+        firstName: name.firstName,
+        lastName: name.lastName,
+        email: `${emailBase}${clinicSuffix}@example.com`,
+        phone: `${phonePrefix}-${5000 + i + 1}`,
+        dateOfBirth: generateDateOfBirth(ageGroup),
+      });
+    }
+  }
+
+  return patients;
+}
+
+/**
+ * Legacy export for backward compatibility.
+ * Use generatePatientsForClinic() for multi-clinic support.
+ * @deprecated Use generatePatientsForClinic() instead
+ */
+export const SAMPLE_PATIENTS = BASE_PATIENTS;

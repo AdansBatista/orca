@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { assignEquipmentToRoomSchema } from '@/lib/validations/room';
@@ -15,11 +16,10 @@ export const GET = withAuth<{ id: string }>(
 
     // Verify room exists and belongs to clinic
     const room = await db.room.findFirst({
-      where: {
+      where: withSoftDelete({
         id: roomId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!room) {
@@ -48,11 +48,10 @@ export const GET = withAuth<{ id: string }>(
     // Get equipment details for each assignment
     const equipmentIds = assignments.map((a) => a.equipmentId);
     const equipmentList = await db.equipment.findMany({
-      where: {
+      where: withSoftDelete({
         id: { in: equipmentIds },
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         type: {
           select: { id: true, name: true, code: true, category: true },
@@ -85,11 +84,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify room exists and belongs to clinic
     const room = await db.room.findFirst({
-      where: {
+      where: withSoftDelete({
         id: roomId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!room) {
@@ -125,11 +123,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify equipment exists and belongs to clinic
     const equipment = await db.equipment.findFirst({
-      where: {
+      where: withSoftDelete({
         id: data.equipmentId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!equipment) {

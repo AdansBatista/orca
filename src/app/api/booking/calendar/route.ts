@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { calendarQuerySchema } from '@/lib/validations/booking';
 
@@ -85,14 +86,12 @@ export const GET = withAuth(
       includeInactive,
     } = queryResult.data;
 
-    // Build where clause
-    // Note: MongoDB requires OR with isSet:false for null checks
-    const where: Record<string, unknown> = {
+    // Build where clause with standardized soft delete filter
+    const where: Record<string, unknown> = withSoftDelete({
       ...getClinicFilter(session),
-      OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
       startTime: { gte: startDate },
       endTime: { lte: endDate },
-    };
+    });
 
     // Filter by provider(s)
     if (providerId) {

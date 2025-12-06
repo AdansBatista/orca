@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { Prisma, TransferStatus } from '@prisma/client';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import {
@@ -175,11 +176,10 @@ export const POST = withAuth(
     const itemValidation = [];
     for (const item of data.items) {
       const inventoryItem = await db.inventoryItem.findFirst({
-        where: {
+        where: withSoftDelete({
           id: item.itemId,
           clinicId: session.user.clinicId,
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!inventoryItem) {

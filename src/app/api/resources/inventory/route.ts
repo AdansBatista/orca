@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import {
@@ -61,11 +62,8 @@ export const GET = withAuth(
       sortOrder,
     } = queryResult.data;
 
-    // Build where clause
-    const where: Record<string, unknown> = {
-      ...getClinicFilter(session),
-      deletedAt: null,
-    };
+    // Build where clause with standardized soft delete filter
+    const where: Record<string, unknown> = withSoftDelete(getClinicFilter(session));
 
     if (category) where.category = category;
     if (status) where.status = status;
@@ -127,7 +125,7 @@ export const GET = withAuth(
 
     // Calculate additional stats
     const stats = await db.inventoryItem.aggregate({
-      where: { ...getClinicFilter(session), deletedAt: null },
+      where: withSoftDelete(getClinicFilter(session)),
       _count: true,
       _sum: {
         currentStock: true,
@@ -136,20 +134,18 @@ export const GET = withAuth(
 
     // Count low stock and out of stock items
     const lowStockCount = await db.inventoryItem.count({
-      where: {
+      where: withSoftDelete({
         ...getClinicFilter(session),
-        deletedAt: null,
         // Items where currentStock <= reorderPoint but > 0
         currentStock: { gt: 0 },
-      },
+      }),
     });
 
     const outOfStockCount = await db.inventoryItem.count({
-      where: {
+      where: withSoftDelete({
         ...getClinicFilter(session),
-        deletedAt: null,
         currentStock: 0,
-      },
+      }),
     });
 
     return NextResponse.json({
@@ -200,11 +196,10 @@ export const POST = withAuth(
 
     // Check for duplicate SKU in this clinic
     const existingBySku = await db.inventoryItem.findFirst({
-      where: {
+      where: withSoftDelete({
         clinicId: session.user.clinicId,
         sku: data.sku,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (existingBySku) {
@@ -223,11 +218,10 @@ export const POST = withAuth(
     // If supplier is specified, verify it exists
     if (data.supplierId) {
       const supplier = await db.supplier.findFirst({
-        where: {
+        where: withSoftDelete({
           id: data.supplierId,
           clinicId: session.user.clinicId,
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!supplier) {

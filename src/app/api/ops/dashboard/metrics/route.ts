@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 
 /**
@@ -17,16 +18,15 @@ export const GET = withAuth(
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Fetch today's appointments
+    // Fetch today's appointments with standardized soft delete
     const appointments = await db.appointment.findMany({
-      where: {
+      where: withSoftDelete({
         ...getClinicFilter(session),
         startTime: {
           gte: today,
           lt: tomorrow,
         },
-        deletedAt: null,
-      },
+      }),
       include: {
         patientFlowState: true,
       },

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 
 /**
@@ -11,14 +12,13 @@ export const GET = withAuth(
   async (req, session) => {
     const clinicId = session.user.clinicId;
 
-    // Get all chairs with their current occupancy
+    // Get all chairs with their current occupancy using standardized soft delete
     const chairs = await db.treatmentChair.findMany({
-      where: {
+      where: withSoftDelete({
         room: {
           clinicId,
         },
-        deletedAt: null,
-      },
+      }),
       include: {
         room: {
           select: {

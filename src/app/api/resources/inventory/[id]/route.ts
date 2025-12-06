@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateInventoryItemSchema } from '@/lib/validations/inventory';
@@ -14,11 +15,10 @@ export const GET = withAuth<{ id: string }>(
     const { id } = await context.params;
 
     const inventoryItem = await db.inventoryItem.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         supplier: {
           select: { id: true, name: true, code: true, email: true, phone: true },
@@ -93,11 +93,10 @@ export const PUT = withAuth<{ id: string }>(
 
     // Check if item exists
     const existingItem = await db.inventoryItem.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existingItem) {
@@ -116,12 +115,11 @@ export const PUT = withAuth<{ id: string }>(
     // If SKU is being changed, check for duplicates
     if (data.sku && data.sku !== existingItem.sku) {
       const duplicateSku = await db.inventoryItem.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           sku: data.sku,
           id: { not: id },
-          deletedAt: null,
-        },
+        }),
       });
 
       if (duplicateSku) {
@@ -141,11 +139,10 @@ export const PUT = withAuth<{ id: string }>(
     // If supplier is being changed, verify it exists
     if (data.supplierId && data.supplierId !== existingItem.supplierId) {
       const supplier = await db.supplier.findFirst({
-        where: {
+        where: withSoftDelete({
           id: data.supplierId,
           clinicId: session.user.clinicId,
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!supplier) {
@@ -249,11 +246,10 @@ export const DELETE = withAuth<{ id: string }>(
 
     // Check if item exists
     const existingItem = await db.inventoryItem.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existingItem) {

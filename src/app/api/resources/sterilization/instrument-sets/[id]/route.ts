@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import {
   updateInstrumentSetSchema,
   updateInstrumentSetStatusSchema,
@@ -17,11 +18,10 @@ export const GET = withAuth<{ id: string }>(
     const { id } = await context.params;
 
     const instrumentSet = await db.instrumentSet.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!instrumentSet) {
@@ -53,11 +53,10 @@ export const PUT = withAuth<{ id: string }>(
 
     // Check if set exists
     const existingSet = await db.instrumentSet.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existingSet) {
@@ -94,12 +93,11 @@ export const PUT = withAuth<{ id: string }>(
     // Check for duplicate set number if it's being changed
     if (data.setNumber && data.setNumber !== existingSet.setNumber) {
       const duplicateSet = await db.instrumentSet.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           setNumber: data.setNumber,
-          deletedAt: null,
           NOT: { id },
-        },
+        }),
       });
 
       if (duplicateSet) {
@@ -155,11 +153,10 @@ export const PATCH = withAuth<{ id: string }>(
 
     // Check if set exists
     const existingSet = await db.instrumentSet.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existingSet) {
@@ -247,11 +244,10 @@ export const DELETE = withAuth<{ id: string }>(
     const { id } = await context.params;
 
     const existingSet = await db.instrumentSet.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existingSet) {

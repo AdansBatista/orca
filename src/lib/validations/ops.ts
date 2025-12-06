@@ -34,6 +34,14 @@ export const checkInSchema = z.object({
 });
 
 /**
+ * Move patient to waiting room
+ */
+export const waitingSchema = z.object({
+  appointmentId: z.string().min(1, 'Appointment ID is required'),
+  notes: z.string().optional(),
+});
+
+/**
  * Call patient to treatment area
  */
 export const callPatientSchema = z.object({
@@ -340,6 +348,7 @@ export type TaskStatus = z.infer<typeof taskStatusEnum>;
 export type TaskPriority = z.infer<typeof taskPriorityEnum>;
 
 export type CheckInInput = z.infer<typeof checkInSchema>;
+export type WaitingInput = z.infer<typeof waitingSchema>;
 export type CallPatientInput = z.infer<typeof callPatientSchema>;
 export type SeatPatientInput = z.infer<typeof seatPatientSchema>;
 export type CompletePatientInput = z.infer<typeof completePatientSchema>;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { dayDashboardQuerySchema } from '@/lib/validations/ops';
 
@@ -42,15 +43,14 @@ export const GET = withAuth(
 
     const clinicFilter = getClinicFilter(session);
 
-    // Build appointment filter
-    const appointmentWhere: Record<string, unknown> = {
+    // Build appointment filter with standardized soft delete
+    const appointmentWhere: Record<string, unknown> = withSoftDelete({
       ...clinicFilter,
       startTime: {
         gte: targetDate,
         lt: nextDay,
       },
-      deletedAt: null,
-    };
+    });
 
     if (providerId) {
       appointmentWhere.providerId = providerId;

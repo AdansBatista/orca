@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createStaffDocumentSchema, documentQuerySchema } from '@/lib/validations/staff';
@@ -44,11 +45,10 @@ export const GET = withAuth<{ id: string }>(
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id: staffProfileId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!staffProfile) {
@@ -159,11 +159,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id: staffProfileId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!staffProfile) {
@@ -258,11 +257,10 @@ export const DELETE = withAuth<{ id: string }>(
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id: staffProfileId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!staffProfile) {

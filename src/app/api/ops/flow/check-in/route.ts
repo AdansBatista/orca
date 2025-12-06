@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { checkInSchema } from '@/lib/validations/ops';
@@ -32,13 +33,12 @@ export const POST = withAuth(
     const { appointmentId, notes } = result.data;
     const clinicId = session.user.clinicId;
 
-    // Find the appointment
+    // Find the appointment with standardized soft delete
     const appointment = await db.appointment.findFirst({
-      where: {
+      where: withSoftDelete({
         id: appointmentId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         patient: true,
       },

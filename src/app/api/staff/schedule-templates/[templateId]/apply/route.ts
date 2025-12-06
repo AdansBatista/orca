@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { applyTemplateSchema, TemplateShiftData } from '@/lib/validations/scheduling';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 
 /**
  * POST /api/staff/schedule-templates/:templateId/apply
@@ -87,11 +88,10 @@ export const POST = withAuth<{ templateId: string }>(
     let staffProfiles;
     if (staffProfileIds && staffProfileIds.length > 0) {
       staffProfiles = await db.staffProfile.findMany({
-        where: {
+        where: withSoftDelete({
           id: { in: staffProfileIds },
           ...getClinicFilter(session),
-          deletedAt: null,
-        },
+        }),
       });
     } else {
       // Get staff from template shift assignments
@@ -101,11 +101,10 @@ export const POST = withAuth<{ templateId: string }>(
 
       if (assignedIds.length > 0) {
         staffProfiles = await db.staffProfile.findMany({
-          where: {
+          where: withSoftDelete({
             id: { in: assignedIds },
             ...getClinicFilter(session),
-            deletedAt: null,
-          },
+          }),
         });
       } else {
         return NextResponse.json(

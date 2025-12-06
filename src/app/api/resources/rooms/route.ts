@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createRoomSchema, roomQuerySchema } from '@/lib/validations/room';
@@ -54,11 +55,8 @@ export const GET = withAuth(
       sortOrder,
     } = queryResult.data;
 
-    // Build where clause
-    const where: Record<string, unknown> = {
-      ...getClinicFilter(session),
-      deletedAt: null, // Exclude soft-deleted records
-    };
+    // Build where clause with standardized soft delete filter
+    const where: Record<string, unknown> = withSoftDelete(getClinicFilter(session));
 
     if (roomType) where.roomType = roomType;
     if (status) where.status = status;
@@ -142,11 +140,10 @@ export const POST = withAuth(
 
     // Check for duplicate room number in this clinic
     const existingRoom = await db.room.findFirst({
-      where: {
+      where: withSoftDelete({
         clinicId: session.user.clinicId,
         roomNumber: data.roomNumber,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (existingRoom) {

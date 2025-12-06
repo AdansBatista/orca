@@ -7,6 +7,7 @@ import {
   createCECreditSchema,
   ceCreditQuerySchema,
 } from '@/lib/validations/performance';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 
 /**
  * GET /api/staff/ce-credits
@@ -152,11 +153,10 @@ export const POST = withAuth(
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id: data.staffProfileId,
         ...clinicFilter,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!staffProfile) {

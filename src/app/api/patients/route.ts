@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth';
 
 /**
@@ -40,10 +41,7 @@ export const GET = withAuth(
       });
     }
 
-    const where: Record<string, unknown> = {
-      clinicId,
-      OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-    };
+    const where: Record<string, unknown> = withSoftDelete({ clinicId });
 
     // Add search filter
     if (search) {

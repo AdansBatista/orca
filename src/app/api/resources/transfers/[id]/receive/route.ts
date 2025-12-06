@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { receiveTransferSchema } from '@/lib/validations/inventory';
@@ -103,11 +104,10 @@ export const POST = withAuth<{ id: string }>(
 
         // Find or create the corresponding inventory item at destination
         let destItem = await tx.inventoryItem.findFirst({
-          where: {
+          where: withSoftDelete({
             clinicId: session.user.clinicId,
             sku: transferItem.item.sku,
-            deletedAt: null,
-          },
+          }),
         });
 
         if (!destItem) {

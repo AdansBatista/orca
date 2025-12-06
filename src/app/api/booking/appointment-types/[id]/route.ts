@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete, SOFT_DELETE_FILTER } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateAppointmentTypeSchema } from '@/lib/validations/booking';
@@ -13,13 +14,11 @@ export const GET = withAuth<{ id: string }>(
   async (req, session, { params }) => {
     const { id } = await params;
 
-    // Note: MongoDB requires OR with isSet:false for null checks
     const appointmentType = await db.appointmentType.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
       include: {
         _count: {
           select: { appointments: true },
@@ -58,13 +57,11 @@ export const PUT = withAuth<{ id: string }>(
     const body = await req.json();
 
     // Find the existing appointment type
-    // Note: MongoDB requires OR with isSet:false for null checks
     const existing = await db.appointmentType.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
     });
 
     if (!existing) {
@@ -101,12 +98,11 @@ export const PUT = withAuth<{ id: string }>(
     // Check for duplicate code if being changed
     if (data.code && data.code !== existing.code) {
       const duplicateCode = await db.appointmentType.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           code: data.code,
           id: { not: id },
-          OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-        },
+        }),
       });
 
       if (duplicateCode) {
@@ -164,13 +160,11 @@ export const DELETE = withAuth<{ id: string }>(
     const { id } = await params;
 
     // Find the existing appointment type
-    // Note: MongoDB requires OR with isSet:false for null checks
     const existing = await db.appointmentType.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
     });
 
     if (!existing) {
@@ -192,7 +186,7 @@ export const DELETE = withAuth<{ id: string }>(
         appointmentTypeId: id,
         startTime: { gte: new Date() },
         status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
+        ...SOFT_DELETE_FILTER,
       },
     });
 

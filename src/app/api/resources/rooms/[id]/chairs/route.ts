@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createTreatmentChairSchema } from '@/lib/validations/room';
@@ -15,11 +16,10 @@ export const GET = withAuth<{ id: string }>(
 
     // Verify room exists and belongs to clinic
     const room = await db.room.findFirst({
-      where: {
+      where: withSoftDelete({
         id: roomId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!room) {
@@ -36,11 +36,10 @@ export const GET = withAuth<{ id: string }>(
     }
 
     const chairs = await db.treatmentChair.findMany({
-      where: {
+      where: withSoftDelete({
         roomId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       orderBy: { chairNumber: 'asc' },
     });
 
@@ -63,11 +62,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify room exists and belongs to clinic
     const room = await db.room.findFirst({
-      where: {
+      where: withSoftDelete({
         id: roomId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!room) {
@@ -103,11 +101,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Check for duplicate chair number in this clinic
     const existingChair = await db.treatmentChair.findFirst({
-      where: {
+      where: withSoftDelete({
         clinicId: session.user.clinicId,
         chairNumber: data.chairNumber,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (existingChair) {

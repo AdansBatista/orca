@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createShiftSchema } from '@/lib/validations/scheduling';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { z } from 'zod';
 
 // Schema for bulk shift creation
@@ -40,11 +41,10 @@ export const POST = withAuth(
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id: staffProfileId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!staffProfile) {

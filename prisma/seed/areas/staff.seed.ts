@@ -3,13 +3,15 @@ import { createStaffFactory } from '../factories/staff.factory';
 import { createFactoryContext } from '../factories/base.factory';
 
 /**
- * Seed staff profiles for each clinic.
+ * Seed staff profiles for ALL clinics.
  * Creates StaffProfiles linked to existing auth users (created by auth.seed).
  *
  * This ensures data consistency:
  * - Users created by auth.seed have RoleAssignments
  * - This seed creates StaffProfiles linked to those same users
  * - Result: all users have both RoleAssignments AND StaffProfiles
+ *
+ * Dependencies: core, auth:users
  */
 export async function seedStaff(ctx: SeedContext): Promise<void> {
   const { db, idTracker, logger } = ctx;
@@ -17,17 +19,26 @@ export async function seedStaff(ctx: SeedContext): Promise<void> {
 
   logger.startArea('Staff Profiles');
 
+  if (clinicIds.length === 0) {
+    logger.warn('No clinics found - core area must be seeded first. Skipping staff seeding.');
+    logger.endArea('Staff Profiles', 0);
+    return;
+  }
+
   let totalStaff = 0;
 
-  for (const clinicId of clinicIds) {
+  for (let clinicIndex = 0; clinicIndex < clinicIds.length; clinicIndex++) {
+    const clinicId = clinicIds[clinicIndex];
     const clinic = await db.clinic.findUnique({ where: { id: clinicId } });
-    logger.info(`Seeding staff profiles for clinic: ${clinic?.name || clinicId}`);
+    logger.info(`Seeding staff profiles for clinic ${clinicIndex + 1}/${clinicIds.length}: ${clinic?.name || clinicId}`);
 
     // Get existing users from this clinic (created by auth.seed)
     const existingUserIds = idTracker.getByClinic('User', clinicId);
 
     if (existingUserIds.length === 0) {
-      logger.info(`  No users found for clinic ${clinicId}, skipping...`);
+      // FAIL LOUDLY instead of silently skipping
+      logger.warn(`  WARNING: No users found for clinic ${clinicId} - auth:users must be seeded first!`);
+      logger.warn(`  This will cause cascade failures in scheduling, performance, booking, and ops.`);
       continue;
     }
 
@@ -39,6 +50,11 @@ export async function seedStaff(ctx: SeedContext): Promise<void> {
     // Get a user to use as createdBy (prefer clinic_admin)
     const adminUser = users.find((u) => u.role === 'clinic_admin') || users[0];
     const createdBy = adminUser?.id;
+
+    if (!createdBy) {
+      logger.warn(`  WARNING: No admin user found for clinic ${clinicId}, skipping staff creation`);
+      continue;
+    }
 
     // Create factory context
     const factoryCtx = createFactoryContext(db, idTracker, clinicId, createdBy);
@@ -54,6 +70,7 @@ export async function seedStaff(ctx: SeedContext): Promise<void> {
     };
 
     let clinicalStaffIndex = 0;
+    let clinicStaffCount = 0;
 
     for (const user of users) {
       // Skip super_admin - they're system users, not staff
@@ -82,12 +99,14 @@ export async function seedStaff(ctx: SeedContext): Promise<void> {
         },
       });
 
+      clinicStaffCount++;
       totalStaff++;
     }
 
-    logger.info(`  Created ${users.filter((u) => u.role !== 'super_admin').length} staff profile(s)`);
+    logger.info(`  Created ${clinicStaffCount} staff profile(s)`);
   }
 
+  logger.success(`Staff seeding complete: ${totalStaff} profiles created across ${clinicIds.length} clinics`);
   logger.endArea('Staff Profiles', totalStaff);
 }
 

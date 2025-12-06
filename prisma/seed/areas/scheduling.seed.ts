@@ -58,8 +58,10 @@ function getMonday(date: Date): Date {
 // ============================================================================
 
 /**
- * Seed scheduling data for staff profiles.
+ * Seed scheduling data for ALL clinics.
  * Creates shifts, time-off requests, availability, and templates.
+ *
+ * Dependencies: core, auth:users, staff
  */
 export async function seedScheduling(ctx: SeedContext): Promise<void> {
   const { db, idTracker, logger } = ctx;
@@ -67,14 +69,21 @@ export async function seedScheduling(ctx: SeedContext): Promise<void> {
 
   logger.startArea('Scheduling');
 
+  if (clinicIds.length === 0) {
+    logger.warn('No clinics found - core area must be seeded first. Skipping scheduling seeding.');
+    logger.endArea('Scheduling', 0);
+    return;
+  }
+
   let totalShifts = 0;
   let totalTimeOff = 0;
   let totalAvailability = 0;
   let totalTemplates = 0;
 
-  for (const clinicId of clinicIds) {
+  for (let clinicIndex = 0; clinicIndex < clinicIds.length; clinicIndex++) {
+    const clinicId = clinicIds[clinicIndex];
     const clinic = await db.clinic.findUnique({ where: { id: clinicId } });
-    logger.info(`Seeding scheduling for clinic: ${clinic?.name || clinicId}`);
+    logger.info(`Seeding scheduling for clinic ${clinicIndex + 1}/${clinicIds.length}: ${clinic?.name || clinicId}`);
 
     // Get staff profiles for this clinic
     const staffProfiles = await db.staffProfile.findMany({
@@ -83,13 +92,18 @@ export async function seedScheduling(ctx: SeedContext): Promise<void> {
     });
 
     if (staffProfiles.length === 0) {
-      logger.warn('  No staff profiles found, skipping scheduling seed');
+      logger.warn('  WARNING: No staff profiles found - staff area must be seeded first!');
+      logger.warn('  Skipping scheduling seed for this clinic.');
       continue;
     }
 
-    // Get a user for createdBy
+    // Get a user for createdBy - REQUIRED, not optional
     const existingUserIds = idTracker.getByClinic('User', clinicId);
-    const createdBy = existingUserIds.length > 0 ? existingUserIds[0] : undefined;
+    if (existingUserIds.length === 0) {
+      logger.warn(`  WARNING: No users found for clinic ${clinicId} - auth:users must be seeded first!`);
+      continue;
+    }
+    const createdBy = existingUserIds[0]; // Now guaranteed to exist
 
     // ========================================================================
     // 1. Create Schedule Templates
@@ -497,6 +511,7 @@ export async function seedScheduling(ctx: SeedContext): Promise<void> {
     logger.info('  Created overtime logs');
   }
 
+  logger.success(`Scheduling seeding complete: ${totalShifts} shifts, ${totalTimeOff} time-off requests, ${totalAvailability} availability records, ${totalTemplates} templates`);
   logger.endArea('Scheduling', totalShifts + totalTimeOff + totalAvailability + totalTemplates);
 }
 

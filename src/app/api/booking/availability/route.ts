@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { SOFT_DELETE_FILTER } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
 import { availabilityCheckSchema } from '@/lib/validations/booking';
 
@@ -46,21 +47,25 @@ export const POST = withAuth(
     const providerConflict = await db.appointment.findFirst({
       where: {
         providerId: data.providerId,
-        deletedAt: null,
         status: { notIn: ['CANCELLED', 'NO_SHOW'] },
         ...exclusion,
-        OR: [
+        AND: [
+          SOFT_DELETE_FILTER,
           {
-            startTime: { lte: data.startTime },
-            endTime: { gt: data.startTime },
-          },
-          {
-            startTime: { lt: data.endTime },
-            endTime: { gte: data.endTime },
-          },
-          {
-            startTime: { gte: data.startTime },
-            endTime: { lte: data.endTime },
+            OR: [
+              {
+                startTime: { lte: data.startTime },
+                endTime: { gt: data.startTime },
+              },
+              {
+                startTime: { lt: data.endTime },
+                endTime: { gte: data.endTime },
+              },
+              {
+                startTime: { gte: data.startTime },
+                endTime: { lte: data.endTime },
+              },
+            ],
           },
         ],
       },
@@ -94,21 +99,25 @@ export const POST = withAuth(
       const chairConflict = await db.appointment.findFirst({
         where: {
           chairId: data.chairId,
-          deletedAt: null,
           status: { notIn: ['CANCELLED', 'NO_SHOW'] },
           ...exclusion,
-          OR: [
+          AND: [
+            SOFT_DELETE_FILTER,
             {
-              startTime: { lte: data.startTime },
-              endTime: { gt: data.startTime },
-            },
-            {
-              startTime: { lt: data.endTime },
-              endTime: { gte: data.endTime },
-            },
-            {
-              startTime: { gte: data.startTime },
-              endTime: { lte: data.endTime },
+              OR: [
+                {
+                  startTime: { lte: data.startTime },
+                  endTime: { gt: data.startTime },
+                },
+                {
+                  startTime: { lt: data.endTime },
+                  endTime: { gte: data.endTime },
+                },
+                {
+                  startTime: { gte: data.startTime },
+                  endTime: { lte: data.endTime },
+                },
+              ],
             },
           ],
         },
@@ -143,21 +152,25 @@ export const POST = withAuth(
       const roomConflict = await db.appointment.findFirst({
         where: {
           roomId: data.roomId,
-          deletedAt: null,
           status: { notIn: ['CANCELLED', 'NO_SHOW'] },
           ...exclusion,
-          OR: [
+          AND: [
+            SOFT_DELETE_FILTER,
             {
-              startTime: { lte: data.startTime },
-              endTime: { gt: data.startTime },
-            },
-            {
-              startTime: { lt: data.endTime },
-              endTime: { gte: data.endTime },
-            },
-            {
-              startTime: { gte: data.startTime },
-              endTime: { lte: data.endTime },
+              OR: [
+                {
+                  startTime: { lte: data.startTime },
+                  endTime: { gt: data.startTime },
+                },
+                {
+                  startTime: { lt: data.endTime },
+                  endTime: { gte: data.endTime },
+                },
+                {
+                  startTime: { gte: data.startTime },
+                  endTime: { lte: data.endTime },
+                },
+              ],
             },
           ],
         },

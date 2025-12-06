@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateRoomSchema } from '@/lib/validations/room';
@@ -14,14 +15,13 @@ export const GET = withAuth<{ id: string }>(
     const { id } = await context.params;
 
     const room = await db.room.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         chairs: {
-          where: { deletedAt: null },
+          where: withSoftDelete({}),
           orderBy: { chairNumber: 'asc' },
         },
         roomEquipment: {
@@ -30,7 +30,7 @@ export const GET = withAuth<{ id: string }>(
         },
         _count: {
           select: {
-            chairs: { where: { deletedAt: null } },
+            chairs: { where: withSoftDelete({}) },
             roomEquipment: { where: { unassignedDate: null } },
           },
         },
@@ -82,11 +82,10 @@ export const PUT = withAuth<{ id: string }>(
 
     // Check if room exists
     const existingRoom = await db.room.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!existingRoom) {
@@ -107,12 +106,11 @@ export const PUT = withAuth<{ id: string }>(
     // Check for duplicate room number if changing it
     if (data.roomNumber && data.roomNumber !== existingRoom.roomNumber) {
       const duplicateRoom = await db.room.findFirst({
-        where: {
+        where: withSoftDelete({
           clinicId: session.user.clinicId,
           roomNumber: data.roomNumber,
           id: { not: id },
-          deletedAt: null,
-        },
+        }),
       });
 
       if (duplicateRoom) {
@@ -139,7 +137,7 @@ export const PUT = withAuth<{ id: string }>(
       include: {
         _count: {
           select: {
-            chairs: { where: { deletedAt: null } },
+            chairs: { where: withSoftDelete({}) },
             roomEquipment: { where: { unassignedDate: null } },
           },
         },
@@ -175,15 +173,14 @@ export const DELETE = withAuth<{ id: string }>(
 
     // Check if room exists
     const existingRoom = await db.room.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         _count: {
           select: {
-            chairs: { where: { deletedAt: null } },
+            chairs: { where: withSoftDelete({}) },
           },
         },
       },

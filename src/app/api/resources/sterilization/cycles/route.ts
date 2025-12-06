@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import {
   createSterilizationCycleSchema,
   sterilizationCycleQuerySchema,
@@ -148,11 +149,10 @@ export const POST = withAuth(
 
     // Verify equipment exists and belongs to this clinic
     const equipment = await db.equipment.findFirst({
-      where: {
+      where: withSoftDelete({
         id: data.equipmentId,
         clinicId: session.user.clinicId,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!equipment) {

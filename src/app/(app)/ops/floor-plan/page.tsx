@@ -51,27 +51,38 @@ export default function FloorPlanPage() {
         setInitialLayout(layoutData.data);
       }
 
-      // Fetch rooms with chairs
-      const roomsRes = await fetch(`/api/resources/rooms?clinicId=${clinicId}`);
-      const roomsData = await roomsRes.json();
+      // Fetch chair statuses (which includes room data)
+      const statusRes = await fetch('/api/ops/resources/status');
+      const statusData = await statusRes.json();
 
-      if (roomsData.success) {
+      if (statusData.success) {
         // Transform room data to include positions from layout
         const layoutRooms = layoutData.data?.rooms || [];
         const layoutChairs = layoutData.data?.chairs || [];
 
-        const transformedRooms: Room[] = roomsData.data.map((room: any) => ({
-          id: room.id,
-          name: room.name,
-          roomNumber: room.roomNumber || '0',
-          boundary: layoutRooms.find((r: any) => r.roomId === room.id),
-          chairs: room.chairs.map((chair: any) => ({
+        // Get rooms from the byRoom data
+        const byRoom = statusData.data.byRoom || [];
+
+        const transformedRooms: Room[] = byRoom.map((roomData: any) => ({
+          id: roomData.room.id,
+          name: roomData.room.name,
+          roomNumber: roomData.room.roomNumber || '0',
+          boundary: layoutRooms.find((r: any) => r.roomId === roomData.room.id),
+          chairs: roomData.chairs.map((chair: any) => ({
             id: chair.id,
             name: chair.name,
             chairNumber: chair.chairNumber,
-            roomId: room.id,
-            isActive: chair.status === 'ACTIVE',
+            roomId: roomData.room.id,
+            isActive: chair.condition === 'GOOD' || chair.condition === 'FAIR',
             position: layoutChairs.find((c: any) => c.chairId === chair.id),
+            status: {
+              status: chair.status,
+              patient: chair.patient,
+              appointment: chair.appointment,
+              occupiedAt: chair.occupiedAt,
+              subStage: chair.activitySubStage,
+              assignedStaff: chair.assignedStaff,
+            },
           })),
         }));
 
@@ -82,19 +93,6 @@ export default function FloorPlanPage() {
         setChairs(allChairs);
       }
 
-      // Fetch chair statuses
-      const statusRes = await fetch('/api/ops/resources/status');
-      const statusData = await statusRes.json();
-
-      if (statusData.success) {
-        // Update chairs with status information
-        setChairs((prev) =>
-          prev.map((chair) => {
-            const status = statusData.data.find((s: any) => s.chairId === chair.id);
-            return status ? { ...chair, status } : chair;
-          })
-        );
-      }
     } catch (error) {
       console.error('Failed to fetch floor plan data:', error);
       toast.error('Failed to load floor plan');

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import {
@@ -19,11 +20,10 @@ export const GET = withAuth<{ id: string }>(
 
     // Verify equipment exists and belongs to clinic
     const equipment = await db.equipment.findFirst({
-      where: {
+      where: withSoftDelete({
         id: equipmentId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!equipment) {
@@ -137,11 +137,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify equipment exists and belongs to clinic
     const equipment = await db.equipment.findFirst({
-      where: {
+      where: withSoftDelete({
         id: equipmentId,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       include: {
         type: true,
       },
@@ -181,11 +180,10 @@ export const POST = withAuth<{ id: string }>(
     // If vendor is specified, verify it exists
     if (data.vendorId) {
       const vendor = await db.supplier.findFirst({
-        where: {
+        where: withSoftDelete({
           id: data.vendorId,
           clinicId: session.user.clinicId,
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!vendor) {

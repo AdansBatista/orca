@@ -178,6 +178,7 @@ export function PatientFlowBoard({ onRefresh }: PatientFlowBoardProps) {
     setActionLoading(patient.id);
 
     const endpoints: Record<string, string> = {
+      waiting: '/api/ops/flow/waiting',
       call: '/api/ops/flow/call',
       complete: '/api/ops/flow/complete',
       checkout: '/api/ops/flow/check-out',
@@ -207,10 +208,10 @@ export function PatientFlowBoard({ onRefresh }: PatientFlowBoardProps) {
     }
   };
 
-  // Get next action for a stage
+  // Get next action for a stage (primary button)
   const getNextAction = (stage: string): { label: string; action: string } | null => {
     const actions: Record<string, { label: string; action: string }> = {
-      CHECKED_IN: { label: 'Call', action: 'call' },
+      CHECKED_IN: { label: 'Waiting', action: 'waiting' },
       WAITING: { label: 'Call', action: 'call' },
       CALLED: { label: 'Seat', action: 'seat' },
       IN_CHAIR: { label: 'Complete', action: 'complete' },
@@ -346,6 +347,16 @@ export function PatientFlowBoard({ onRefresh }: PatientFlowBoardProps) {
                                 Contact
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              {/* Call option for CHECKED_IN patients (skip waiting) */}
+                              {patient.stage === 'CHECKED_IN' && (
+                                <DropdownMenuItem
+                                  onClick={() => movePatient(patient, 'call')}
+                                  disabled={actionLoading === patient.id}
+                                >
+                                  <ArrowRight className="h-4 w-4 mr-2" />
+                                  Call (Skip Waiting)
+                                </DropdownMenuItem>
+                              )}
                               {nextAction && (
                                 <DropdownMenuItem
                                   onClick={() => movePatient(patient, nextAction.action)}

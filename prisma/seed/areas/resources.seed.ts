@@ -21,14 +21,18 @@ import {
   INVENTORY_ITEMS,
   INVENTORY_SUPPLIERS,
 } from '../fixtures/inventory.fixture';
+import { withSoftDelete } from '../utils/soft-delete';
 
 /**
  * Seed resources data: Equipment types, suppliers, and sample equipment.
  *
- * This creates:
+ * This creates FOR ALL CLINICS:
  * 1. System-wide equipment types (available to all clinics)
  * 2. Suppliers for each clinic
- * 3. Sample equipment for the primary clinic (standard/full mode only)
+ * 3. Sample equipment (standard/full mode only)
+ * 4. Rooms and chairs
+ * 5. Sterilization data
+ * 6. Inventory items
  */
 export async function seedResources(ctx: SeedContext): Promise<void> {
   const { db, config, idTracker, logger } = ctx;
@@ -242,7 +246,7 @@ export async function seedResources(ctx: SeedContext): Promise<void> {
     logger.info('Creating sample maintenance records...');
 
     const equipmentForMaintenance = await db.equipment.findMany({
-      where: { clinicId: primaryClinicId, deletedAt: null },
+      where: withSoftDelete({ clinicId: primaryClinicId }),
       include: { type: true },
     });
 
@@ -798,7 +802,7 @@ export async function seedResources(ctx: SeedContext): Promise<void> {
 
     // Get suppliers for this clinic (we'll need them for linking)
     const inventorySuppliers = await db.supplier.findMany({
-      where: { clinicId: primaryClinicId, deletedAt: null },
+      where: withSoftDelete({ clinicId: primaryClinicId }),
     });
 
     // Map supplier codes to IDs
@@ -981,13 +985,13 @@ export async function seedResources(ctx: SeedContext): Promise<void> {
       logger.info('Creating sample purchase orders...');
 
       const inventoryItems = await db.inventoryItem.findMany({
-        where: { clinicId: primaryClinicId, deletedAt: null },
+        where: withSoftDelete({ clinicId: primaryClinicId }),
         take: 10,
       });
 
       // Get a supplier
       const poSupplier = inventorySuppliers[0] || (await db.supplier.findFirst({
-        where: { clinicId: primaryClinicId, deletedAt: null },
+        where: withSoftDelete({ clinicId: primaryClinicId }),
       }));
 
       if (poSupplier && inventoryItems.length > 0) {
@@ -1108,7 +1112,7 @@ export async function seedResources(ctx: SeedContext): Promise<void> {
         const secondaryClinic = await db.clinic.findUnique({ where: { id: secondaryClinicId } });
 
         const transferItems = await db.inventoryItem.findMany({
-          where: { clinicId: primaryClinicId, deletedAt: null, availableStock: { gt: 5 } },
+          where: withSoftDelete({ clinicId: primaryClinicId, availableStock: { gt: 5 } }),
           take: 8,
         });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import {
@@ -60,11 +61,8 @@ export const GET = withAuth(
       sortOrder,
     } = queryResult.data;
 
-    // Build where clause
-    const where: Record<string, unknown> = {
-      ...getClinicFilter(session),
-      deletedAt: null, // Exclude soft-deleted records
-    };
+    // Build where clause with standardized soft delete filter
+    const where: Record<string, unknown> = withSoftDelete(getClinicFilter(session));
 
     if (status) where.status = status;
     if (employmentType) where.employmentType = employmentType;
@@ -145,11 +143,10 @@ export const POST = withAuth(
 
     // Check for duplicate employee number in this clinic
     const existingByNumber = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         clinicId: session.user.clinicId,
         employeeNumber: data.employeeNumber,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (existingByNumber) {
@@ -167,11 +164,10 @@ export const POST = withAuth(
 
     // Check for duplicate email in this clinic
     const existingByEmail = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         clinicId: session.user.clinicId,
         email: data.email,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (existingByEmail) {

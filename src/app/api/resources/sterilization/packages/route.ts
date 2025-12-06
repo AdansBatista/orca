@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import {
   createInstrumentPackageSchema,
   instrumentPackageQuerySchema,
@@ -224,11 +225,10 @@ export const POST = withAuth(
     // Verify instrument set if provided
     if (data.instrumentSetId) {
       const instrumentSet = await db.instrumentSet.findFirst({
-        where: {
+        where: withSoftDelete({
           id: data.instrumentSetId,
           clinicId: session.user.clinicId,
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!instrumentSet) {

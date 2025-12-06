@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateRoleSchema } from '@/lib/validations/roles';
@@ -67,10 +68,9 @@ export const GET = withAuth<{ id: string }>(
     // Look up StaffProfiles for assigned users to enable proper linking
     const userIds = role.assignments.map((a) => a.user.id);
     const staffProfiles = await db.staffProfile.findMany({
-      where: {
+      where: withSoftDelete({
         userId: { in: userIds },
-        deletedAt: null,
-      },
+      }),
       select: {
         id: true,
         userId: true,

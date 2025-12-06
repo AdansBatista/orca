@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { inventoryCountSchema } from '@/lib/validations/inventory';
@@ -38,11 +39,10 @@ export const POST = withAuth(
     for (const count of counts) {
       // Get the item
       const item = await db.inventoryItem.findFirst({
-        where: {
+        where: withSoftDelete({
           id: count.itemId,
           ...getClinicFilter(session),
-          deletedAt: null,
-        },
+        }),
       });
 
       if (!item) {

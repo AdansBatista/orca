@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { createRoleAssignmentSchema } from '@/lib/validations/roles';
 
 /**
@@ -15,11 +16,10 @@ export const GET = withAuth<{ id: string }>(
 
     // Verify the user exists and belongs to the clinic
     const user = await db.user.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        deletedAt: null,
-      },
+      }),
       select: {
         id: true,
         firstName: true,
@@ -115,11 +115,10 @@ export const POST = withAuth<{ id: string }>(
 
     // Verify the user exists and belongs to the clinic
     const user = await db.user.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         clinicIds: { has: targetClinicId },
-        deletedAt: null,
-      },
+      }),
       select: {
         id: true,
         firstName: true,

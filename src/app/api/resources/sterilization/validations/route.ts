@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete, SOFT_DELETE_FILTER } from '@/lib/db/soft-delete';
 import {
   createSterilizerValidationSchema,
   sterilizerValidationQuerySchema,
@@ -150,8 +151,8 @@ export const POST = withAuth(
       where: {
         id: data.equipmentId,
         clinicId: session.user.clinicId,
-        deletedAt: null,
         category: 'STERILIZATION',
+        ...SOFT_DELETE_FILTER,
       },
     });
 

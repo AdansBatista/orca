@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { withSoftDelete, SOFT_DELETE_FILTER } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateAppointmentSchema } from '@/lib/validations/booking';
@@ -13,13 +14,11 @@ export const GET = withAuth<{ id: string }>(
   async (req, session, { params }) => {
     const { id } = await params;
 
-    // Note: MongoDB requires OR with isSet:false for null checks
     const appointment = await db.appointment.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
       include: {
         patient: {
           select: {
@@ -99,13 +98,11 @@ export const PUT = withAuth<{ id: string }>(
     const body = await req.json();
 
     // Find the existing appointment
-    // Note: MongoDB requires OR with isSet:false for null checks
     const existing = await db.appointment.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
     });
 
     if (!existing) {
@@ -167,7 +164,7 @@ export const PUT = withAuth<{ id: string }>(
           id: { not: id },
           status: { notIn: ['CANCELLED', 'NO_SHOW'] },
           AND: [
-            { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
+            SOFT_DELETE_FILTER,
             {
               OR: [
                 {
@@ -211,7 +208,7 @@ export const PUT = withAuth<{ id: string }>(
           id: { not: id },
           status: { notIn: ['CANCELLED', 'NO_SHOW'] },
           AND: [
-            { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
+            SOFT_DELETE_FILTER,
             {
               OR: [
                 {
@@ -317,13 +314,11 @@ export const DELETE = withAuth<{ id: string }>(
     const { id } = await params;
 
     // Find the existing appointment
-    // Note: MongoDB requires OR with isSet:false for null checks
     const existing = await db.appointment.findFirst({
-      where: {
+      where: withSoftDelete({
         id,
         ...getClinicFilter(session),
-        OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
-      },
+      }),
     });
 
     if (!existing) {

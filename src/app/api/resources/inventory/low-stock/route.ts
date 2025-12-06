@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { InventoryCategory } from '@prisma/client';
 
 import { db } from '@/lib/db';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 
 /**
@@ -19,12 +20,11 @@ export const GET = withAuth(
 
     // Get all items to check against their reorder points
     const items = await db.inventoryItem.findMany({
-      where: {
+      where: withSoftDelete({
         ...getClinicFilter(session),
-        deletedAt: null,
-        status: 'ACTIVE',
+        status: 'ACTIVE' as const,
         ...(category ? { category } : {}),
-      },
+      }),
       include: {
         supplier: {
           select: { id: true, name: true, code: true },

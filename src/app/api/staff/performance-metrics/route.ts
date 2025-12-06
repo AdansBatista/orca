@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
+import { withSoftDelete } from '@/lib/db/soft-delete';
 import {
   createPerformanceMetricSchema,
   performanceMetricQuerySchema,
@@ -139,11 +140,10 @@ export const POST = withAuth(
 
     // Verify staff profile exists and belongs to clinic
     const staffProfile = await db.staffProfile.findFirst({
-      where: {
+      where: withSoftDelete({
         id: data.staffProfileId,
         ...clinicFilter,
-        deletedAt: null,
-      },
+      }),
     });
 
     if (!staffProfile) {

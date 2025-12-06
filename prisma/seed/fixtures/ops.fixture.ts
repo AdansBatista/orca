@@ -49,41 +49,68 @@ export interface FloorPlanConfig {
 
 /**
  * Default floor plan layout for a typical orthodontic clinic
- * Uses a 20x12 grid layout
+ * Uses a 24x16 grid layout to accommodate all rooms and chairs
  */
 export function getDefaultFloorPlan(
   rooms: Array<{ id: string; name: string }>,
   chairs: Array<{ id: string; name: string; roomId: string }>
 ): FloorPlanConfig {
-  return {
-    gridColumns: 20,
-    gridRows: 12,
-    cellSize: 40,
-    rooms: rooms.slice(0, 6).map((room, index) => {
-      // Layout rooms in a 3x2 grid pattern
-      const col = index % 3;
-      const row = Math.floor(index / 3);
+  // Find the main treatment room (has most chairs) and other rooms
+  const roomWithChairCounts = rooms.map((room) => ({
+    ...room,
+    chairCount: chairs.filter((c) => c.roomId === room.id).length,
+  }));
 
-      const roomChairs = chairs
-        .filter((c) => c.roomId === room.id)
-        .slice(0, 2)
-        .map((chair, chairIndex) => ({
-          chairId: chair.id,
-          name: chair.name,
-          x: chairIndex * 3 + 1,
-          y: 2,
+  // Sort rooms: treatment room first (most chairs), then others
+  const sortedRooms = [...roomWithChairCounts].sort((a, b) => b.chairCount - a.chairCount);
+
+  return {
+    gridColumns: 24,
+    gridRows: 16,
+    cellSize: 40,
+    rooms: sortedRooms.map((room, index) => {
+      const roomChairs = chairs.filter((c) => c.roomId === room.id);
+
+      // Main treatment room (first room, has most chairs) - larger layout
+      if (index === 0 && roomChairs.length >= 3) {
+        // Large room spanning most of the width for the main treatment area
+        return {
+          roomId: room.id,
+          name: room.name,
+          x: 1,
+          y: 1,
+          width: 18,
+          height: 8,
           rotation: 0,
-        }));
+          chairs: roomChairs.map((chair, chairIndex) => ({
+            chairId: chair.id,
+            name: chair.name,
+            x: chairIndex * 3 + 1, // Space chairs 3 units apart
+            y: 3,
+            rotation: 0,
+          })),
+        };
+      }
+
+      // Other rooms - smaller, positioned below the main treatment room
+      const col = (index - 1) % 4;
+      const row = Math.floor((index - 1) / 4);
 
       return {
         roomId: room.id,
         name: room.name,
-        x: col * 6 + 1,
-        y: row * 6 + 1,
-        width: 5,
-        height: 5,
+        x: col * 5 + 1,
+        y: row * 5 + 10, // Start below the main treatment room
+        width: 4,
+        height: 4,
         rotation: 0,
-        chairs: roomChairs,
+        chairs: roomChairs.map((chair, chairIndex) => ({
+          chairId: chair.id,
+          name: chair.name,
+          x: chairIndex * 2 + 1,
+          y: 1,
+          rotation: 0,
+        })),
       };
     }),
   };
@@ -185,7 +212,7 @@ export function generatePatientFlowStates(
       checkedInAt = new Date(appointmentTime.getTime() - 10 * 60000);
       calledAt = new Date(appointmentTime.getTime() + 2 * 60000);
       seatedAt = new Date(appointmentTime.getTime() + 5 * 60000);
-    } else if (apt.status === 'CHECKED_IN') {
+    } else if (apt.status === 'ARRIVED') {
       // Randomly distribute between CHECKED_IN, WAITING, CALLED
       const randomStage = Math.random();
       if (randomStage < 0.3) {

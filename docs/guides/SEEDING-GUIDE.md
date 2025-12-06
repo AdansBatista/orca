@@ -417,27 +417,72 @@ Ensure seed order respects dependencies:
 }
 ```
 
-### 5. Explicitly Set Optional Fields to `null` (MongoDB)
+### 5. Use Standardized Soft Delete Filter
 
-**CRITICAL**: MongoDB treats "field not set" differently from "field = null". This affects query behavior.
+**CRITICAL**: Use the standardized soft delete helper for ALL queries on soft-deletable models.
 
 ```typescript
-// ❌ WRONG - Field is unset, won't match `where: { deletedAt: null }`
-const base = {
-  firstName: 'John',
-  lastName: 'Doe',
-  // deletedAt is not set
-};
+// Import the helper
+import { withSoftDelete } from '../utils/soft-delete';
 
-// ✅ CORRECT - Explicitly set to null for proper query matching
-const base = {
-  firstName: 'John',
-  lastName: 'Doe',
-  deletedAt: null,  // Explicitly set for MongoDB compatibility
-};
+// ✅ CORRECT - Use the helper function
+const patients = await db.patient.findMany({
+  where: withSoftDelete({ clinicId }),
+});
+
+// ✅ ALSO CORRECT - For more complex queries
+const appointments = await db.appointment.findMany({
+  where: withSoftDelete({
+    clinicId,
+    startTime: { gte: today, lt: tomorrow },
+  }),
+});
+
+// ❌ WRONG - Manual deletedAt check (inconsistent)
+const patients = await db.patient.findMany({
+  where: { clinicId, deletedAt: null },  // May miss unset values in MongoDB
+});
+
+// ❌ ALSO WRONG - Using OR pattern directly (verbose)
+const patients = await db.patient.findMany({
+  where: {
+    clinicId,
+    OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }],
+  },
+});
 ```
 
-For soft-delete fields (`deletedAt`) and other optional fields used in queries, **always explicitly set them to `null`** in factories.
+**Models with soft delete support:**
+- User, Patient, StaffProfile
+- Supplier, Equipment, Room, TreatmentChair
+- InstrumentSet, InventoryItem
+- AppointmentType, Appointment
+
+### 6. Explicitly Set `deletedAt: null` When Creating Records
+
+**CRITICAL**: MongoDB treats "field not set" differently from "field = null". Always explicitly set `deletedAt: null` when creating soft-deletable records.
+
+```typescript
+// ✅ CORRECT - Explicitly set deletedAt for proper query matching
+const patient = await db.patient.create({
+  data: {
+    clinicId,
+    firstName: 'John',
+    lastName: 'Doe',
+    deletedAt: null,  // Explicitly set for MongoDB compatibility
+  },
+});
+
+// ❌ WRONG - Field is unset, may not match soft delete queries
+const patient = await db.patient.create({
+  data: {
+    clinicId,
+    firstName: 'John',
+    lastName: 'Doe',
+    // deletedAt is not set - BAD!
+  },
+});
+```
 
 ---
 

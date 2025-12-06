@@ -90,14 +90,22 @@ function addMonths(date: Date, months: number): Date {
 // ============================================================================
 
 /**
- * Seed performance and training data for staff profiles.
+ * Seed performance and training data for ALL clinics.
  * Creates goals, reviews, training records, CE credits, and recognitions.
+ *
+ * Dependencies: core, auth:users, staff
  */
 export async function seedPerformance(ctx: SeedContext): Promise<void> {
   const { db, idTracker, logger } = ctx;
   const clinicIds = idTracker.getAll('Clinic');
 
   logger.startArea('Performance & Training');
+
+  if (clinicIds.length === 0) {
+    logger.warn('No clinics found - core area must be seeded first. Skipping performance seeding.');
+    logger.endArea('Performance & Training', 0);
+    return;
+  }
 
   let totalGoals = 0;
   let totalReviews = 0;
@@ -106,9 +114,10 @@ export async function seedPerformance(ctx: SeedContext): Promise<void> {
   let totalRecognitions = 0;
   let totalMetrics = 0;
 
-  for (const clinicId of clinicIds) {
+  for (let clinicIndex = 0; clinicIndex < clinicIds.length; clinicIndex++) {
+    const clinicId = clinicIds[clinicIndex];
     const clinic = await db.clinic.findUnique({ where: { id: clinicId } });
-    logger.info(`Seeding performance data for clinic: ${clinic?.name || clinicId}`);
+    logger.info(`Seeding performance data for clinic ${clinicIndex + 1}/${clinicIds.length}: ${clinic?.name || clinicId}`);
 
     // Get staff profiles for this clinic
     const staffProfiles = await db.staffProfile.findMany({
@@ -117,13 +126,18 @@ export async function seedPerformance(ctx: SeedContext): Promise<void> {
     });
 
     if (staffProfiles.length === 0) {
-      logger.warn('  No staff profiles found, skipping performance seed');
+      logger.warn('  WARNING: No staff profiles found - staff area must be seeded first!');
+      logger.warn('  Skipping performance seed for this clinic.');
       continue;
     }
 
-    // Get a user for createdBy
+    // Get a user for createdBy - REQUIRED, not optional
     const existingUserIds = idTracker.getByClinic('User', clinicId);
-    const createdBy = existingUserIds.length > 0 ? existingUserIds[0] : undefined;
+    if (existingUserIds.length === 0) {
+      logger.warn(`  WARNING: No users found for clinic ${clinicId} - auth:users must be seeded first!`);
+      continue;
+    }
+    const createdBy = existingUserIds[0]; // Now guaranteed to exist
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -453,6 +467,7 @@ export async function seedPerformance(ctx: SeedContext): Promise<void> {
     logger.info(`  Created ${totalMetrics} performance metrics`);
   }
 
+  logger.success(`Performance seeding complete: ${totalGoals} goals, ${totalReviews} reviews, ${totalTraining} training, ${totalCECredits} CE credits, ${totalRecognitions} recognitions, ${totalMetrics} metrics`);
   logger.endArea('Performance & Training', totalGoals + totalReviews + totalTraining + totalCECredits + totalRecognitions + totalMetrics);
 }
 
