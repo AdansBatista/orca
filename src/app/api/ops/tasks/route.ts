@@ -45,8 +45,14 @@ export const GET = withAuth(
       ...getClinicFilter(session),
     };
 
+    // Handle comma-separated status values
     if (status) {
-      where.status = status;
+      const statuses = status.split(',').map(s => s.trim()).filter(Boolean);
+      if (statuses.length === 1) {
+        where.status = statuses[0];
+      } else if (statuses.length > 1) {
+        where.status = { in: statuses };
+      }
     }
 
     if (assigneeId) {
@@ -70,18 +76,12 @@ export const GET = withAuth(
     // Count total
     const total = await db.operationsTask.count({ where });
 
-    // Fetch tasks
+    // Fetch tasks - don't include owner relation to avoid orphan reference errors
+    // Owner data was incorrectly stored as User ID instead of StaffProfile ID in some records
     const tasks = await db.operationsTask.findMany({
       where,
       include: {
         assignee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        owner: {
           select: {
             id: true,
             firstName: true,
@@ -139,6 +139,29 @@ export const POST = withAuth(
     const data = result.data;
     const clinicId = session.user.clinicId;
 
+    // Find the StaffProfile for the current user
+    const staffProfile = await db.staffProfile.findFirst({
+      where: {
+        userId: session.user.id,
+        clinicId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!staffProfile) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'NO_STAFF_PROFILE',
+            message: 'No staff profile found for current user. Please contact an administrator.',
+          },
+        },
+        { status: 400 }
+      );
+    }
+
     // Create task
     const task = await db.operationsTask.create({
       data: {
@@ -147,7 +170,7 @@ export const POST = withAuth(
         description: data.description,
         type: data.type,
         assigneeId: data.assigneeId,
-        ownerId: session.user.id,
+        ownerId: staffProfile.id,
         dueAt: data.dueAt ? new Date(data.dueAt) : undefined,
         priority: data.priority,
         relatedType: data.relatedType,

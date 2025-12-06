@@ -1,6 +1,6 @@
 # Current Development Focus
 
-> **Last Updated**: 2025-12-04
+> **Last Updated**: 2025-12-06
 >
 > **Purpose**: Single source of truth for what LLMs and developers should work on
 
@@ -11,7 +11,7 @@
 | Attribute | Value |
 |-----------|-------|
 | **Current Phase** | Phase 2 - Core Operations (In Progress) |
-| **Implementation Status** | ✅ Phase 1 Complete, 🔄 Phase 2 In Progress |
+| **Implementation Status** | ✅ Phase 1 Complete, 🔄 Phase 2 In Progress (Booking ✅, Practice Orchestration ✅) |
 | **Documentation Status** | ✅ Complete for all 13 areas |
 
 ---
@@ -74,19 +74,22 @@ These areas have no dependencies and can be started immediately:
   - ✅ Emergency Appointments (API + UI) - triage, severity tracking, resolution workflow
   - ✅ Appointment Reminders (API + UI) - templates, queue, multi-channel support
 
-### 2. Practice Orchestration
+### ~~2. Practice Orchestration~~ ✅ COMPLETE (88%)
 - **Documentation**: [docs/areas/practice-orchestration/](areas/practice-orchestration/)
-- **Depends On**: Auth ✅, Staff ✅, Booking
-- **Key Deliverables**: Patient flow, check-in/out, waitlist management
-- **Priority**: High - operational efficiency
-- **Status**: Waiting on Booking
+- **Depends On**: Auth ✅, Staff ✅, Booking ✅
+- **Status**: ✅ 3/4 sub-areas implemented (30/34 functions)
+- **Completed Sub-Areas**:
+  - ✅ Operations Dashboard (day view, timeline, kanban board, floor plan, stats)
+  - ✅ Patient Flow Management (check-in, queue, call-to-chair, seating, checkout)
+  - ✅ Resource Coordination (chair status, resource occupancy, staff workload)
+- **Deferred**: AI Manager (requires AI infrastructure planning)
 
-### 3. Patient Communications
+### 3. Patient Communications 🔄 NEXT
 - **Documentation**: [docs/areas/patient-communications/](areas/patient-communications/)
-- **Depends On**: Auth ✅, Booking
-- **Key Deliverables**: Reminders, notifications, messaging
+- **Depends On**: Auth ✅, Booking ✅
+- **Key Deliverables**: Messaging hub, patient portal, campaigns, education materials
 - **Priority**: High - patient engagement
-- **Status**: Waiting on Booking
+- **Status**: Ready to start
 
 ---
 
@@ -94,10 +97,8 @@ These areas have no dependencies and can be started immediately:
 
 | Area | Phase | Blocked By | Status |
 |------|-------|------------|--------|
-| Practice Orchestration | 2 | Booking | ⏳ Waiting |
-| Patient Communications | 2 | Booking | ⏳ Waiting |
-| CRM & Onboarding | 3 | Booking, Patient Comms | ⏳ Waiting |
-| Treatment Management | 3 | Booking | ⏳ Waiting |
+| CRM & Onboarding | 3 | Patient Comms | ⏳ Waiting |
+| Treatment Management | 3 | Phase 2 Complete | ⏳ Waiting |
 | Imaging Management | 3 | Treatment | ⏳ Waiting |
 | Lab Work Management | 3 | Treatment | ⏳ Waiting |
 | Billing & Insurance | 4 | Treatment, CRM | ⏳ Waiting |
@@ -112,11 +113,11 @@ These areas have no dependencies and can be started immediately:
 ```
 Phase 1: Foundation ✅       Phase 2: Core Operations       Phase 3: Clinical
 ┌─────────────────────┐     ┌─────────────────────┐        ┌─────────────────────┐
-│ ✅ Auth & Users     │ ──▶ │ • Booking ← NEXT    │ ──▶    │ • CRM & Onboarding  │
-│ ✅ Staff Management │     │ • Practice Orch.    │        │ • Treatment Mgmt    │
-│ ✅ Resources Mgmt   │     │ • Patient Comms     │        │ • Imaging           │
+│ ✅ Auth & Users     │ ──▶ │ ✅ Booking          │ ──▶    │ • CRM & Onboarding  │
+│ ✅ Staff Management │     │ ✅ Practice Orch.   │        │ • Treatment Mgmt    │
+│ ✅ Resources Mgmt   │     │ • Patient Comms ←   │        │ • Imaging           │
 └─────────────────────┘     └─────────────────────┘        │ • Lab Work          │
-                                                           └─────────────────────┘
+                                     NEXT                  └─────────────────────┘
                                                                      │
                                                                      ▼
                             Phase 5: Support               Phase 4: Financial
@@ -141,13 +142,14 @@ If asked to "implement the next feature" or "start development" without specific
 
 ```
 Phase 1 Complete? ✅ YES
-Phase 2 Started? ✅ YES (Booking in progress)
-└── Continue Phase 2: Booking & Scheduling ← YOU ARE HERE
-    ├── ✅ Calendar Management (MVP + Enhanced UI)
-    ├── ✅ Appointment Management (CRUD + List View)
-    ├── ✅ Waitlist & Recovery (API + UI Complete, Notifications on hold)
-    ├── ✅ Emergency & Reminders (API + UI Complete)
-    └── ⏳ On-Call Management (Next - additional features)
+Phase 2 Started? ✅ YES
+├── ✅ Booking & Scheduling - Complete
+├── ✅ Practice Orchestration - Complete (88%, AI Manager deferred)
+└── 🔄 Patient Communications ← YOU ARE HERE (Next to implement)
+    ├── 📋 Messaging Hub (SMS, email, in-app messaging)
+    ├── 📋 Patient Portal (login, appointments, messages)
+    ├── 📋 Campaigns (automated outreach)
+    └── 📋 Education Materials (content management)
 ```
 
 ---
@@ -156,6 +158,10 @@ Phase 2 Started? ✅ YES (Booking in progress)
 
 | Date | Area/Feature | Status |
 |------|--------------|--------|
+| 2025-12-06 | Practice Orchestration - All 3 core sub-areas | ✅ Complete (88%) |
+| 2025-12-06 | Practice Orchestration - Tasks feature (CRUD, validation fixes) | ✅ Complete |
+| 2025-12-05 | Practice Orchestration - Patient Flow & Resource Coordination | ✅ Complete |
+| 2025-12-05 | Practice Orchestration - Operations Dashboard (Floor Plan, Kanban) | ✅ Complete |
 | 2025-12-04 | Booking - UI Styling Review & Standardization | ✅ Complete |
 | 2025-12-04 | Booking - PatientSearchCombobox reusable component | ✅ Complete |
 | 2025-12-03 | Booking - Emergency & Reminders (API + UI) | ✅ Complete |
@@ -178,8 +184,10 @@ Phase 2 Started? ✅ YES (Booking in progress)
 
 | Area | Sub-Area | Assignee | Started | Status |
 |------|----------|----------|---------|--------|
-| Booking & Scheduling | Opening Notifications | - | - | On hold (infrastructure needed) |
-| Booking & Scheduling | On-Call Management | - | - | Next priority |
+| Patient Communications | Messaging Hub | - | - | Next to start |
+| Patient Communications | Patient Portal | - | - | Planned |
+| Patient Communications | Campaigns | - | - | Planned |
+| Patient Communications | Education Materials | - | - | Planned |
 
 ---
 

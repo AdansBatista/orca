@@ -230,13 +230,14 @@ export const taskPriorityEnum = z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']);
 
 /**
  * Create operations task
+ * Note: dueAt accepts ISO datetime string (converted from datetime-local input)
  */
 export const createTaskSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().max(1000).optional(),
   type: taskTypeEnum.default('MANUAL'),
   assigneeId: z.string().optional(),
-  dueAt: z.string().datetime().optional(),
+  dueAt: z.string().optional(), // Accept any valid date string, will be parsed in API
   priority: taskPriorityEnum.default('NORMAL'),
   relatedType: z.string().optional(),
   relatedId: z.string().optional(),
@@ -249,7 +250,7 @@ export const updateTaskSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).optional(),
   assigneeId: z.string().nullable().optional(),
-  dueAt: z.string().datetime().nullable().optional(),
+  dueAt: z.string().nullable().optional(), // Accept any valid date string
   status: taskStatusEnum.optional(),
   priority: taskPriorityEnum.optional(),
 });
@@ -318,13 +319,14 @@ export const queueQuerySchema = z.object({
 
 /**
  * Query params for tasks
+ * Note: status can be comma-separated for multiple values (e.g., "PENDING,IN_PROGRESS")
  */
 export const taskQuerySchema = z.object({
-  status: taskStatusEnum.optional(),
+  status: z.string().optional(), // Can be single or comma-separated status values
   assigneeId: z.string().optional(),
   priority: taskPriorityEnum.optional(),
-  dueFrom: z.string().datetime().optional(),
-  dueTo: z.string().datetime().optional(),
+  dueFrom: z.string().optional(),
+  dueTo: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(100).default(20),
 });

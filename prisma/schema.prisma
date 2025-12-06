@@ -5466,7 +5466,7 @@ model OperationsTask {
 
   // Assignment
   assigneeId      String?        @db.ObjectId
-  ownerId         String         @db.ObjectId
+  ownerId         String?        @db.ObjectId
 
   // Timing
   dueAt           DateTime?
@@ -5488,7 +5488,7 @@ model OperationsTask {
   // Relations
   clinic          Clinic         @relation(fields: [clinicId], references: [id])
   assignee        StaffProfile?  @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  owner           StaffProfile   @relation("TaskOwner", fields: [ownerId], references: [id])
+  owner           StaffProfile?  @relation("TaskOwner", fields: [ownerId], references: [id])
 
   @@index([clinicId, status])
   @@index([clinicId, assigneeId])
