@@ -72,6 +72,20 @@ model Clinic {
   dailyMetrics               DailyMetrics[]
   floorPlanConfig            FloorPlanConfig?
 
+  // Patient Communications relations
+  messageTemplates           MessageTemplate[]
+  messages                   Message[]
+  notificationPreferences    NotificationPreference[]
+
+  // Patient Portal relations
+  portalAccounts             PortalAccount[]
+
+  // Treatment Management relations
+  treatmentPlans             TreatmentPlan[]
+  treatmentPhases            TreatmentPhase[]
+  treatmentMilestones        TreatmentMilestone[]
+  treatmentPhotos            TreatmentPhoto[]
+
   @@map("clinics")
 }
 
@@ -300,6 +314,17 @@ model Patient {
   // Practice Orchestration relations
   patientFlowStates          PatientFlowState[]
   resourceOccupancy          ResourceOccupancy[]
+
+  // Patient Communications relations
+  messages                   Message[]
+  notificationPreference     NotificationPreference?
+
+  // Patient Portal relations
+  portalAccount              PortalAccount?
+
+  // Treatment Management relations
+  treatmentPlans             TreatmentPlan[]
+  treatmentPhotos            TreatmentPhoto[]
 
   @@index([clinicId])
   @@index([lastName, firstName])
@@ -5573,4 +5598,674 @@ model FloorPlanConfig {
   clinic          Clinic         @relation(fields: [clinicId], references: [id])
 
   @@map("floor_plan_configs")
+}
+
+// =============================================================================
+// PATIENT COMMUNICATIONS AREA - Messaging, templates, notifications
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Enums for Patient Communications
+// -----------------------------------------------------------------------------
+
+/// MessageChannel - Communication channel type
+enum MessageChannel {
+  SMS
+  EMAIL
+  PUSH
+  IN_APP
+}
+
+/// MessageDirection - Direction of message
+enum MessageDirection {
+  OUTBOUND     // Sent to patient
+  INBOUND      // Received from patient
+}
+
+/// MessageStatus - Status of message
+enum MessageStatus {
+  DRAFT        // Not yet sent
+  PENDING      // Queued for sending
+  SCHEDULED    // Scheduled for future
+  SENT         // Sent to provider
+  DELIVERED    // Confirmed delivered
+  FAILED       // Failed to send
+  BOUNCED      // Bounced back
+  CANCELLED    // Cancelled before sending
+}
+
+/// DeliveryStatus - Detailed delivery status
+enum DeliveryStatus {
+  PENDING      // Waiting to be sent
+  SENT         // Sent to provider
+  DELIVERED    // Confirmed delivered
+  FAILED       // Delivery failed
+  BOUNCED      // Message bounced
+  OPENED       // Email/notification opened
+  CLICKED      // Link clicked
+  UNSUBSCRIBED // User unsubscribed
+  COMPLAINED   // Marked as spam
+}
+
+// -----------------------------------------------------------------------------
+// Message Templates - Reusable message templates
+// -----------------------------------------------------------------------------
+
+/// MessageTemplate - Reusable message template with multi-channel support
+model MessageTemplate {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+
+  // Template identification
+  name            String
+  description     String?
+  category        String         // appointment, billing, treatment, marketing, general
+
+  // SMS content
+  smsBody         String?
+
+  // Email content
+  emailSubject    String?
+  emailBody       String?        // Plain text version
+  emailHtmlBody   String?        // HTML version
+
+  // Push notification content
+  pushTitle       String?
+  pushBody        String?
+
+  // In-app notification content
+  inAppTitle      String?
+  inAppBody       String?
+
+  // Available variables for substitution (e.g., ["patient.firstName", "appointment.date"])
+  variables       String[]       @default([])
+
+  // Status
+  isActive        Boolean        @default(true)
+  isSystem        Boolean        @default(false) // System templates cannot be deleted
+  version         Int            @default(1)
+
+  // Timestamps & Audit
+  createdBy       String         @db.ObjectId
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  messages        Message[]
+
+  @@unique([clinicId, name])
+  @@index([clinicId, category])
+  @@index([clinicId, isActive])
+  @@map("message_templates")
+}
+
+// -----------------------------------------------------------------------------
+// Messages - Individual messages sent/received
+// -----------------------------------------------------------------------------
+
+/// Message - Individual message to/from a patient
+model Message {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String           @db.ObjectId
+  patientId       String           @db.ObjectId
+
+  // Message content
+  channel         MessageChannel
+  subject         String?          // For email
+  body            String           // Message body (rendered from template or custom)
+  htmlBody        String?          // HTML body for email
+
+  // Direction & routing
+  direction       MessageDirection @default(OUTBOUND)
+  templateId      String?          @db.ObjectId
+
+  // Contact info used
+  toAddress       String?          // Phone number, email, or device token
+  fromAddress     String?          // Sender (clinic phone/email)
+
+  // Status & scheduling
+  status          MessageStatus    @default(PENDING)
+  scheduledAt     DateTime?        // For scheduled messages
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  readAt          DateTime?        // For in-app messages
+
+  // Threading/conversation support
+  conversationId  String?          @db.ObjectId  // Group related messages
+  replyToId       String?          @db.ObjectId  // Reply to another message
+
+  // Related entity (optional link to appointment, etc.)
+  relatedType     String?          // appointment, invoice, treatment
+  relatedId       String?          @db.ObjectId
+
+  // Metadata for provider-specific data
+  metadata        Json?
+  tags            String[]         @default([])
+
+  // Error handling
+  errorMessage    String?
+  retryCount      Int              @default(0)
+
+  // Timestamps & Audit
+  createdBy       String           @db.ObjectId
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  clinic          Clinic           @relation(fields: [clinicId], references: [id])
+  patient         Patient          @relation(fields: [patientId], references: [id])
+  template        MessageTemplate? @relation(fields: [templateId], references: [id])
+  deliveries      MessageDelivery[]
+  replyTo         Message?         @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies         Message[]        @relation("MessageReplies")
+
+  @@index([clinicId, patientId])
+  @@index([clinicId, status])
+  @@index([clinicId, channel])
+  @@index([clinicId, createdAt])
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// -----------------------------------------------------------------------------
+// Message Delivery - Tracks delivery attempts and status per provider
+// -----------------------------------------------------------------------------
+
+/// MessageDelivery - Delivery attempt for a message
+model MessageDelivery {
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  messageId         String         @db.ObjectId
+
+  // Provider details
+  provider          String         // twilio, sendgrid, firebase, internal
+  providerMessageId String?        // External message ID from provider
+
+  // Delivery status
+  status            DeliveryStatus @default(PENDING)
+  statusDetails     String?        // Detailed status message
+
+  // Timestamps for tracking
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  openedAt          DateTime?
+  clickedAt         DateTime?
+  bouncedAt         DateTime?
+  failedAt          DateTime?
+
+  // Webhook data from provider
+  webhookData       Json?
+
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  message           Message        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([providerMessageId])
+  @@index([status])
+  @@map("message_deliveries")
+}
+
+// -----------------------------------------------------------------------------
+// Notification Preferences - Patient communication preferences
+// -----------------------------------------------------------------------------
+
+/// NotificationPreference - Patient communication preferences
+model NotificationPreference {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  patientId       String         @unique @db.ObjectId  // One preference per patient
+
+  // Channel preferences
+  smsEnabled      Boolean        @default(true)
+  emailEnabled    Boolean        @default(true)
+  pushEnabled     Boolean        @default(true)
+
+  // Category preferences
+  appointmentReminders   Boolean  @default(true)
+  treatmentUpdates       Boolean  @default(true)
+  billingNotifications   Boolean  @default(true)
+  marketingMessages      Boolean  @default(false)  // Requires explicit opt-in
+
+  // Preferred channel order (first = primary)
+  channelPriority String[]       @default(["SMS", "EMAIL", "PUSH"])
+
+  // Quiet hours (no messages during these times)
+  quietHoursStart String?        // e.g., "21:00" (9 PM)
+  quietHoursEnd   String?        // e.g., "08:00" (8 AM)
+  timezone        String?        // Patient timezone
+
+  // Opt-out tracking
+  smsOptOutAt     DateTime?
+  emailOptOutAt   DateTime?
+
+  // Consent tracking
+  marketingConsentAt DateTime?   // When marketing consent was given
+  marketingConsentBy String?     // How consent was given (web, sms, verbal)
+
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  patient         Patient        @relation(fields: [patientId], references: [id])
+
+  @@unique([clinicId, patientId])
+  @@index([clinicId])
+  @@map("notification_preferences")
+}
+
+// =============================================================================
+// PATIENT PORTAL - Patient-facing mobile PWA for self-service
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Portal Account - Patient authentication for the portal
+// -----------------------------------------------------------------------------
+
+/// PortalAccountStatus - Status of portal account
+enum PortalAccountStatus {
+  PENDING           // Account created but not verified
+  ACTIVE            // Account is active and usable
+  SUSPENDED         // Temporarily suspended
+  LOCKED            // Locked due to failed attempts
+  DEACTIVATED       // Deactivated by admin or patient
+}
+
+/// PortalAccount - Patient portal authentication account
+model PortalAccount {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String              @db.ObjectId
+  patientId           String              @unique @db.ObjectId  // One portal account per patient
+
+  // Authentication credentials
+  email               String              // Login email (can differ from patient email)
+  passwordHash        String?             // Hashed password (null if using magic link only)
+
+  // Account status
+  status              PortalAccountStatus @default(PENDING)
+
+  // Email verification
+  emailVerified       Boolean             @default(false)
+  emailVerifiedAt     DateTime?
+  verificationToken   String?             // Token for email verification
+  verificationExpires DateTime?
+
+  // Password reset
+  resetToken          String?             // Token for password reset
+  resetTokenExpires   DateTime?
+
+  // Magic link auth
+  magicLinkToken      String?             // Current magic link token
+  magicLinkExpires    DateTime?
+
+  // Security
+  failedLoginAttempts Int                 @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  lastLoginUserAgent  String?
+
+  // Two-factor authentication (optional)
+  twoFactorEnabled    Boolean             @default(false)
+  twoFactorSecret     String?             // TOTP secret
+  twoFactorBackupCodes String[]           @default([])
+
+  // Push notification tokens (for PWA)
+  pushTokens          Json?               // Array of { token, device, createdAt }
+
+  // Preferences
+  preferredLanguage   String              @default("en")
+
+  // Terms and privacy acceptance
+  termsAcceptedAt     DateTime?
+  privacyAcceptedAt   DateTime?
+
+  // Timestamps
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?           // Soft delete
+
+  // Relations
+  clinic              Clinic              @relation(fields: [clinicId], references: [id])
+  patient             Patient             @relation(fields: [patientId], references: [id])
+  sessions            PortalSession[]
+  activityLogs        PortalActivityLog[]
+
+  @@unique([clinicId, email])
+  @@index([clinicId])
+  @@index([email])
+  @@index([verificationToken])
+  @@index([resetToken])
+  @@index([magicLinkToken])
+  @@map("portal_accounts")
+}
+
+// -----------------------------------------------------------------------------
+// Portal Session - Active login sessions for portal users
+// -----------------------------------------------------------------------------
+
+/// PortalSession - Active portal session
+model PortalSession {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  accountId           String              @db.ObjectId
+
+  // Session token
+  sessionToken        String              @unique
+
+  // Device info
+  userAgent           String?
+  ipAddress           String?
+  deviceType          String?             // mobile, tablet, desktop
+  deviceName          String?             // e.g., "iPhone 15", "Chrome on Windows"
+
+  // Status
+  isActive            Boolean             @default(true)
+
+  // Timestamps
+  createdAt           DateTime            @default(now())
+  expiresAt           DateTime
+  lastActivityAt      DateTime            @default(now())
+  revokedAt           DateTime?
+  revokedReason       String?             // logout, expired, admin_revoke, security
+
+  // Relations
+  account             PortalAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([expiresAt])
+  @@map("portal_sessions")
+}
+
+// -----------------------------------------------------------------------------
+// Portal Activity Log - Audit trail for patient portal actions
+// -----------------------------------------------------------------------------
+
+/// PortalActivityType - Types of portal activities
+enum PortalActivityType {
+  LOGIN               // Successful login
+  LOGIN_FAILED        // Failed login attempt
+  LOGOUT              // Logout
+  PASSWORD_CHANGE     // Changed password
+  PASSWORD_RESET      // Reset password via link
+  PROFILE_VIEW        // Viewed profile
+  PROFILE_UPDATE      // Updated profile info
+  APPOINTMENT_VIEW    // Viewed appointment details
+  APPOINTMENT_BOOK    // Booked new appointment
+  APPOINTMENT_CONFIRM // Confirmed appointment attendance
+  APPOINTMENT_CANCEL  // Cancelled appointment
+  APPOINTMENT_RESCHEDULE // Rescheduled appointment
+  MESSAGE_VIEW        // Viewed messages
+  MESSAGE_SEND        // Sent a message
+  DOCUMENT_VIEW       // Viewed a document
+  DOCUMENT_DOWNLOAD   // Downloaded a document
+  PAYMENT_VIEW        // Viewed payment history
+  PAYMENT_MAKE        // Made a payment
+  SETTINGS_CHANGE     // Changed settings
+  TWO_FACTOR_ENABLE   // Enabled 2FA
+  TREATMENT_VIEW      // Viewed treatment progress
+  TWO_FACTOR_DISABLE  // Disabled 2FA
+}
+
+/// PortalActivityLog - Audit log of patient portal activity
+model PortalActivityLog {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  accountId           String              @db.ObjectId
+
+  // Activity details
+  activityType        PortalActivityType
+  description         String?             // Human-readable description
+
+  // Related entity (optional)
+  relatedType         String?             // appointment, message, document, payment
+  relatedId           String?             @db.ObjectId
+
+  // Request context
+  ipAddress           String?
+  userAgent           String?
+
+  // Additional metadata
+  metadata            Json?               // Any additional context
+
+  // Timestamp
+  createdAt           DateTime            @default(now())
+
+  // Relations
+  account             PortalAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, createdAt])
+  @@index([activityType])
+  @@map("portal_activity_logs")
+}
+
+// =============================================================================
+// TREATMENT MANAGEMENT AREA - Treatment plans, progress tracking, milestones
+// =============================================================================
+
+/// TreatmentPlanStatus - Status of treatment plan lifecycle
+enum TreatmentPlanStatus {
+  DRAFT           // Being created
+  PRESENTED       // Presented to patient
+  ACCEPTED        // Patient accepted
+  ACTIVE          // Currently in progress
+  ON_HOLD         // Temporarily paused
+  COMPLETED       // Successfully finished
+  DISCONTINUED    // Stopped before completion
+  TRANSFERRED     // Patient transferred to another provider
+}
+
+/// TreatmentPhaseType - Types of treatment phases
+enum TreatmentPhaseType {
+  INITIAL_ALIGNMENT   // Initial tooth movement
+  LEVELING            // Leveling and alignment
+  SPACE_CLOSURE       // Closing extraction spaces
+  FINISHING           // Fine-tuning positions
+  DETAILING           // Final adjustments
+  RETENTION           // Post-treatment retention
+  OBSERVATION         // Monitoring period
+  CUSTOM              // Custom phase
+}
+
+/// PhaseStatus - Status of individual phases
+enum PhaseStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+/// MilestoneStatus - Status of treatment milestones
+enum MilestoneStatus {
+  PENDING       // Not yet started
+  IN_PROGRESS   // Currently working toward
+  ACHIEVED      // Successfully reached
+  MISSED        // Target date passed
+  DEFERRED      // Postponed
+}
+
+/// TreatmentPlan - Patient treatment plan
+model TreatmentPlan {
+  id                    String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String              @db.ObjectId
+  patientId             String              @db.ObjectId
+
+  // Plan identification
+  planNumber            String              // Unique identifier (e.g., "TP-2024-001")
+  planName              String              // Display name (e.g., "Full Orthodontic Treatment")
+  planType              String?             // Type of treatment
+
+  // Status tracking
+  status                TreatmentPlanStatus @default(DRAFT)
+  version               Int                 @default(1) // For tracking modifications
+
+  // Clinical details
+  chiefComplaint        String?             // Patient's primary concern
+  diagnosis             String[]            // Clinical diagnoses
+  treatmentGoals        String[]            // Goals to achieve
+  treatmentDescription  String?             // Overview description
+
+  // Provider assignment
+  primaryProviderId     String?             @db.ObjectId
+  supervisingProviderId String?             @db.ObjectId
+
+  // Duration and estimates
+  estimatedDuration     Int?                // In months
+  estimatedVisits       Int?                // Expected number of visits
+  totalFee              Float?              // Total treatment cost
+
+  // Important dates
+  presentedDate         DateTime?           // When presented to patient
+  acceptedDate          DateTime?           // When patient accepted
+  startDate             DateTime?           // Actual treatment start
+  estimatedEndDate      DateTime?           // Expected completion
+  actualEndDate         DateTime?           // Actual completion
+
+  // Timestamps & Audit
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  deletedAt             DateTime?           // Soft delete
+  createdBy             String?             @db.ObjectId
+  updatedBy             String?             @db.ObjectId
+
+  // Relations
+  clinic                Clinic              @relation(fields: [clinicId], references: [id])
+  patient               Patient             @relation(fields: [patientId], references: [id])
+  phases                TreatmentPhase[]
+  milestones            TreatmentMilestone[]
+  progressPhotos        TreatmentPhoto[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([status])
+  @@map("treatment_plans")
+}
+
+/// TreatmentPhase - Individual phases within a treatment plan
+model TreatmentPhase {
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String            @db.ObjectId
+  treatmentPlanId     String            @db.ObjectId
+
+  // Phase identification
+  phaseNumber         Int               // Order within plan (1, 2, 3...)
+  phaseName           String            // Display name
+  phaseType           TreatmentPhaseType @default(CUSTOM)
+  description         String?           // What this phase involves
+  objectives          String[]          // Phase-specific goals
+
+  // Status tracking
+  status              PhaseStatus       @default(NOT_STARTED)
+
+  // Timeline
+  plannedStartDate    DateTime?
+  plannedEndDate      DateTime?
+  actualStartDate     DateTime?
+  actualEndDate       DateTime?
+
+  // Progress tracking
+  estimatedVisits     Int?
+  completedVisits     Int               @default(0)
+  progressPercent     Int               @default(0) // 0-100
+
+  // Notes
+  notes               String?
+
+  // Timestamps
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  // Relations
+  clinic              Clinic            @relation(fields: [clinicId], references: [id])
+  treatmentPlan       TreatmentPlan     @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@map("treatment_phases")
+}
+
+/// TreatmentMilestone - Key milestones in treatment progress
+model TreatmentMilestone {
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String            @db.ObjectId
+  treatmentPlanId     String            @db.ObjectId
+
+  // Milestone details
+  milestoneName       String            // e.g., "Initial Alignment Complete"
+  milestoneType       String?           // Type category
+  description         String?           // What this milestone represents
+
+  // Status
+  status              MilestoneStatus   @default(PENDING)
+
+  // Dates
+  targetDate          DateTime?         // When we aim to achieve
+  achievedDate        DateTime?         // When actually achieved
+
+  // Additional info
+  completionCriteria  String?           // What defines completion
+  notes               String?
+
+  // Visible to patient in portal
+  visibleToPatient    Boolean           @default(true)
+  patientDescription  String?           // Patient-friendly description
+
+  // Timestamps
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  // Relations
+  clinic              Clinic            @relation(fields: [clinicId], references: [id])
+  treatmentPlan       TreatmentPlan     @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@map("treatment_milestones")
+}
+
+/// TreatmentPhoto - Progress photos associated with treatment
+model TreatmentPhoto {
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String            @db.ObjectId
+  treatmentPlanId     String            @db.ObjectId
+  patientId           String            @db.ObjectId
+
+  // Photo details
+  photoType           String            // "BEFORE", "PROGRESS", "AFTER"
+  photoCategory       String?           // "FRONTAL", "LATERAL", "OCCLUSAL", "SMILE"
+  description         String?
+
+  // File storage
+  fileUrl             String            // URL to stored image
+  thumbnailUrl        String?           // Thumbnail version
+  fileName            String?
+  fileSize            Int?              // In bytes
+  mimeType            String?           // e.g., "image/jpeg"
+
+  // Metadata
+  takenDate           DateTime?         // When photo was taken
+  takenBy             String?           @db.ObjectId // Provider/staff who took it
+
+  // Portal visibility
+  visibleToPatient    Boolean           @default(true)
+
+  // Timestamps
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?         // Soft delete
+
+  // Relations
+  clinic              Clinic            @relation(fields: [clinicId], references: [id])
+  treatmentPlan       TreatmentPlan     @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  patient             Patient           @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@index([patientId])
+  @@index([photoType])
+  @@map("treatment_photos")
 }

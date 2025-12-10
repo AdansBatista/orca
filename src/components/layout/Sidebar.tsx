@@ -223,7 +223,15 @@ const defaultNavGroups: NavGroup[] = [
       { label: "Billing", href: "/billing", icon: DollarSign },
       { label: "Reports", href: "/reports", icon: BarChart3 },
       { label: "Documents", href: "/documents", icon: FileText },
-      { label: "Messages", href: "/messages", icon: MessageSquare },
+      {
+        label: "Communications",
+        href: "/communications",
+        icon: MessageSquare,
+        children: [
+          { label: "Inbox", href: "/communications", icon: MessageSquare },
+          { label: "Templates", href: "/communications/templates", icon: FileText },
+        ],
+      },
     ],
   },
   {

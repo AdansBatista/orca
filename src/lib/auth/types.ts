@@ -90,6 +90,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'inventory:*',
     // Operations/Orchestration
     'ops:*',
+    // Communications
+    'comms:*',
   ],
   doctor: [
     // Legacy levels
@@ -111,6 +113,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     // Operations/Orchestration
     'ops:view_dashboard',
     'ops:read',
+    // Communications
+    'comms:view_inbox',
+    'comms:send_message',
   ],
   clinical_staff: [
     // Legacy levels
@@ -134,6 +139,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     // Operations/Orchestration
     'ops:view_dashboard',
     'ops:read',
+    // Communications
+    'comms:view_inbox',
+    'comms:send_message',
   ],
   front_desk: [
     // Legacy levels
@@ -153,6 +161,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     // Operations/Orchestration
     'ops:view_dashboard',
     'ops:read',
+    // Communications (full access for front desk)
+    'comms:*',
   ],
   billing: [
     // Legacy levels

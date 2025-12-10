@@ -10,6 +10,9 @@ import { seedResources, clearResources } from './resources.seed';
 import { seedPatients, clearPatients } from './patients.seed';
 import { seedBooking, clearBooking } from './booking.seed';
 import { seedOps, clearOps } from './ops.seed';
+import { seedCommunications, clearCommunications } from './communications.seed';
+import { seedPortal, clearPortal } from './portal.seed';
+import { seedTreatment, clearTreatment } from './treatment.seed';
 
 /**
  * Registry of all seedable areas with their dependencies.
@@ -117,11 +120,35 @@ export const areaRegistry: SeedArea[] = [
     seed: seedOps,
     clear: clearOps,
   },
+  {
+    id: 'communications',
+    name: 'Patient Communications (Messaging & Templates)',
+    phase: 2,
+    dependencies: ['core', 'auth:users', 'patients'],
+    seed: seedCommunications,
+    clear: clearCommunications,
+  },
+  {
+    id: 'portal',
+    name: 'Patient Portal (Accounts & Sessions)',
+    phase: 2,
+    dependencies: ['core', 'patients'],
+    seed: seedPortal,
+    clear: clearPortal,
+  },
 
   // ============================================================================
   // PHASE 3: Clinical
   // ============================================================================
-  // Areas to be added: treatment, imaging, lab
+  {
+    id: 'treatment',
+    name: 'Treatment Plans & Progress',
+    phase: 3,
+    dependencies: ['core', 'patients', 'auth:users'],
+    seed: seedTreatment,
+    clear: clearTreatment,
+  },
+  // Areas to be added: imaging, lab
 
   // ============================================================================
   // PHASE 4: Financial
