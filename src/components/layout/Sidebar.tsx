@@ -54,6 +54,7 @@ import {
   Map,
   CheckSquare,
   LayoutGrid,
+  History,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -185,8 +186,10 @@ const defaultNavGroups: NavGroup[] = [
           { label: "Schedules", href: "/staff/schedules", icon: CalendarClock },
           { label: "Time Off", href: "/staff/time-off", icon: CalendarOff },
           { label: "Performance", href: "/staff/performance", icon: TrendingUp },
-          { label: "Training", href: "/staff/training", icon: GraduationCap },
+          { label: "Training", href: "/staff/performance/training", icon: GraduationCap },
           { label: "Roles", href: "/staff/roles", icon: Shield },
+          { label: "Credentials", href: "/staff/credentials/alerts", icon: AlertTriangle },
+          { label: "Audit Log", href: "/staff/roles/audit", icon: History },
         ],
       },
       {

@@ -225,6 +225,12 @@ export default function PerformanceDashboardPage() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
+              <a href="/staff/performance/analytics">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
               <a href="/staff/performance/recognition">
                 <Star className="h-4 w-4 mr-2" />
                 Give Recognition

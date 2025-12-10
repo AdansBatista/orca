@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Search, Shield } from 'lucide-react';
+import { Plus, Search, Shield, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,12 +112,20 @@ export function RoleList() {
             Manage system roles and custom role definitions
           </p>
         </div>
-        <Link href="/staff/roles/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Role
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/staff/roles/templates">
+            <Button variant="outline">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Templates
+            </Button>
+          </Link>
+          <Link href="/staff/roles/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Role
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

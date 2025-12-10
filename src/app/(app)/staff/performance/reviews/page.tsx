@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { BarChart3, RefreshCw, Calendar } from 'lucide-react';
+import { BarChart3, RefreshCw, Calendar, Plus } from 'lucide-react';
 
 import { PageHeader, PageContent, StatsRow } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -127,6 +127,14 @@ export default function ReviewsPage() {
           { label: 'Performance', href: '/staff/performance' },
           { label: 'Reviews' },
         ]}
+        actions={
+          <Button asChild>
+            <a href="/staff/performance/reviews/schedule">
+              <Plus className="h-4 w-4 mr-2" />
+              Schedule Reviews
+            </a>
+          </Button>
+        }
       />
       <PageContent density="comfortable">
         <div className="space-y-6">
