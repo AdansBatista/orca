@@ -96,6 +96,15 @@ model Clinic {
   treatmentMilestones        TreatmentMilestone[]
   treatmentPhotos            TreatmentPhoto[]
 
+  // CRM & Patient Onboarding relations
+  leads                      Lead[]
+  formTemplates              FormTemplate[]
+  formSubmissions            FormSubmission[]
+  referringProviders         ReferringProvider[]
+  referralLetters            ReferralLetter[]
+  recordsRequests            RecordsRequest[]
+  intakeTokens               IntakeToken[]
+
   @@map("clinics")
 }
 
@@ -341,6 +350,12 @@ model Patient {
   treatmentPlans             TreatmentPlan[]
   treatmentPhotos            TreatmentPhoto[]
 
+  // CRM & Patient Onboarding relations
+  formSubmissions            FormSubmission[]
+  referralLetters            ReferralLetter[]
+  recordsRequests            RecordsRequest[]
+  intakeTokens               IntakeToken[]
+
   @@index([clinicId])
   @@index([lastName, firstName])
   @@map("patients")
@@ -447,6 +462,16 @@ model StaffProfile {
   assignedTasks          OperationsTask[]   @relation("TaskAssignee")
   ownedTasks             OperationsTask[]   @relation("TaskOwner")
   chairAssignments       ResourceOccupancy[] @relation("ChairAssignedStaff")
+
+  // CRM & Patient Onboarding relations
+  assignedLeads          Lead[]             @relation("LeadAssignee")
+  leadActivities         LeadActivity[]     @relation("LeadActivityPerformer")
+  assignedLeadTasks      LeadTask[]         @relation("LeadTaskAssignee")
+  completedLeadTasks     LeadTask[]         @relation("LeadTaskCompleter")
+  reviewedFormSubmissions FormSubmission[]  @relation("FormReviewer")
+  createdReferralLetters ReferralLetter[]   @relation("ReferralLetterCreator")
+  createdRecordsRequests RecordsRequest[]   @relation("RecordsRequestCreator")
+  createdIntakeTokens    IntakeToken[]      @relation("IntakeTokenCreator")
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -6744,4 +6769,580 @@ model TreatmentPhoto {
   @@index([patientId])
   @@index([photoType])
   @@map("treatment_photos")
+}
+
+// =============================================================================
+// CRM & PATIENT ONBOARDING AREA - Lead management, intake forms, referrals
+// =============================================================================
+
+/// ContactMethod - Preferred method of contact
+enum ContactMethod {
+  PHONE
+  EMAIL
+  TEXT
+  MAIL
+}
+
+/// LeadSource - How the lead found the practice
+enum LeadSource {
+  WEBSITE
+  PHONE_CALL
+  WALK_IN
+  REFERRAL_DENTIST
+  REFERRAL_PATIENT
+  SOCIAL_MEDIA
+  GOOGLE_ADS
+  INSURANCE_DIRECTORY
+  OTHER
+}
+
+/// LeadStage - Pipeline stage for lead progression
+enum LeadStage {
+  INQUIRY               // Initial contact
+  CONTACTED             // Staff has made contact
+  CONSULTATION_SCHEDULED // Appointment booked
+  CONSULTATION_COMPLETED // Consultation done
+  PENDING_DECISION       // Waiting for patient decision
+  TREATMENT_ACCEPTED     // Patient accepted treatment
+  TREATMENT_STARTED      // Treatment has begun
+  LOST                   // Did not convert
+}
+
+/// LeadStatus - High-level lead status
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  CONVERTED
+  LOST
+}
+
+/// LeadPatientType - Type of patient (for leads)
+enum LeadPatientType {
+  NEW_PATIENT
+  RETURNING_PATIENT
+  TRANSFER_PATIENT
+}
+
+/// Lead - Prospective patient tracking
+model Lead {
+  id                   String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId             String          @db.ObjectId
+
+  // Contact Info
+  firstName            String
+  lastName             String
+  email                String?
+  phone                String
+  preferredContact     ContactMethod   @default(PHONE)
+
+  // Lead Source
+  source               LeadSource
+  sourceDetails        String?         // Campaign name, referrer name, etc.
+  referringDentistId   String?         @db.ObjectId
+
+  // Pipeline
+  status               LeadStatus      @default(NEW)
+  stage                LeadStage       @default(INQUIRY)
+  assignedToId         String?         @db.ObjectId
+
+  // Patient Info
+  patientType          LeadPatientType @default(NEW_PATIENT)
+  patientAge           Int?
+  isMinor              Boolean         @default(false)
+  guardianName         String?
+  guardianPhone        String?
+  guardianEmail        String?
+
+  // Interest / Reason
+  primaryConcern       String?         // Main reason for seeking treatment
+  treatmentInterest    String?         // Specific treatment interest (braces, Invisalign, etc.)
+  urgency              String?         // "immediate", "within_month", "exploring"
+
+  // Consultation
+  consultationDate     DateTime?
+  consultationNotes    String?
+
+  // Conversion
+  convertedAt          DateTime?
+  convertedToPatientId String?         @db.ObjectId
+  lostReason           String?
+  lostDate             DateTime?
+
+  // Timestamps
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  deletedAt            DateTime?       // Soft delete
+
+  // Relations
+  clinic               Clinic          @relation(fields: [clinicId], references: [id])
+  assignedTo           StaffProfile?   @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  referringDentist     ReferringProvider? @relation(fields: [referringDentistId], references: [id])
+  activities           LeadActivity[]
+  tasks                LeadTask[]
+  formSubmissions      FormSubmission[]
+  recordsRequests      RecordsRequest[]
+  intakeTokens         IntakeToken[]
+
+  @@index([clinicId])
+  @@index([status])
+  @@index([stage])
+  @@index([assignedToId])
+  @@index([source])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+/// LeadActivityType - Types of lead activities
+enum LeadActivityType {
+  NOTE
+  CALL
+  EMAIL
+  TEXT
+  MEETING
+  STAGE_CHANGE
+  STATUS_CHANGE
+  ASSIGNMENT_CHANGE
+  FORM_SUBMITTED
+  DOCUMENT_UPLOADED
+  SYSTEM
+}
+
+/// LeadActivity - Activity log for leads
+model LeadActivity {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String           @db.ObjectId
+  leadId      String           @db.ObjectId
+
+  type        LeadActivityType
+  title       String
+  description String?
+  metadata    Json?            // Additional structured data
+
+  // Who performed the activity
+  performedById String?        @db.ObjectId
+
+  createdAt   DateTime         @default(now())
+
+  // Relations
+  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  performedBy StaffProfile?    @relation("LeadActivityPerformer", fields: [performedById], references: [id])
+
+  @@index([clinicId])
+  @@index([leadId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("lead_activities")
+}
+
+/// LeadTaskStatus - Status of lead tasks
+enum LeadTaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+/// LeadTaskPriority - Priority of lead tasks
+enum LeadTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+/// LeadTask - Tasks associated with leads
+model LeadTask {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String           @db.ObjectId
+  leadId      String           @db.ObjectId
+
+  title       String
+  description String?
+  dueDate     DateTime?
+  priority    LeadTaskPriority @default(MEDIUM)
+  status      LeadTaskStatus   @default(PENDING)
+
+  // Assignment
+  assignedToId String?         @db.ObjectId
+  completedAt  DateTime?
+  completedById String?        @db.ObjectId
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignedTo  StaffProfile?    @relation("LeadTaskAssignee", fields: [assignedToId], references: [id])
+  completedBy StaffProfile?    @relation("LeadTaskCompleter", fields: [completedById], references: [id])
+
+  @@index([clinicId])
+  @@index([leadId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([assignedToId])
+  @@map("lead_tasks")
+}
+
+// =============================================================================
+// INTAKE FORMS - Digital form collection for patients and leads
+// =============================================================================
+
+/// FormType - Type of intake form
+enum FormType {
+  PATIENT_INFO
+  MEDICAL_HISTORY
+  DENTAL_HISTORY
+  INSURANCE
+  CONSENT_TREATMENT
+  CONSENT_PRIVACY       // Generic privacy/info protection consent (HIPAA/PIPEDA/etc.)
+  CONSENT_PHOTO
+  CONSENT_FINANCIAL
+  CUSTOM
+}
+
+/// FormCategory - Category of form
+enum FormCategory {
+  INTAKE
+  CONSENT
+  INSURANCE
+  CLINICAL
+}
+
+/// FormTemplate - Reusable form definitions
+model FormTemplate {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String?       @db.ObjectId  // null = global template
+
+  name        String
+  description String?
+  type        FormType
+  category    FormCategory
+
+  // Form definition (JSON schema)
+  schema      Json          // Form fields, validation, conditional logic
+
+  isActive    Boolean       @default(true)
+  isRequired  Boolean       @default(false)
+  sortOrder   Int           @default(0)
+
+  // Version tracking
+  version     Int           @default(1)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdById String?       @db.ObjectId
+
+  // Relations
+  clinic      Clinic?       @relation(fields: [clinicId], references: [id])
+  submissions FormSubmission[]
+
+  @@index([clinicId])
+  @@index([type])
+  @@index([category])
+  @@index([isActive])
+  @@map("form_templates")
+}
+
+/// FormSubmissionStatus - Status of form submission
+enum FormSubmissionStatus {
+  PENDING     // Started but not completed
+  COMPLETED   // Fully submitted
+  REVIEWED    // Staff has reviewed
+  ARCHIVED    // No longer active
+}
+
+/// FormSubmission - Submitted form data
+model FormSubmission {
+  id            String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String               @db.ObjectId
+
+  templateId    String               @db.ObjectId
+  leadId        String?              @db.ObjectId
+  patientId     String?              @db.ObjectId
+
+  // Submission data
+  responses     Json                 // Form responses
+  status        FormSubmissionStatus @default(PENDING)
+
+  // Completion tracking
+  startedAt     DateTime?
+  completedAt   DateTime?
+  submittedBy   String?              // Email or name of submitter
+
+  // E-signature
+  signatureData String?              // Base64 signature image
+  signedAt      DateTime?
+  signerName    String?
+  signerRelation String?             // "Self", "Parent", "Guardian"
+
+  // Review tracking
+  reviewedAt    DateTime?
+  reviewedById  String?              @db.ObjectId
+  reviewNotes   String?
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  // Relations
+  clinic        Clinic               @relation(fields: [clinicId], references: [id])
+  template      FormTemplate         @relation(fields: [templateId], references: [id])
+  lead          Lead?                @relation(fields: [leadId], references: [id])
+  patient       Patient?             @relation(fields: [patientId], references: [id])
+  reviewedBy    StaffProfile?        @relation("FormReviewer", fields: [reviewedById], references: [id])
+
+  @@index([clinicId])
+  @@index([templateId])
+  @@index([leadId])
+  @@index([patientId])
+  @@index([status])
+  @@map("form_submissions")
+}
+
+// =============================================================================
+// REFERRAL TRACKING - Manage referring provider relationships
+// =============================================================================
+
+/// ReferringProviderType - Type of referring provider (external dentists/specialists)
+enum ReferringProviderType {
+  GENERAL_DENTIST
+  PEDIATRIC_DENTIST
+  ORAL_SURGEON
+  PERIODONTIST
+  ENDODONTIST
+  PROSTHODONTIST
+  OTHER_SPECIALIST
+  PHYSICIAN
+  OTHER
+}
+
+/// ReferrerStatus - Status of referring provider relationship
+enum ReferrerStatus {
+  ACTIVE
+  INACTIVE
+  PREFERRED       // High-value referrer
+}
+
+/// ReferringProvider - Referring dentist/provider management
+model ReferringProvider {
+  id              String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String                @db.ObjectId
+
+  // Provider Info
+  type            ReferringProviderType @default(GENERAL_DENTIST)
+  practiceName    String
+  firstName       String
+  lastName        String
+  credentials     String?        // DDS, DMD, etc.
+
+  // Contact
+  email           String?
+  phone           String?
+  fax             String?
+  website         String?
+
+  // Address
+  address         String?
+  city            String?
+  state           String?        // Province for Canada
+  zipCode         String?        // Postal code for Canada
+
+  // Relationship
+  status          ReferrerStatus @default(ACTIVE)
+  notes           String?
+
+  // Stats (denormalized for quick access)
+  totalReferrals    Int          @default(0)
+  referralsThisYear Int          @default(0)
+  lastReferralDate  DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?      // Soft delete
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  leads           Lead[]
+  referralLetters ReferralLetter[]
+
+  @@index([clinicId])
+  @@index([status])
+  @@index([type])
+  @@index([practiceName])
+  @@map("referring_providers")
+}
+
+/// ReferralLetterType - Types of communication with referring providers
+enum ReferralLetterType {
+  THANK_YOU_NEW_PATIENT
+  THANK_YOU_CONSULTATION
+  TREATMENT_STARTED
+  PROGRESS_UPDATE
+  TREATMENT_COMPLETE
+  GENERAL_APPRECIATION
+}
+
+/// ReferralDeliveryMethod - How the referral letter was sent
+enum ReferralDeliveryMethod {
+  EMAIL
+  FAX
+  MAIL
+  PORTAL
+}
+
+/// ReferralLetter - Letters/communications to referring providers
+model ReferralLetter {
+  id              String                  @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String                  @db.ObjectId
+
+  providerId      String                  @db.ObjectId
+  patientId       String?                 @db.ObjectId
+  leadId          String?                 @db.ObjectId
+
+  type            ReferralLetterType
+  subject         String
+  body            String
+
+  // Delivery
+  sentAt          DateTime?
+  sentVia         ReferralDeliveryMethod?
+
+  createdAt       DateTime           @default(now())
+  createdById     String             @db.ObjectId
+
+  // Relations
+  clinic          Clinic             @relation(fields: [clinicId], references: [id])
+  provider        ReferringProvider  @relation(fields: [providerId], references: [id])
+  patient         Patient?           @relation(fields: [patientId], references: [id])
+  createdBy       StaffProfile       @relation("ReferralLetterCreator", fields: [createdById], references: [id])
+
+  @@index([clinicId])
+  @@index([providerId])
+  @@index([patientId])
+  @@index([type])
+  @@map("referral_letters")
+}
+
+// =============================================================================
+// RECORDS REQUESTS - Coordinate incoming/outgoing patient records
+// =============================================================================
+
+/// RecordDirection - Direction of records transfer
+enum RecordDirection {
+  INCOMING   // Records we're requesting from another provider
+  OUTGOING   // Records another provider is requesting from us
+}
+
+/// RecordType - Types of records being requested
+enum RecordType {
+  XRAYS
+  PHOTOS
+  TREATMENT_RECORDS
+  MEDICAL_HISTORY
+  BILLING_RECORDS
+  ALL
+}
+
+/// RecordRequestStatus - Status of records request
+enum RecordRequestStatus {
+  PENDING
+  SENT
+  RECEIVED
+  COMPLETED
+  CANCELLED
+}
+
+/// RecordsRequest - Patient records transfer coordination
+model RecordsRequest {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String              @db.ObjectId
+
+  direction       RecordDirection     // INCOMING or OUTGOING
+  patientId       String?             @db.ObjectId
+  leadId          String?             @db.ObjectId
+
+  // Provider Info (external provider)
+  providerName    String
+  providerPhone   String?
+  providerFax     String?
+  providerEmail   String?
+  providerAddress String?
+
+  // Request Details
+  recordTypes     RecordType[]
+  dateRange       String?             // "Last 5 years", "All records", etc.
+  notes           String?
+
+  // Status
+  status          RecordRequestStatus @default(PENDING)
+
+  // Dates
+  requestedAt     DateTime            @default(now())
+  sentAt          DateTime?
+  receivedAt      DateTime?
+  dueDate         DateTime?
+
+  // Authorization
+  authorizationSigned Boolean         @default(false)
+  authorizationDate   DateTime?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  deletedAt       DateTime?           // Soft delete
+  createdById     String              @db.ObjectId
+
+  // Relations
+  clinic          Clinic              @relation(fields: [clinicId], references: [id])
+  patient         Patient?            @relation(fields: [patientId], references: [id])
+  lead            Lead?               @relation(fields: [leadId], references: [id])
+  createdByUser   StaffProfile        @relation("RecordsRequestCreator", fields: [createdById], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([leadId])
+  @@index([direction])
+  @@index([status])
+  @@index([dueDate])
+  @@map("records_requests")
+}
+
+// =============================================================================
+// INTAKE TOKENS - Secure tokens for public form access
+// =============================================================================
+
+/// IntakeToken - Token for public intake form access
+model IntakeToken {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String    @db.ObjectId
+
+  token       String    @unique // Secure random token
+
+  // Link to lead or patient
+  leadId      String?   @db.ObjectId
+  patientId   String?   @db.ObjectId
+
+  // Which form templates are allowed
+  templateIds String[]  @db.ObjectId
+
+  // Contact info for sending the link
+  email       String?
+  phone       String?
+
+  // Expiration and usage
+  expiresAt   DateTime?
+  isUsed      Boolean   @default(false)
+  usedAt      DateTime?
+
+  createdAt   DateTime  @default(now())
+  createdById String    @db.ObjectId
+
+  // Relations
+  clinic      Clinic    @relation(fields: [clinicId], references: [id])
+  lead        Lead?     @relation(fields: [leadId], references: [id])
+  patient     Patient?  @relation(fields: [patientId], references: [id])
+  createdBy   StaffProfile @relation("IntakeTokenCreator", fields: [createdById], references: [id])
+
+  @@index([clinicId])
+  @@index([leadId])
+  @@index([patientId])
+  @@map("intake_tokens")
 }

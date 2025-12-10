@@ -55,6 +55,10 @@ import {
   CheckSquare,
   LayoutGrid,
   History,
+  Target,
+  UserPlus,
+  Building2,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -172,6 +176,19 @@ const defaultNavGroups: NavGroup[] = [
         ],
       },
       { label: "Treatments", href: "/treatments", icon: ClipboardList },
+      {
+        label: "CRM",
+        href: "/crm",
+        icon: Target,
+        children: [
+          { label: "Dashboard", href: "/crm", icon: LayoutGrid },
+          { label: "Leads", href: "/crm/leads", icon: UserPlus },
+          { label: "Pipeline", href: "/crm/pipeline", icon: Target },
+          { label: "Referrers", href: "/crm/referrers", icon: Building2 },
+          { label: "Intake Forms", href: "/crm/forms", icon: ClipboardCheck },
+          { label: "Records Requests", href: "/crm/records", icon: FileText },
+        ],
+      },
     ],
   },
   {
