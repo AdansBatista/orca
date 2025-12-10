@@ -12,10 +12,28 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | ✅ Complete (~85%) |
 | **Priority** | High |
 | **Complexity** | Medium |
 | **Functions** | 4 |
+| **Last Updated** | 2024-12-09 |
+
+---
+
+## Implementation Status
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| Chair/Room Assignment | ✅ Complete | ChairSelectionDialog, chair endpoints |
+| Equipment Status Tracking | ⚠️ Not Implemented | Model not in schema |
+| Staff Assignment Management | ✅ Complete | StaffAssignment model implemented |
+| Utilization Tracking | 🔄 Partial | Metrics calculated, no reporting UI |
+
+### Code Locations
+- **Components:** `src/components/ops/ChairSelectionDialog.tsx`
+- **API:** `src/app/api/ops/chairs/` - sub-stage, ready-for-doctor, block/unblock endpoints
+- **API:** `src/app/api/ops/resources/status/` - Chair/room occupancy status
+- **Models:** `ResourceOccupancy`, `StaffAssignment`, `ChairActivitySubStage` enum
 
 ---
 

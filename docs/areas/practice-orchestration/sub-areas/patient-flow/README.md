@@ -12,10 +12,29 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | ✅ Complete (~90%) |
 | **Priority** | Critical |
 | **Complexity** | High |
 | **Functions** | 6 |
+| **Last Updated** | 2024-12-09 |
+
+---
+
+## Implementation Status
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| Patient Check-In | ✅ Complete | API endpoint and flow integration |
+| Queue Management | ✅ Complete | QueueDisplay component |
+| Call-to-Chair | ✅ Complete | Flow actions implemented |
+| Patient Journey Tracking | ✅ Complete | PatientFlowState model with stage history |
+| Wait Time Monitoring | 🔄 Partial | Calculated in metrics, no alert UI |
+| Check-Out Processing | ✅ Complete | API endpoint exists |
+
+### Code Locations
+- **Components:** `src/components/ops/PatientFlowBoard.tsx`, `QueueDisplay.tsx`, `ChairSelectionDialog.tsx`
+- **API:** `src/app/api/ops/flow/` - 10+ endpoints (check-in, call, seat, waiting, complete, check-out, revert, queue)
+- **Models:** `PatientFlowState`, `FlowStageHistory` in Prisma schema
 
 ---
 

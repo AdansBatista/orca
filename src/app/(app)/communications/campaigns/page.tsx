@@ -257,6 +257,11 @@ export default function CampaignsPage() {
                 Back to Inbox
               </Button>
             </Link>
+            <Link href="/communications/campaigns/templates">
+              <Button variant="outline" size="sm">
+                Browse Templates
+              </Button>
+            </Link>
             <Link href="/communications/campaigns/new">
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />

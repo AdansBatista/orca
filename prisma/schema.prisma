@@ -83,6 +83,10 @@ model Clinic {
   contentCategories          ContentCategory[]
   faqItems                   FAQItem[]
 
+  // Survey relations
+  surveys                    Survey[]
+  surveyResponses            SurveyResponse[]
+
   // Patient Portal relations
   portalAccounts             PortalAccount[]
 
@@ -326,6 +330,9 @@ model Patient {
   messages                   Message[]
   notificationPreference     NotificationPreference?
   contentDeliveries          ContentDelivery[]
+
+  // Survey relations
+  surveyResponses            SurveyResponse[]
 
   // Patient Portal relations
   portalAccount              PortalAccount?
@@ -6201,6 +6208,132 @@ model NotificationPreference {
   @@unique([clinicId, patientId])
   @@index([clinicId])
   @@map("notification_preferences")
+}
+
+// =============================================================================
+// SURVEYS - Patient feedback and surveys
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Survey - Survey form definition
+// -----------------------------------------------------------------------------
+
+/// SurveyStatus - Status of a survey
+enum SurveyStatus {
+  DRAFT             // Being edited
+  ACTIVE            // Accepting responses
+  PAUSED            // Temporarily not accepting responses
+  CLOSED            // Permanently closed
+  ARCHIVED          // Archived
+}
+
+/// SurveyQuestionType - Types of survey questions
+enum SurveyQuestionType {
+  TEXT              // Free text answer
+  TEXTAREA          // Multi-line text answer
+  SINGLE_CHOICE     // Radio buttons - one answer
+  MULTIPLE_CHOICE   // Checkboxes - multiple answers
+  RATING            // Star/number rating
+  NPS               // Net Promoter Score (0-10)
+  YES_NO            // Boolean yes/no
+  DATE              // Date picker
+  EMAIL             // Email input
+  PHONE             // Phone input
+}
+
+/// Survey - Survey form definition
+model Survey {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+
+  // Survey details
+  title           String
+  description     String?
+  category        String         // satisfaction, nps, treatment, general, exit
+
+  // Configuration
+  isAnonymous     Boolean        @default(false)
+  allowMultiple   Boolean        @default(false)  // Allow multiple responses per patient
+  requiresAuth    Boolean        @default(false)  // Require portal login
+
+  // Questions stored as JSON array for flexibility
+  questions       Json           // Array of question objects
+
+  // Branding
+  logoUrl         String?
+  primaryColor    String?
+  thankYouMessage String?
+
+  // Status & scheduling
+  status          SurveyStatus   @default(DRAFT)
+  startsAt        DateTime?
+  endsAt          DateTime?
+
+  // Metrics
+  responseCount   Int            @default(0)
+  completionRate  Float          @default(0)   // Percentage of completions vs starts
+
+  // Timestamps & Audit
+  createdBy       String         @db.ObjectId
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  responses       SurveyResponse[]
+
+  @@index([clinicId, status])
+  @@index([clinicId, category])
+  @@map("surveys")
+}
+
+// -----------------------------------------------------------------------------
+// Survey Response - Individual survey submission
+// -----------------------------------------------------------------------------
+
+/// SurveyResponseStatus - Status of a survey response
+enum SurveyResponseStatus {
+  STARTED           // Survey started but not completed
+  COMPLETED         // Survey submitted
+  ABANDONED         // Started but never completed
+}
+
+/// SurveyResponse - Individual patient response to a survey
+model SurveyResponse {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String               @db.ObjectId
+  surveyId        String               @db.ObjectId
+  patientId       String?              @db.ObjectId  // Optional for anonymous surveys
+
+  // Response data
+  answers         Json                 // Array of answer objects matching question IDs
+  status          SurveyResponseStatus @default(STARTED)
+
+  // Metadata
+  startedAt       DateTime             @default(now())
+  completedAt     DateTime?
+  timeSpent       Int?                 // Seconds spent on survey
+  ipAddress       String?              // For duplicate detection
+  userAgent       String?
+
+  // Scoring (for NPS and satisfaction surveys)
+  overallScore    Float?               // Calculated overall score if applicable
+  npsScore        Int?                 // NPS score if applicable (0-10)
+
+  // Timestamps
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  // Relations
+  clinic          Clinic               @relation(fields: [clinicId], references: [id])
+  survey          Survey               @relation(fields: [surveyId], references: [id])
+  patient         Patient?             @relation(fields: [patientId], references: [id])
+
+  @@index([surveyId, status])
+  @@index([clinicId, patientId])
+  @@index([surveyId, createdAt])
+  @@map("survey_responses")
 }
 
 // =============================================================================

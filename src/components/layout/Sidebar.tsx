@@ -229,7 +229,11 @@ const defaultNavGroups: NavGroup[] = [
         icon: MessageSquare,
         children: [
           { label: "Inbox", href: "/communications", icon: MessageSquare },
+          { label: "Campaigns", href: "/communications/campaigns", icon: Siren },
           { label: "Templates", href: "/communications/templates", icon: FileText },
+          { label: "Content Library", href: "/communications/content", icon: GraduationCap },
+          { label: "FAQs", href: "/communications/faqs", icon: HelpCircle },
+          { label: "Surveys", href: "/communications/surveys", icon: ClipboardList },
         ],
       },
     ],

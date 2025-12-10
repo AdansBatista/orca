@@ -12,10 +12,62 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | 🔄 In Development (~75%) |
 | **Priority** | High |
 | **Complexity** | High |
 | **Functions** | 5 |
+
+---
+
+## Implementation Status
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| Portal Authentication | ✅ Complete | Password, magic link, email verification, password reset |
+| Patient Profile Management | ✅ Complete | Contact info, notification preferences |
+| Appointment Self-Service | ✅ Complete | View, confirm, cancel, reschedule requests |
+| Treatment Progress Access | ⚠️ Partial | API exists, photos blocked by Imaging area |
+| Payment & Billing Self-Service | 🚫 Blocked | Requires Billing & Insurance area |
+
+### Implemented Code Locations
+
+**Services:**
+- `src/lib/services/portal/auth-service.ts` - Full authentication service
+- `src/lib/services/portal/index.ts` - Session management
+
+**API Routes:**
+- `src/app/api/portal/auth/` - All auth endpoints (login, register, magic-link, password reset)
+- `src/app/api/portal/profile/` - Profile management
+- `src/app/api/portal/appointments/` - Appointment operations
+- `src/app/api/portal/appointments/[id]/confirm/` - Confirmation
+- `src/app/api/portal/appointments/[id]/cancel/` - Cancellation
+- `src/app/api/portal/appointments/[id]/reschedule/` - Reschedule requests
+- `src/app/api/portal/treatment/` - Treatment info (basic)
+
+**UI Pages:**
+- `src/app/(portal)/portal/page.tsx` - Dashboard
+- `src/app/(portal)/portal/profile/page.tsx` - Profile editing
+- `src/app/(portal)/portal/appointments/page.tsx` - Appointment list
+- `src/app/(portal)/portal/appointments/[id]/page.tsx` - Appointment details
+- `src/app/(portal)/portal/messages/page.tsx` - Messages
+- `src/app/(portal)/portal/progress/page.tsx` - Progress view
+- `src/app/(portal)/(auth)/portal/login/page.tsx` - Login
+
+**UI Components:**
+- `src/components/portal/ProfileForm.tsx` - Profile editing form
+- `src/components/portal/AppointmentActions.tsx` - Confirm/cancel/reschedule
+
+### Blocked Features
+
+**Payment & Billing Self-Service** 🚫
+- **Reason**: Requires Billing & Insurance area to be implemented
+- **Impact**: Patients cannot view balances, make payments, or download statements
+- **When Ready**: After Billing & Insurance area completes Phase 2
+
+**Treatment Progress Photos** ⚠️
+- **Reason**: Requires Imaging Management area
+- **Impact**: Limited to text-based progress info only
+- **Workaround**: API returns treatment plan data without photos
 
 ---
 

@@ -11,17 +11,17 @@
 | Attribute                 | Value                                                                                      |
 | ------------------------- | ------------------------------------------------------------------------------------------ |
 | **Current Phase**         | Phase 2 - Core Operations                                                                  |
-| **In Progress**           | Patient Communications (Next Area) |
-| **Implementation Status** | ✅ Auth, ✅ Staff, ✅ Resources, ✅ Booking, ✅ Practice Orchestration (88% - AI Manager deferred) |
+| **In Progress**           | Patient Communications (~75% Complete) |
+| **Implementation Status** | ✅ Auth, 🔄 Staff (~75%), ✅ Resources, ✅ Booking, ✅ Practice Orchestration (88%), 🔄 Patient Comms (~75%) |
 
 ### What to Work On
 
 1. **Completed**: Auth & Authorization - Full RBAC implemented
-2. **Completed**: Staff Management - All 24 functions implemented
+2. **Partial (~75%)**: Staff Management - Scheduling 100%, Profiles 90%, Roles 40%, Performance 50%
 3. **Completed**: Resources Management - All 4 sub-areas implemented (Equipment, Rooms, Inventory, Sterilization)
 4. **Completed**: Booking & Scheduling - Phase 2 Complete (UI Styling Standardized, PatientSearchCombobox added)
-5. **Completed**: Practice Orchestration - 3/4 sub-areas complete (Operations Dashboard, Patient Flow, Resource Coordination); AI Manager deferred
-6. **Next**: Patient Communications
+5. **Completed (88%)**: Practice Orchestration - 3/4 sub-areas complete; AI Manager deferred
+6. **In Progress (~75%)**: Patient Communications - Messaging 80%, Portal 75%, Campaigns 85%, Content 70%
 
 ### Finding Documentation
 
@@ -49,10 +49,10 @@
 ### Progress Overview
 
 ```
-[██████████░░░░░░░░░░] 45% Complete
+[██████████░░░░░░░░░░] 50% Complete
 
-Phase 1: Foundation    [█████] 3/3 Complete (Auth ✅, Staff ✅, Resources ✅)
-Phase 2: Operations    [████░] 2/3 Complete (Booking ✅, Practice Orchestration ✅)
+Phase 1: Foundation    [████░] Auth ✅, Staff ~75%, Resources ✅
+Phase 2: Operations    [████░] Booking ✅, Orchestration 88%, Patient Comms ~75%
 Phase 3: Clinical      [░░░░░] Not Started
 Phase 4: Financial     [░░░░░] Not Started
 Phase 5: Support       [░░░░░] Not Started
@@ -82,7 +82,7 @@ _Must build first - required by all other phases_
 | #   | Area                                                  | Status                  | Priority | Dependencies   |
 | --- | ----------------------------------------------------- | ----------------------- | -------- | -------------- |
 | 1.1 | [Auth & Authorization](./areas/auth/)                 | ✅ Complete             | Critical | None           |
-| 1.2 | [Staff Management](./areas/staff-management/)         | ✅ Complete (24/24)     | Critical | Auth ✅        |
+| 1.2 | [Staff Management](./areas/staff-management/)         | 🔄 In Progress (~75%)   | Critical | Auth ✅        |
 | 1.3 | [Resources Management](./areas/resources-management/) | ✅ Complete             | High     | Auth ✅        |
 
 ### Phase 2: Core Operations
@@ -93,7 +93,7 @@ _Core daily operations_
 | --- | ---------------------- | --------------------------- | -------- | ---------------- |
 | 2.1 | Booking & Scheduling   | ✅ Phase 2 Complete         | Critical | Phase 1          |
 | 2.2 | Practice Orchestration | ✅ Complete (88%)           | High     | Phase 1, Booking |
-| 2.3 | Patient Communications | 📋 Planned                  | High     | Phase 1          |
+| 2.3 | Patient Communications | 🔄 In Progress (~75%)       | High     | Phase 1          |
 
 ### Phase 3: Clinical
 
@@ -133,15 +133,15 @@ _Supporting systems_
 | Area                                                            | Status          | Sub-Areas | Functions  | Documentation                             |
 | --------------------------------------------------------------- | --------------- | --------- | ---------- | ----------------------------------------- |
 | [Auth & Authorization](./areas/auth/)                           | ✅ Complete     | 5         | 24         | [View](./areas/auth/)                     |
-| [Booking & Scheduling](./areas/booking/)                        | 🔄 Phase 2 Done | 4         | 24         | [View](./areas/booking/)                  |
+| [Booking & Scheduling](./areas/booking/)                        | ✅ Phase 2 Done | 4         | 24         | [View](./areas/booking/)                  |
 | [Treatment Management](./areas/treatment-management/)           | 📋 Planned      | TBD       | TBD        | [View](./areas/treatment-management/)     |
 | [Imaging Management](./areas/imaging-management/)               | 📋 Planned      | 4         | 24         | [View](./areas/imaging-management/)       |
 | [Lab Work Management](./areas/lab-work-management/)             | 📋 Planned      | 4         | 24         | [View](./areas/lab-work-management/)      |
 | [Practice Orchestration](./areas/practice-orchestration/)       | ✅ Complete (88%) | 4         | 34         | [View](./areas/practice-orchestration/)   |
-| [Staff Management](./areas/staff-management/)                   | ✅ Complete     | 4         | 24/24 impl | [View](./areas/staff-management/)         |
+| [Staff Management](./areas/staff-management/)                   | 🔄 ~75%         | 4         | ~18/24 impl | [View](./areas/staff-management/)        |
 | [Resources Management](./areas/resources-management/)           | ✅ Complete     | 4         | 24 impl    | [View](./areas/resources-management/)     |
 | [CRM & Onboarding](./areas/crm-onboarding/)                     | 📋 Planned      | 4         | 24         | [View](./areas/crm-onboarding/)           |
-| [Patient Communications](./areas/patient-communications/)       | 📋 Planned      | 4         | 20         | [View](./areas/patient-communications/)   |
+| [Patient Communications](./areas/patient-communications/)       | 🔄 ~75%         | 4         | ~16/21 impl | [View](./areas/patient-communications/) |
 | [Financial Management](./areas/financial-management/)           | 📋 Planned      | 4         | 24         | [View](./areas/financial-management/)     |
 | [Billing & Insurance](./areas/billing-insurance/)               | 📋 Planned      | 4         | 31         | [View](./areas/billing-insurance/)        |
 | [Compliance & Documentation](./areas/compliance-documentation/) | 📋 Planned      | 4         | 24         | [View](./areas/compliance-documentation/) |
@@ -382,49 +382,52 @@ _Real-time operations dashboard and patient flow_
 
 _Team coordination, scheduling, and assignments_
 
-**Documentation**: [Full Area Documentation](./areas/staff-management/) | **Backlog**: [BACKLOG-IMPLEMENTATION.md](./areas/staff-management/BACKLOG-IMPLEMENTATION.md)
+**Documentation**: [Full Area Documentation](./areas/staff-management/)
 
-**Overall Status**: ✅ **Complete** (24 of 24 functions implemented)
+**Overall Status**: 🔄 **In Progress (~75%)**
 
 **Sub-Areas:**
 
-- 6.1 **Staff Profiles & HR** - `✅ Complete (6/6)`
-  - ✅ Employee profiles CRUD, credentials, certifications, emergency contacts, employment records, document management
-  - **Bonuses**: Compensation tracking, verification API, document versioning
-- 6.2 **Scheduling & Time Management** - `✅ Complete (6/6)`
-  - ✅ Shift scheduling, time-off management, availability management, schedule templates
+- 6.1 **Staff Profiles & HR** - `🔄 ~90%`
+  - ✅ Employee profiles CRUD, credentials, certifications, emergency contacts, employment records
+  - ⚠️ Credential expiration alerts not implemented
+  - ⚠️ State database verification not implemented
+- 6.2 **Scheduling & Time Management** - `✅ Complete (100%)`
+  - ✅ Shift scheduling, time-off management, availability management
   - ✅ Coverage management, overtime tracking
-  - **Bonuses**: Blackout dates, PTO tracking, month view, bulk shift creation
-- 6.3 **Roles & Permissions** - `✅ Complete (6/6)`
-  - ✅ Role CRUD, permission assignment, PermissionMatrix UI
-  - ✅ Role hierarchy, role templates, access audit
-  - ✅ Role clone, validation, history, export/import
-- 6.4 **Performance & Training** - `✅ Complete (6/6)`
-  - ✅ Performance metrics, goal tracking, review cycles
-  - ✅ Training records, CE credits, recognition/kudos
+  - ✅ Blackout dates, PTO tracking, month view, bulk shift creation
+- 6.3 **Roles & Permissions** - `🔄 ~40%`
+  - ✅ Basic role CRUD, permission assignment
+  - ⚠️ Role hierarchy enforcement not implemented
+  - ⚠️ Role templates UI incomplete
+  - ⚠️ Permission inheritance calculation missing
+  - ⚠️ Access audit dashboard not built
+- 6.4 **Performance & Training** - `🔄 ~50%`
+  - ✅ Performance goals and reviews API
+  - ⚠️ Performance visualization/charts missing
+  - ⚠️ Review cycle scheduling workflow incomplete
+  - ⚠️ Training compliance enforcement missing
+  - ⚠️ CE credit expiration notifications missing
 
-**Key Implemented Functions (24/24):**
-
-- Staff profile CRUD with compensation tracking
-- Credential & certification management with expiration tracking
+**What's Implemented:**
+- Staff profile CRUD with clinic isolation
+- Credential & certification management
 - Emergency contacts & employment history
-- Document management with versioning & access levels
-- Shift scheduling with templates, blackout dates, bulk operations
-- Time-off requests with PTO balance tracking
-- Staff availability management
-- Coverage management with gap detection
-- Overtime tracking with approval workflow
-- Role management with hierarchy, clone, validate, history
-- Role templates with industry-standard library
-- Access audit with compliance dashboards
-- Performance metrics tracking
-- Goal setting and progress tracking
-- Performance review cycles
-- Training record management
-- CE credit tracking with verification
-- Recognition and kudos system
+- Complete shift scheduling with calendar integration
+- Time-off request workflow
+- Coverage gap detection
+- Overtime calculation and tracking
+- Basic role CRUD and permission assignment
 
-**Remaining Work**: Only UX enhancements (drag-drop scheduling) and deferred items remain. See [BACKLOG-IMPLEMENTATION.md](./areas/staff-management/BACKLOG-IMPLEMENTATION.md)
+**What's Not Yet Implemented:**
+- Credential expiration alert system
+- Role hierarchy enforcement
+- Role templates UI
+- Permission inheritance calculation
+- Access audit dashboard
+- Performance visualization/charts
+- Review cycle scheduling
+- Training compliance alerts
 
 ---
 
@@ -495,14 +498,35 @@ _Patient acquisition, intake process, and referral management for orthodontic pr
 
 _Messaging, portal, and campaigns_
 
+**Documentation**: [Full Area Documentation](./areas/patient-communications/)
+
+**Overall Status**: 🔄 **In Progress (~75%)**
+
 **Sub-Areas:**
 
-- 9.1 Messaging Hub - `📋 Planned`
-- 9.2 Patient Portal - `📋 Planned`
-- 9.3 Campaigns - `📋 Planned`
-- 9.4 Education Materials - `📋 Planned`
+- 9.1 **Messaging Hub** - `🔄 ~80%`
+  - ✅ SMS delivery (Twilio), Email delivery (SendGrid), In-App notifications
+  - ✅ Message routing, history, template management
+  - ⚠️ Two-way SMS threading not implemented
+  - ⚠️ Unified inbox UI not built
+- 9.2 **Patient Portal** - `🔄 ~75%`
+  - ✅ Portal authentication (password, magic link, email verification)
+  - ✅ Profile management, appointment self-service
+  - 🚫 Payment & Billing blocked by Billing & Insurance area
+  - 🚫 Treatment photos blocked by Imaging Management area
+- 9.3 **Automated Campaigns** - `✅ ~85%`
+  - ✅ Campaign execution engine, workflow builder UI
+  - ✅ Appointment reminders, follow-up sequences
+  - ⚠️ Survey form builder UI not implemented
+  - ⚠️ A/B testing not implemented
+- 9.4 **Educational Content Library** - `🔄 ~70%`
+  - ✅ Content delivery automation, personalization
+  - ⚠️ Rich text editor staff UI not built
+  - ⚠️ FAQ management staff UI not built
 
-**Key Functions:** TBD after sub-area planning
+**Blocked Features:**
+- Payment & Billing Self-Service → Blocked by **Billing & Insurance** area
+- Treatment Progress Photos → Blocked by **Imaging Management** area
 
 ---
 
@@ -718,8 +742,11 @@ _Supplier relationships and procurement_
 
 | Date       | Change                                                                                   | Author |
 | ---------- | ---------------------------------------------------------------------------------------- | ------ |
+| 2024-12-09 | Documentation review: Updated implementation status across all areas to match actual code | Claude |
+| 2024-12-09 | Patient Communications ~75% complete: Messaging 80%, Portal 75%, Campaigns 85%, Content 70% | Claude |
+| 2024-12-09 | Staff Management corrected to ~75%: Scheduling 100%, Profiles 90%, Roles 40%, Performance 50% | Claude |
 | 2025-12-06 | Practice Orchestration 88% complete: 3/4 sub-areas (Operations Dashboard, Patient Flow, Resource Coordination) | Claude |
-| 2024-11-30 | Staff Management 100% complete: All 4 sub-areas fully implemented (24/24 functions)     | Claude |
+| 2024-11-30 | Staff Management marked complete (later corrected in 2024-12-09 review)                  | Claude |
 | 2024-11-30 | Staff Management - Performance & Training sub-area complete (6 models, APIs, UIs)        | Claude |
 | 2024-11-30 | Staff Management - Roles & Permissions sub-area complete (hierarchy, templates, audit)   | Claude |
 | 2024-11-30 | Staff Management - Scheduling & Time Management sub-area complete                        | Claude |
@@ -737,5 +764,5 @@ _Supplier relationships and procurement_
 ---
 
 **Status**: Active
-**Last Updated**: 2025-12-06
+**Last Updated**: 2024-12-09
 **Owner**: Development Team

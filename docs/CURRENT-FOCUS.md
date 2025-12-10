@@ -1,6 +1,6 @@
 # Current Development Focus
 
-> **Last Updated**: 2025-12-06
+> **Last Updated**: 2025-12-09 (Updated after Patient Comms completion)
 >
 > **Purpose**: Single source of truth for what LLMs and developers should work on
 
@@ -11,7 +11,7 @@
 | Attribute | Value |
 |-----------|-------|
 | **Current Phase** | Phase 2 - Core Operations (In Progress) |
-| **Implementation Status** | ✅ Phase 1 Complete, 🔄 Phase 2 In Progress (Booking ✅, Practice Orchestration ✅) |
+| **Implementation Status** | 🔄 Phase 1 ~92%, ✅ Phase 2 ~95% (Booking ✅, Orchestration 88%, Patient Comms ~95%) |
 | **Documentation Status** | ✅ Complete for all 13 areas |
 
 ---
@@ -26,15 +26,15 @@ These areas have no dependencies and can be started immediately:
 - **Completed Features**: User login, session management (JWT), role-based permissions, audit logging
 - **Code Patterns**: [AUTH-PATTERNS.md](guides/AUTH-PATTERNS.md)
 
-### ~~2. Staff Management~~ ✅ COMPLETE
+### 2. Staff Management 🔄 ~75% COMPLETE
 - **Documentation**: [docs/areas/staff-management/](areas/staff-management/)
 - **Depends On**: Authentication ✅
-- **Status**: ✅ All 4 sub-areas implemented (24/24 functions)
-- **Completed Sub-Areas**:
-  - ✅ Staff Profiles & HR (profiles, credentials, certifications, emergency contacts, documents)
-  - ✅ Scheduling & Time Management (shifts, time-off, templates, availability, coverage)
-  - ✅ Roles & Permissions (custom roles, permission assignment)
-  - ✅ Performance & Training (metrics, goals, reviews)
+- **Status**: 🔄 ~75% complete (core features implemented, some advanced features pending)
+- **Sub-Area Status**:
+  - ✅ Staff Profiles & HR (~90%) - Core complete, credential alerts incomplete
+  - ✅ Scheduling & Time Management (100%) - Fully implemented
+  - 🔄 Roles & Permissions (~40%) - Basic CRUD done, hierarchy/templates incomplete
+  - 🔄 Performance & Training (~50%) - API exists, visualization/workflows incomplete
 
 ### ~~3. Resources Management~~ ✅ COMPLETE
 - **Documentation**: [docs/areas/resources-management/](areas/resources-management/)
@@ -84,12 +84,19 @@ These areas have no dependencies and can be started immediately:
   - ✅ Resource Coordination (chair status, resource occupancy, staff workload)
 - **Deferred**: AI Manager (requires AI infrastructure planning)
 
-### 3. Patient Communications 🔄 NEXT
+### ~~3. Patient Communications~~ ✅ COMPLETE (~95%)
 - **Documentation**: [docs/areas/patient-communications/](areas/patient-communications/)
 - **Depends On**: Auth ✅, Booking ✅
-- **Key Deliverables**: Messaging hub, patient portal, campaigns, education materials
-- **Priority**: High - patient engagement
-- **Status**: Ready to start
+- **Status**: ✅ ~95% complete - All unblocked features implemented
+- **Sub-Area Status**:
+  - ✅ Messaging Hub (100%) - SMS/Email/Push, Unified Inbox, Two-way conversations
+  - 🔄 Patient Portal (~75%) - Auth complete, billing **blocked** by Billing area
+  - ✅ Automated Campaigns (100%) - Workflow builder, template gallery complete
+  - ✅ Educational Content (100%) - Rich text editor, article management, FAQs complete
+  - ✅ Surveys (100%) - Form builder with drag-drop questions complete
+- **Remaining (Blocked)**:
+  - 🚫 Payment self-service blocked by Billing & Insurance area
+  - 🚫 Patient Portal billing features blocked by Billing area
 
 ---
 
@@ -111,13 +118,13 @@ These areas have no dependencies and can be started immediately:
 ## Implementation Phases Overview
 
 ```
-Phase 1: Foundation ✅       Phase 2: Core Operations       Phase 3: Clinical
+Phase 1: Foundation ~92%     Phase 2: Core Operations ~95%  Phase 3: Clinical
 ┌─────────────────────┐     ┌─────────────────────┐        ┌─────────────────────┐
 │ ✅ Auth & Users     │ ──▶ │ ✅ Booking          │ ──▶    │ • CRM & Onboarding  │
-│ ✅ Staff Management │     │ ✅ Practice Orch.   │        │ • Treatment Mgmt    │
-│ ✅ Resources Mgmt   │     │ • Patient Comms ←   │        │ • Imaging           │
+│ 🔄 Staff Mgmt ~75%  │     │ ✅ Practice Orch.   │        │ • Treatment Mgmt    │
+│ ✅ Resources Mgmt   │     │ ✅ Patient Comms    │        │ • Imaging           │
 └─────────────────────┘     └─────────────────────┘        │ • Lab Work          │
-                                     NEXT                  └─────────────────────┘
+                                   ~95% DONE               └─────────────────────┘
                                                                      │
                                                                      ▼
                             Phase 5: Support               Phase 4: Financial
@@ -141,15 +148,16 @@ If asked to "implement the next feature" or "start development" without specific
 ### Quick Decision Tree
 
 ```
-Phase 1 Complete? ✅ YES
-Phase 2 Started? ✅ YES
+Phase 1 Complete? 🔄 ~92% (Staff Management needs completion)
+Phase 2 Complete? ✅ YES (~95% overall)
 ├── ✅ Booking & Scheduling - Complete
 ├── ✅ Practice Orchestration - Complete (88%, AI Manager deferred)
-└── 🔄 Patient Communications ← YOU ARE HERE (Next to implement)
-    ├── 📋 Messaging Hub (SMS, email, in-app messaging)
-    ├── 📋 Patient Portal (login, appointments, messages)
-    ├── 📋 Campaigns (automated outreach)
-    └── 📋 Education Materials (content management)
+└── ✅ Patient Communications - ~95% COMPLETE
+    ├── ✅ Messaging Hub (100%) - Unified Inbox, Two-way SMS
+    ├── 🔄 Patient Portal (~75%) - Auth works, billing blocked
+    ├── ✅ Campaigns (100%) - Workflow builder + template gallery
+    ├── ✅ Education Materials (100%) - Rich text editor, FAQs
+    └── ✅ Surveys (100%) - Form builder complete
 ```
 
 ---
@@ -158,6 +166,11 @@ Phase 2 Started? ✅ YES
 
 | Date | Area/Feature | Status |
 |------|--------------|--------|
+| 2025-12-09 | Patient Communications - Survey Form Builder (API + UI) | ✅ Complete |
+| 2025-12-09 | Patient Communications - Campaign Template Gallery (14 templates) | ✅ Complete |
+| 2025-12-09 | Patient Communications - FAQ Management (API + UI) | ✅ Complete |
+| 2025-12-09 | Patient Communications - Rich Text Article Editor | ✅ Complete |
+| 2025-12-09 | Patient Communications - Tiptap Rich Text Component | ✅ Complete |
 | 2025-12-06 | Practice Orchestration - All 3 core sub-areas | ✅ Complete (88%) |
 | 2025-12-06 | Practice Orchestration - Tasks feature (CRUD, validation fixes) | ✅ Complete |
 | 2025-12-05 | Practice Orchestration - Patient Flow & Resource Coordination | ✅ Complete |
@@ -184,10 +197,14 @@ Phase 2 Started? ✅ YES
 
 | Area | Sub-Area | Assignee | Started | Status |
 |------|----------|----------|---------|--------|
-| Patient Communications | Messaging Hub | - | - | Next to start |
-| Patient Communications | Patient Portal | - | - | Planned |
-| Patient Communications | Campaigns | - | - | Planned |
-| Patient Communications | Education Materials | - | - | Planned |
+| Patient Communications | Patient Portal | - | - | 🔄 ~75% (billing blocked by Phase 4) |
+| Staff Management | Roles & Permissions | - | - | 🔄 ~40% (hierarchy incomplete) |
+| Staff Management | Performance & Training | - | - | 🔄 ~50% (visualization incomplete) |
+
+### Next Priority (Unblocked)
+1. Staff Management - Role hierarchy & permission templates
+2. Staff Management - Performance visualization dashboards
+3. Staff Management - Training workflows & certification alerts
 
 ---
 

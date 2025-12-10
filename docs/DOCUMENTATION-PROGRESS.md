@@ -2,9 +2,9 @@
 
 > **Purpose**: Track function-level documentation progress across LLM sessions
 >
-> **Last Updated**: 2025-12-04 (Booking UI styling review completed)
+> **Last Updated**: 2025-12-09 (Implementation status audit completed)
 >
-> **Current Task**: Documentation complete! Implementation in progress (Booking Phase 2 Complete)
+> **Current Task**: Documentation complete! Implementation in progress (Phase 2 ~85% complete)
 
 ---
 
@@ -53,18 +53,18 @@
 
 ---
 
-### ✅ Staff Management (24 functions documented, 14 implemented)
+### 🔄 Staff Management (24 functions documented, ~75% implemented)
 
-**Documentation Completed**: 2024-11-28  
-**Implementation Status**: 58% Complete (14 of 24 functions)  
-**Last Implementation Review**: 2024-11-30
+**Documentation Completed**: 2024-11-28
+**Implementation Status**: ~75% Complete
+**Last Implementation Review**: 2025-12-09
 
 | Sub-Area                     | Functions | Documentation Status | Implementation Status                     |
 | ---------------------------- | --------- | -------------------- | ----------------------------------------- |
-| Staff Profiles & HR          | 6         | ✅ All documented    | ✅ **100% Complete** (6/6)                |
-| Scheduling & Time Management | 6         | ✅ All documented    | ✅ **Core Complete** (4/6 core + bonuses) |
-| Roles & Permissions          | 6         | ✅ All documented    | ⚠️ **Partial** (3/6 - 60%)                |
-| Performance & Training       | 6         | ✅ All documented    | ❌ **Not Started** (0/6)                  |
+| Staff Profiles & HR          | 6         | ✅ All documented    | ✅ **~90% Complete** (credential alerts incomplete) |
+| Scheduling & Time Management | 6         | ✅ All documented    | ✅ **100% Complete** (fully implemented) |
+| Roles & Permissions          | 6         | ✅ All documented    | 🔄 **~40%** (basic CRUD, hierarchy/templates incomplete) |
+| Performance & Training       | 6         | ✅ All documented    | 🔄 **~50%** (API exists, visualization incomplete) |
 
 **Documentation Files Created**:
 
@@ -75,10 +75,10 @@
 
 **Implementation Highlights**:
 
-- ✅ Staff Profiles/HR: All 6 functions + bonuses (compensation tracking, verification API, document versioning)
-- ✅ Scheduling: Core features + bonuses (blackout dates, PTO tracking, month view, bulk shifts)
-- ⚠️ Roles: Core role management + exceptional PermissionMatrix UI (missing hierarchy, templates)
-- ❌ Performance & Training: Schemas exist but no API/UI implementation
+- ✅ Staff Profiles/HR: Core complete (compensation, verification, versioning) - credential alerts incomplete
+- ✅ Scheduling: Fully implemented (shifts, time-off, templates, availability, coverage)
+- 🔄 Roles: Basic CRUD + PermissionMatrix UI (missing hierarchy, templates, audit)
+- 🔄 Performance & Training: API exists (metrics, goals, reviews) - visualization/workflows incomplete
 
 **See**: `docs/areas/staff-management/BACKLOG-IMPLEMENTATION.md` for remaining features
 
@@ -135,6 +135,39 @@
 | Patient Flow          | 6         | patient-check-in.md, queue-management.md, call-to-chair.md, patient-journey-tracking.md, wait-time-monitoring.md, check-out-processing.md |
 | Resource Coordination | 4         | chair-room-assignment.md, equipment-status.md, staff-assignment.md, utilization-tracking.md                                               |
 | AI Manager            | 4         | natural-language-queries.md, anomaly-detection.md, schedule-optimization.md, task-generation.md                                           |
+
+---
+
+### 🔄 Patient Communications (21 functions documented, ~75% implemented)
+
+**Documentation Completed**: 2024-11-28
+**Implementation Status**: ~75% Complete
+**Last Implementation Review**: 2025-12-09
+
+| Sub-Area                    | Functions | Documentation Status | Implementation Status                     |
+| --------------------------- | --------- | -------------------- | ----------------------------------------- |
+| Messaging Hub               | 6         | ✅ All documented    | ✅ **~80% Complete** (two-way SMS incomplete) |
+| Patient Portal              | 5         | ✅ All documented    | 🔄 **~75%** (billing blocked by dependencies) |
+| Automated Campaigns         | 5         | ✅ All documented    | ✅ **~85%** (A/B testing not implemented) |
+| Educational Content Library | 4         | ✅ All documented    | 🔄 **~70%** (backend complete, staff UI incomplete) |
+
+**Documentation Files Created**:
+
+- sms-delivery.md, email-delivery.md, in-app-notifications.md, message-routing-and-delivery.md, message-history-and-logging.md, template-management.md
+- patient-portal-authentication.md, patient-profile-management.md, appointment-self-service.md, result-access-and-download.md, payment-and-billing-self-service.md
+- campaign-creation-and-scheduling.md, event-triggered-workflows.md, appointment-reminders.md, follow-up-sequences.md, feedback-and-survey-campaigns.md
+- content-management-and-curation.md, patient-education-delivery.md, content-personalization.md, faq-and-knowledge-base.md
+
+**Implementation Highlights**:
+
+- ✅ Messaging Hub: SMS (Twilio), Email (SendGrid), Push (Firebase), templates complete
+- 🔄 Patient Portal: Auth (password, magic link) complete, billing blocked by Billing area
+- ✅ Campaigns: Workflow builder complete, execution engine working, A/B not implemented
+- 🔄 Educational Content: Delivery automation works, staff content editor UI incomplete
+
+**Known Blocked Features**:
+- 🚫 Payment & Billing Self-Service - Blocked by Billing & Insurance area
+- 🚫 Treatment Progress Photos - Blocked by Imaging Management area
 
 ---
 

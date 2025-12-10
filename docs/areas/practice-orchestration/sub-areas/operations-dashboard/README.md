@@ -12,10 +12,29 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | ✅ Complete (~95%) |
 | **Priority** | Critical |
 | **Complexity** | High |
 | **Functions** | 6 |
+| **Last Updated** | 2024-12-09 |
+
+---
+
+## Implementation Status
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| Day View Dashboard | ✅ Complete | Metrics, time range tabs, real-time polling |
+| Week View Dashboard | ✅ Complete | WeekView component |
+| Month View Dashboard | ✅ Complete | MonthView component |
+| Timeline View | ⚠️ Incomplete | Not implemented |
+| Board/Kanban View | ✅ Complete | PatientFlowBoard with 5 stages |
+| Floor Plan View | ✅ Complete | FloorPlanView with fullscreen |
+
+### Code Locations
+- **Pages:** `src/app/(app)/ops/page.tsx`, `src/app/(app)/ops/floor-plan/page.tsx`
+- **Components:** `src/components/ops/dashboard/WeekView.tsx`, `MonthView.tsx`
+- **API:** `src/app/api/ops/dashboard/metrics/route.ts`, `day/route.ts`, `week/route.ts`, `month/route.ts`
 
 ---
 
