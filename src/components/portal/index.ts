@@ -12,3 +12,4 @@ export {
   PortalEmptyState,
 } from './PortalCard';
 export { AppointmentActions } from './AppointmentActions';
+export { ProfileForm } from './ProfileForm';

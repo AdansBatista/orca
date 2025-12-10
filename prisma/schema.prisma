@@ -63,6 +63,8 @@ model Clinic {
   openingNotifications       OpeningNotification[]
   reEngagementCampaigns      ReEngagementCampaign[]
   campaignPatients           CampaignPatient[]
+  campaigns                  Campaign[]
+  campaignSends              CampaignSend[]
 
   // Practice Orchestration relations
   patientFlowStates          PatientFlowState[]
@@ -76,6 +78,10 @@ model Clinic {
   messageTemplates           MessageTemplate[]
   messages                   Message[]
   notificationPreferences    NotificationPreference[]
+  contentArticles            ContentArticle[]
+  contentDeliveries          ContentDelivery[]
+  contentCategories          ContentCategory[]
+  faqItems                   FAQItem[]
 
   // Patient Portal relations
   portalAccounts             PortalAccount[]
@@ -310,6 +316,7 @@ model Patient {
   recurringAppointments      RecurringAppointment[]
   openingNotifications       OpeningNotification[]
   campaignPatients           CampaignPatient[]
+  campaignSends              CampaignSend[]
 
   // Practice Orchestration relations
   patientFlowStates          PatientFlowState[]
@@ -318,6 +325,7 @@ model Patient {
   // Patient Communications relations
   messages                   Message[]
   notificationPreference     NotificationPreference?
+  contentDeliveries          ContentDelivery[]
 
   // Patient Portal relations
   portalAccount              PortalAccount?
@@ -5248,6 +5256,180 @@ enum CampaignPatientResponse {
   NO_RESPONSE         // No response received
 }
 
+// -----------------------------------------------------------------------------
+// Automated Campaigns - General purpose campaign workflow system
+// -----------------------------------------------------------------------------
+
+/// CampaignType - Types of automated campaigns
+enum CampaignType {
+  MARKETING           // Promotional campaigns
+  REMINDER            // Appointment reminders
+  FOLLOW_UP           // Post-visit follow-ups
+  SURVEY              // Feedback collection
+  REACTIVATION        // Re-engagement
+  WELCOME             // New patient onboarding
+  EDUCATION           // Treatment education
+}
+
+/// TriggerType - How campaigns are triggered
+enum TriggerType {
+  EVENT               // Triggered by system events
+  SCHEDULED           // One-time scheduled send
+  RECURRING           // Repeating schedule
+}
+
+/// StepType - Types of workflow steps
+enum StepType {
+  SEND                // Send a message
+  WAIT                // Wait for a duration
+  CONDITION           // Check a condition
+  BRANCH              // Branch based on criteria
+}
+
+/// SendStatus - Status of individual campaign sends
+enum SendStatus {
+  PENDING             // Waiting to be sent
+  SENT                // Message sent
+  DELIVERED           // Confirmed delivery
+  OPENED              // Message opened (email)
+  CLICKED             // Link clicked
+  FAILED              // Delivery failed
+  SKIPPED             // Skipped due to condition
+  CANCELLED           // Cancelled before send
+}
+
+/// Campaign - Automated communication workflow
+model Campaign {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String            @db.ObjectId
+
+  // Campaign identification
+  name            String
+  description     String?
+  type            CampaignType
+
+  // Targeting - JSON with audience criteria
+  audience        Json?             // { patientStatus: [], treatmentTypes: [], tags: [] }
+  excludeCriteria Json?             // Exclusion rules
+
+  // Trigger configuration
+  triggerType     TriggerType
+  triggerEvent    String?           // For EVENT type: "appointment.booked", "treatment.started", etc.
+  triggerSchedule DateTime?         // For SCHEDULED type
+  triggerRecurrence Json?           // For RECURRING: { frequency: "weekly", days: [1,3,5], time: "09:00" }
+
+  // Status
+  status          CampaignStatus    @default(DRAFT)
+
+  // Stats (denormalized for performance)
+  totalRecipients Int               @default(0)
+  totalSent       Int               @default(0)
+  totalDelivered  Int               @default(0)
+  totalOpened     Int               @default(0)
+  totalClicked    Int               @default(0)
+  totalFailed     Int               @default(0)
+
+  // Audit
+  createdBy       String            @db.ObjectId
+  activatedAt     DateTime?
+  pausedAt        DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  clinic          Clinic            @relation(fields: [clinicId], references: [id])
+  steps           CampaignStep[]
+  sends           CampaignSend[]
+
+  @@index([clinicId, status])
+  @@index([clinicId, type])
+  @@index([triggerEvent])
+  @@map("campaigns")
+}
+
+/// CampaignStep - Individual step in a campaign workflow
+model CampaignStep {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  campaignId      String            @db.ObjectId
+
+  // Step order and identification
+  stepOrder       Int
+  name            String
+  type            StepType
+
+  // For SEND steps
+  channel         MessageChannel?   // SMS, EMAIL, PUSH, IN_APP
+  templateId      String?           @db.ObjectId
+
+  // For WAIT steps
+  waitDuration    Int?              // Duration in minutes
+  waitUntil       String?           // Dynamic expression: "2 days before appointment"
+
+  // For CONDITION steps - JSON condition object
+  condition       Json?             // { field: "patient.hasEmail", operator: "eq", value: true }
+
+  // For BRANCH steps - Array of branch paths
+  branches        Json?             // [{ condition: {...}, nextStepId: "..." }]
+  nextStepId      String?           @db.ObjectId // Default next step
+
+  // Timestamps
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  campaign        Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  template        MessageTemplate?  @relation(fields: [templateId], references: [id])
+  sends           CampaignSend[]
+
+  @@index([campaignId, stepOrder])
+  @@map("campaign_steps")
+}
+
+/// CampaignSend - Individual send to a patient within a campaign
+model CampaignSend {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String            @db.ObjectId
+  campaignId      String            @db.ObjectId
+  stepId          String            @db.ObjectId
+  patientId       String            @db.ObjectId
+
+  // Status
+  status          SendStatus        @default(PENDING)
+
+  // Scheduling
+  scheduledAt     DateTime
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  failedAt        DateTime?
+
+  // Result tracking
+  messageId       String?           @db.ObjectId  // Link to actual Message sent
+  errorMessage    String?
+  skipReason      String?
+
+  // Timestamps
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  clinic          Clinic            @relation(fields: [clinicId], references: [id])
+  campaign        Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  step            CampaignStep      @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  patient         Patient           @relation(fields: [patientId], references: [id])
+  message         Message?          @relation(fields: [messageId], references: [id])
+
+  @@index([clinicId])
+  @@index([campaignId, status])
+  @@index([patientId])
+  @@index([scheduledAt, status])
+  @@index([stepId])
+  @@map("campaign_sends")
+}
+
 // =============================================================================
 // PRACTICE ORCHESTRATION AREA - Operations dashboard, patient flow, resources
 // =============================================================================
@@ -5648,6 +5830,165 @@ enum DeliveryStatus {
 }
 
 // -----------------------------------------------------------------------------
+// Educational Content Library - Patient education materials
+// -----------------------------------------------------------------------------
+
+/// ContentStatus - Status of educational content
+enum ContentStatus {
+  DRAFT         // Being created/edited
+  PUBLISHED     // Live and accessible
+  ARCHIVED      // No longer active
+}
+
+/// DeliveryMethod - How content is delivered to patients
+enum DeliveryMethod {
+  EMAIL         // Sent via email
+  PORTAL        // Available in patient portal
+  SMS_LINK      // SMS with link
+  IN_APP        // In-app notification
+}
+
+/// ContentArticle - Educational content article
+model ContentArticle {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String?           @db.ObjectId  // Null for global content
+
+  // Content
+  title           String
+  slug            String
+  summary         String?
+  body            String            // Rich text/markdown content
+
+  // Media
+  featuredImage   String?
+  attachments     Json?             // Array of attachment URLs/metadata
+  videoUrl        String?
+
+  // Organization
+  category        String
+  tags            String[]          @default([])
+  treatmentTypes  String[]          @default([])  // braces, aligners, etc.
+  treatmentPhases String[]          @default([])  // pre-treatment, active, retention
+  ageGroups       String[]          @default([])  // child, teen, adult
+  languages       String[]          @default(["en"])
+
+  // Status
+  status          ContentStatus     @default(DRAFT)
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+
+  // Metrics
+  viewCount       Int               @default(0)
+  shareCount      Int               @default(0)
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+
+  // Audit
+  createdBy       String            @db.ObjectId
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  clinic          Clinic?           @relation(fields: [clinicId], references: [id])
+  deliveries      ContentDelivery[]
+
+  @@unique([clinicId, slug])
+  @@index([clinicId, category])
+  @@index([clinicId, status])
+  @@index([tags])
+  @@map("content_articles")
+}
+
+/// ContentDelivery - Track content delivered to patients
+model ContentDelivery {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String            @db.ObjectId
+  articleId       String            @db.ObjectId
+  patientId       String            @db.ObjectId
+
+  // Delivery
+  method          DeliveryMethod
+  deliveredAt     DateTime          @default(now())
+  viewedAt        DateTime?
+
+  // Context
+  triggeredBy     String?           // Event name or "manual"
+  sentBy          String?           @db.ObjectId
+
+  // Relations
+  clinic          Clinic            @relation(fields: [clinicId], references: [id])
+  article         ContentArticle    @relation(fields: [articleId], references: [id])
+  patient         Patient           @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId, patientId])
+  @@index([articleId])
+  @@map("content_deliveries")
+}
+
+/// ContentCategory - Categories for organizing content
+model ContentCategory {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String?           @db.ObjectId  // Null for global
+
+  name            String
+  slug            String
+  description     String?
+  parentId        String?           @db.ObjectId
+  sortOrder       Int               @default(0)
+
+  icon            String?
+  color           String?
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  clinic          Clinic?           @relation(fields: [clinicId], references: [id])
+  parent          ContentCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children        ContentCategory[] @relation("CategoryHierarchy")
+
+  @@unique([clinicId, slug])
+  @@index([clinicId])
+  @@map("content_categories")
+}
+
+/// FAQItem - Frequently asked questions
+model FAQItem {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String?           @db.ObjectId  // Null for global
+
+  question        String
+  answer          String
+  category        String
+  tags            String[]          @default([])
+
+  // Display
+  sortOrder       Int               @default(0)
+  isFeatured      Boolean           @default(false)
+
+  // Metrics
+  viewCount       Int               @default(0)
+  helpfulCount    Int               @default(0)
+  notHelpfulCount Int               @default(0)
+
+  // Status
+  isActive        Boolean           @default(true)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  clinic          Clinic?           @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId, category])
+  @@index([clinicId, isActive])
+  @@map("faq_items")
+}
+
+// -----------------------------------------------------------------------------
 // Message Templates - Reusable message templates
 // -----------------------------------------------------------------------------
 
@@ -5694,6 +6035,7 @@ model MessageTemplate {
   // Relations
   clinic          Clinic         @relation(fields: [clinicId], references: [id])
   messages        Message[]
+  campaignSteps   CampaignStep[]
 
   @@unique([clinicId, name])
   @@index([clinicId, category])
@@ -5760,6 +6102,7 @@ model Message {
   deliveries      MessageDelivery[]
   replyTo         Message?         @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies         Message[]        @relation("MessageReplies")
+  campaignSends   CampaignSend[]
 
   @@index([clinicId, patientId])
   @@index([clinicId, status])

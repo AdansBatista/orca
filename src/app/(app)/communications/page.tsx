@@ -16,6 +16,8 @@ import {
   CheckCheck,
   AlertCircle,
   Clock,
+  Zap,
+  BookOpen,
 } from 'lucide-react';
 
 import { PageHeader, PageContent, StatsRow } from '@/components/layout';
@@ -186,6 +188,18 @@ export default function CommunicationsPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
+            <Link href="/communications/campaigns">
+              <Button variant="outline" size="sm">
+                <Zap className="h-4 w-4 mr-2" />
+                Campaigns
+              </Button>
+            </Link>
+            <Link href="/communications/content">
+              <Button variant="outline" size="sm">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Content
+              </Button>
+            </Link>
             <Link href="/communications/templates">
               <Button variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
