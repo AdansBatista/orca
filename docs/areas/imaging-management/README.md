@@ -169,7 +169,7 @@ Create professional presentations and documentation from patient images.
 | CBCT Systems | DICOM | 3D volumetric imaging |
 | iTero Scanner | Cloud API | Digital impressions and 3D models |
 | 3Shape Scanner | File Import | STL and 3D scan data |
-| Cloud Storage | S3-compatible | Secure image storage |
+| Local Storage | Filesystem | On-premises image storage (public/uploads/images/) |
 
 ---
 
@@ -343,12 +343,12 @@ Orthodontic practices use standardized photo sets for consistent documentation:
 
 ### Key Technical Decisions
 
-- Use cloud storage (S3-compatible) for scalable image storage
+- Use local filesystem storage (`public/uploads/images/`) for on-premises deployment
 - Generate multiple image variants (thumbnail, preview, full)
 - Implement progressive loading for large images
 - Use Cornerstone.js for DICOM viewing
 - Store originals separately from edited versions
-- Implement CDN for fast image delivery
+- Serve images as static files via Next.js
 
 ### Performance Considerations
 

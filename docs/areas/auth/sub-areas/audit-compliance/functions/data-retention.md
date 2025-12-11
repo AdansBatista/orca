@@ -39,7 +39,7 @@ model LogArchive {
   startDate   DateTime // Range start
   endDate     DateTime // Range end
   recordCount Int
-  storageUrl  String   // S3/blob URL
+  storagePath String   // Local filesystem path (e.g., data/archives/)
   checksum    String   // For integrity verification
   archivedAt  DateTime @default(now())
   expiresAt   DateTime // When to delete (7 years from oldest record)
@@ -88,8 +88,8 @@ async function archiveLogs() {
   // Calculate checksum
   const checksum = createHash('sha256').update(exportData).digest('hex');
 
-  // Upload to cold storage (S3)
-  const storageUrl = await uploadToS3(
+  // Save to archive directory (local filesystem)
+  const storagePath = await saveToArchive(
     `audit-logs/${format(oneYearAgo, 'yyyy-MM')}.json`,
     exportData
   );
@@ -101,7 +101,7 @@ async function archiveLogs() {
       startDate: logsToArchive[0].timestamp,
       endDate: logsToArchive[logsToArchive.length - 1].timestamp,
       recordCount: logsToArchive.length,
-      storageUrl,
+      storagePath,
       checksum,
       expiresAt: addYears(logsToArchive[0].timestamp, 7),
     },
@@ -124,8 +124,8 @@ async function verifyArchiveIntegrity(archiveId: string): Promise<boolean> {
     where: { id: archiveId },
   });
 
-  // Download from storage
-  const data = await downloadFromS3(archive.storageUrl);
+  // Read from archive directory
+  const data = await readFromArchive(archive.storagePath);
 
   // Verify checksum
   const currentChecksum = createHash('sha256').update(data).digest('hex');
@@ -146,8 +146,8 @@ async function deleteExpiredArchives() {
   });
 
   for (const archive of expiredArchives) {
-    // Delete from cold storage
-    await deleteFromS3(archive.storageUrl);
+    // Delete from archive directory
+    await deleteFromArchive(archive.storagePath);
 
     // Delete archive record
     await db.logArchive.delete({
@@ -164,7 +164,7 @@ async function deleteExpiredArchives() {
 **Depends On:**
 - Audit Event Logging
 - PHI Access Tracking
-- Cloud storage (S3/Azure Blob)
+- Local filesystem storage (data/archives/)
 
 **Required By:**
 - HIPAA compliance

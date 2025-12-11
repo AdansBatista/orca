@@ -1,8 +1,12 @@
 /**
- * Storage Service - Abstract interface for file storage
+ * Storage Service - Local filesystem storage for patient images
  *
- * Provides a unified interface for storing files, either locally (dev)
- * or in S3-compatible storage (production).
+ * This application uses local filesystem storage exclusively.
+ * All files are stored in public/uploads/images/{clinicId}/{patientId}/
+ * and served directly by Next.js as static files.
+ *
+ * This supports the on-premises deployment model where all data
+ * remains on the local LAN.
  */
 
 import { LocalStorage } from './local';
@@ -34,10 +38,9 @@ export interface StorageService {
 
   /**
    * Get a URL for accessing a file
-   * For local storage, returns a direct path
-   * For S3, returns a pre-signed URL
+   * Returns a direct path for static file serving
    * @param path - Storage path
-   * @param expiresIn - Expiration time in seconds (for signed URLs)
+   * @param expiresIn - Not used for local storage (included for interface compatibility)
    */
   getUrl(path: string, expiresIn?: number): Promise<string>;
 
@@ -54,44 +57,16 @@ export interface StorageService {
   exists(path: string): Promise<boolean>;
 }
 
-// Storage provider type
-type StorageProvider = 'local' | 's3';
-
-// Get storage provider from environment
-const getStorageProvider = (): StorageProvider => {
-  const provider = process.env.STORAGE_PROVIDER;
-  if (provider === 's3') {
-    return 's3';
-  }
-  return 'local';
-};
-
 // Singleton storage instance
 let storageInstance: StorageService | null = null;
 
 /**
  * Get the storage service instance
- * Uses local storage by default, S3 when configured
+ * Uses local filesystem storage for on-premises deployment
  */
 export function getStorage(): StorageService {
-  if (storageInstance) {
-    return storageInstance;
+  if (!storageInstance) {
+    storageInstance = new LocalStorage();
   }
-
-  const provider = getStorageProvider();
-
-  switch (provider) {
-    case 's3':
-      // S3 storage would be imported here when implemented
-      // For now, fall back to local
-      console.warn('S3 storage not yet implemented, using local storage');
-      storageInstance = new LocalStorage();
-      break;
-    case 'local':
-    default:
-      storageInstance = new LocalStorage();
-      break;
-  }
-
   return storageInstance;
 }

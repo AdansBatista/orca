@@ -71,10 +71,28 @@ interface ProgressNote {
     planNumber: string;
     planName: string;
   } | null;
-  _count: {
-    procedures: number;
-    findings: number;
-  };
+  signedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  coSignedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  procedures: Array<{
+    id: string;
+    procedureCode: string;
+    procedureName: string;
+    performedAt: string;
+  }>;
+  findings: Array<{
+    id: string;
+    findingType: string;
+    description: string;
+    createdAt: string;
+  }>;
 }
 
 const noteTypeLabels: Record<string, string> = {
@@ -458,14 +476,14 @@ export default function ProgressNoteDetailPage({ params }: { params: Promise<{ i
                       <ClipboardList className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">Procedures</span>
                     </div>
-                    <Badge variant="secondary">{note._count.procedures}</Badge>
+                    <Badge variant="secondary">{note.procedures?.length ?? 0}</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Stethoscope className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">Findings</span>
                     </div>
-                    <Badge variant="secondary">{note._count.findings}</Badge>
+                    <Badge variant="secondary">{note.findings?.length ?? 0}</Badge>
                   </div>
                 </CardContent>
               </Card>

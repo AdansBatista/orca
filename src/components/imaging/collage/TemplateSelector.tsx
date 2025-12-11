@@ -46,7 +46,7 @@ export function TemplateSelector({
   className,
 }: TemplateSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('__all__');
 
   // Filter templates
   const filteredTemplates = useMemo(() => {
@@ -57,7 +57,7 @@ export function TemplateSelector({
         template.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory =
-        !categoryFilter || template.category === categoryFilter;
+        categoryFilter === '__all__' || template.category === categoryFilter;
 
       return matchesSearch && matchesCategory;
     });
@@ -95,7 +95,7 @@ export function TemplateSelector({
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value="__all__">All Categories</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category} value={category}>
                 {category.charAt(0) + category.slice(1).toLowerCase()}
@@ -106,7 +106,7 @@ export function TemplateSelector({
       </div>
 
       {/* Template grid by category */}
-      {categoryFilter ? (
+      {categoryFilter !== '__all__' ? (
         // Flat grid when filtering by category
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredTemplates.map((template) => (

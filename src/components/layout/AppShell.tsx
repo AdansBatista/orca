@@ -33,23 +33,23 @@ function AppShellContent({ children, className }: AppShellProps) {
   const { isCollapsed } = useSidebar();
   const { level: chairLevel } = useChairSidebar();
 
-  // Add right margin only when chair sidebar panel is open
-  // Level 0: floating button (no margin)
+  // Add right margin to account for chair sidebar
+  // Level 0: floating button (small margin to avoid overlap)
   // Level 1: thin panel (50px margin)
   // Level 2: wide panel (320px margin)
   const rightMargin =
     chairLevel === 0
-      ? ""
+      ? "md:mr-12"
       : chairLevel === 1
         ? "md:mr-[50px]"
         : "md:mr-80";
 
   return (
-    <div className={cn("flex min-h-screen bg-background", className)}>
+    <div className={cn("flex min-h-screen bg-background overflow-hidden", className)}>
       <Sidebar />
       <main
         className={cn(
-          "flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out",
+          "flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden transition-all duration-300 ease-in-out",
           isCollapsed ? "ml-16" : "ml-64",
           rightMargin
         )}

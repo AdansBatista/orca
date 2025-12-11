@@ -71,11 +71,38 @@ interface Lead {
     firstName: string;
     lastName: string;
   } | null;
-  _count: {
-    activities: number;
-    tasks: number;
-    formSubmissions: number;
-  };
+  activities: Array<{
+    id: string;
+    type: string;
+    title: string;
+    description: string | null;
+    createdAt: string;
+    performedBy: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    } | null;
+  }>;
+  tasks: Array<{
+    id: string;
+    title: string;
+    status: string;
+    dueDate: string | null;
+    assignedTo: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    } | null;
+  }>;
+  formSubmissions: Array<{
+    id: string;
+    createdAt: string;
+    template: {
+      id: string;
+      name: string;
+      type: string;
+    } | null;
+  }>;
 }
 
 interface Activity {
@@ -454,15 +481,15 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               <CardContent compact className="space-y-3">
                 <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                   <span className="text-sm text-muted-foreground">Activities</span>
-                  <Badge variant="soft-primary">{lead._count.activities}</Badge>
+                  <Badge variant="soft-primary">{lead.activities?.length ?? 0}</Badge>
                 </div>
                 <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                   <span className="text-sm text-muted-foreground">Tasks</span>
-                  <Badge variant="soft-primary">{lead._count.tasks}</Badge>
+                  <Badge variant="soft-primary">{lead.tasks?.length ?? 0}</Badge>
                 </div>
                 <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                   <span className="text-sm text-muted-foreground">Forms</span>
-                  <Badge variant="soft-primary">{lead._count.formSubmissions}</Badge>
+                  <Badge variant="soft-primary">{lead.formSubmissions?.length ?? 0}</Badge>
                 </div>
               </CardContent>
             </Card>

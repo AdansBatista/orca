@@ -93,7 +93,7 @@ export function CollageEditor({
   // Image picker state
   const [availableImages, setAvailableImages] = useState<PatientImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('__all__');
 
   const collageRef = useRef<HTMLDivElement>(null);
 
@@ -108,7 +108,7 @@ export function CollageEditor({
     try {
       const params = new URLSearchParams();
       params.set('patientId', patientId);
-      if (categoryFilter) params.set('category', categoryFilter);
+      if (categoryFilter && categoryFilter !== '__all__') params.set('category', categoryFilter);
       params.set('pageSize', '100');
 
       const response = await fetch(`/api/images?${params}`);
@@ -133,7 +133,7 @@ export function CollageEditor({
     if (slot?.category) {
       setCategoryFilter(slot.category);
     } else {
-      setCategoryFilter('');
+      setCategoryFilter('__all__');
     }
   }, [template.slots]);
 
@@ -432,7 +432,7 @@ export function CollageEditor({
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="__all__">All Categories</SelectItem>
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}

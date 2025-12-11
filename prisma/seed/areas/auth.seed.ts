@@ -105,7 +105,10 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     // Distribution of users by role
     const userDistribution = calculateUserDistribution(usersPerClinic);
 
-    // Create clinic admin admin@smileorthomain.smileortho.com  Password123!
+    // Create clinic admin
+    // Admin: admin@smileorthomain.smileortho.com / Password123!
+    // Super Admin: admin@system.local / Password123!
+    // Portal: emma.parent@example.com / Portal123!
     const adminProfile = orthoGenerator.patientName(35);
     const clinicAdmin = await db.user.create({
       data: {

@@ -346,8 +346,8 @@ export default function CephAnalysisPage() {
         }
       />
 
-      <div className="p-0">
-        <div className="h-[calc(100vh-140px)]">
+      <div className="p-0 w-full overflow-hidden">
+        <div className="h-[calc(100vh-140px)] w-full overflow-hidden">
           <CephAnalysis
             imageUrl={analysis.image.fileUrl}
             imageId={analysis.imageId}

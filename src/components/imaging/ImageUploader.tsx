@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Image as ImageIcon, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Box } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,11 +79,21 @@ export function ImageUploader({
     [files.length, maxFiles]
   );
 
+  // Determine accepted file types based on category
+  const acceptedFileTypes = category === 'SCAN_3D'
+    ? {
+        'model/stl': ['.stl'],
+        'model/obj': ['.obj'],
+        'model/ply': ['.ply'],
+        'application/octet-stream': ['.stl', '.obj', '.ply'],
+      }
+    : {
+        'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.bmp', '.tiff'],
+      };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.bmp', '.tiff'],
-    },
+    accept: acceptedFileTypes,
     maxFiles: maxFiles - files.length,
     disabled: files.length >= maxFiles || isUploading,
   });
@@ -215,14 +225,24 @@ export function ImageUploader({
         )}
       >
         <input {...getInputProps()} />
-        <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+        {category === 'SCAN_3D' ? (
+          <Box className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+        ) : (
+          <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+        )}
         {isDragActive ? (
-          <p className="text-primary font-medium">Drop images here...</p>
+          <p className="text-primary font-medium">
+            Drop {category === 'SCAN_3D' ? '3D models' : 'images'} here...
+          </p>
         ) : (
           <>
-            <p className="font-medium">Drag & drop images here</p>
+            <p className="font-medium">
+              Drag & drop {category === 'SCAN_3D' ? '3D models' : 'images'} here
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
-              or click to browse (max {maxFiles} files)
+              {category === 'SCAN_3D'
+                ? 'STL, OBJ, PLY files supported'
+                : `or click to browse (max ${maxFiles} files)`}
             </p>
           </>
         )}
@@ -257,12 +277,19 @@ export function ImageUploader({
               <Card key={file.id} className="relative overflow-hidden">
                 <CardContent className="p-2">
                   <div className="aspect-square relative rounded overflow-hidden bg-muted">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={file.preview}
-                      alt={file.file.name}
-                      className="w-full h-full object-cover"
-                    />
+                    {/* Show icon for 3D files, image preview for images */}
+                    {file.file.name.match(/\.(stl|obj|ply)$/i) ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                        <Box className="h-12 w-12 text-gray-500" />
+                      </div>
+                    ) : (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={file.preview}
+                        alt={file.file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
 
                     {/* Status overlay */}
                     {file.status === 'uploading' && (

@@ -344,9 +344,9 @@ export function CephAnalysis({
         />
 
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-w-0">
           {/* Canvas */}
-          <div className="flex-1 relative">
+          <div className="flex-1 relative min-w-0 overflow-hidden">
             <CephCanvas
               imageUrl={imageUrl}
               placedLandmarks={placedLandmarks}
@@ -362,7 +362,7 @@ export function CephAnalysis({
 
           {/* Measurements Panel */}
           {toolState.showMeasurements && (
-            <div className="w-80 border-l bg-background">
+            <div className="w-100 shrink-0 border-l bg-background overflow-y-auto">
               <CephMeasurementsPanel
                 measurements={measurements}
                 placedLandmarks={placedLandmarks}

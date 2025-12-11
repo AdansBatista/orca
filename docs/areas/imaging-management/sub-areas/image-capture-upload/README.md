@@ -257,7 +257,7 @@ This sub-area handles the complex challenge of integrating with diverse imaging 
 4. Thumbnail generation (150px)
 5. Preview generation (800px)
 6. Full resolution optimization
-7. Storage upload (S3-compatible)
+7. Local filesystem storage (public/uploads/images/)
 8. Database record creation
 
 **User Stories**:
@@ -577,10 +577,10 @@ enum BatchStatus {
 
 | Dependency | Type | Description |
 |------------|------|-------------|
-| Cloud Storage (S3) | Required | Image file storage |
+| Local Filesystem | Required | Image file storage (public/uploads/images/) |
 | Image Processing | Required | Sharp.js for image manipulation |
 | DICOM Toolkit | Required | dcmjs for DICOM parsing |
-| iTero API | Optional | Scanner cloud integration |
+| iTero API | Optional | Scanner integration (if available on LAN) |
 
 ---
 
@@ -599,10 +599,10 @@ enum BatchStatus {
 - Audit protocol compliance
 
 ### Data Protection
-- Images encrypted at rest in cloud storage
-- HTTPS for all image transfers
-- Signed URLs for image access
-- No PHI in filenames (use IDs)
+- Images stored on local filesystem with file system permissions
+- HTTPS for all image transfers within LAN
+- Direct static file URLs (Next.js serves from public/)
+- No PHI in filenames (use UUIDs)
 
 ---
 

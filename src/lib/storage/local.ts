@@ -1,8 +1,13 @@
 /**
  * Local Storage Implementation
  *
- * Stores files in the public/uploads directory for development.
+ * Stores files in the public/uploads/images directory.
  * Files are served statically by Next.js.
+ *
+ * This is the ONLY storage implementation for Orca.
+ * The application uses local filesystem storage exclusively
+ * to support on-premises deployment where all data remains
+ * on the local LAN.
  */
 
 import fs from 'fs/promises';

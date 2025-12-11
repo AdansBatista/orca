@@ -516,7 +516,7 @@ async function generateUserActivityReport(
 
 ### External
 - MongoDB - Log storage
-- (Optional) S3 - Cold storage archive
+- Local filesystem - Archive storage (on-premises deployment)
 
 ---
 

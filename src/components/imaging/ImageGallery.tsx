@@ -88,7 +88,7 @@ interface ImageGalleryProps {
 }
 
 const IMAGE_CATEGORIES = [
-  { value: '', label: 'All Categories' },
+  { value: 'all', label: 'All Categories' },
   { value: 'EXTRAORAL_PHOTO', label: 'Extraoral Photo' },
   { value: 'INTRAORAL_PHOTO', label: 'Intraoral Photo' },
   { value: 'PANORAMIC_XRAY', label: 'Panoramic X-Ray' },
@@ -127,7 +127,7 @@ export function ImageGallery({
 
   // Filters
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt-desc');
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -146,14 +146,15 @@ export function ImageGallery({
 
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (category) params.set('category', category);
+      if (category && category !== 'all') params.set('category', category);
       params.set('sortBy', sortField);
       params.set('sortOrder', sortOrder);
       params.set('page', String(page));
       params.set('pageSize', '20');
 
       try {
-        const response = await fetch(`/api/patients/${patientId}/images?${params.toString()}`);
+        params.set('patientId', patientId);
+        const response = await fetch(`/api/images?${params.toString()}`);
         const result = await response.json();
 
         if (!result.success) {
@@ -243,7 +244,7 @@ export function ImageGallery({
           </SelectTrigger>
           <SelectContent>
             {IMAGE_CATEGORIES.map((cat) => (
-              <SelectItem key={cat.value} value={cat.value || 'all'}>
+              <SelectItem key={cat.value} value={cat.value}>
                 {cat.label}
               </SelectItem>
             ))}

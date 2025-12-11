@@ -92,6 +92,16 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'ops:*',
     // Communications
     'comms:*',
+    // CRM & Onboarding
+    'leads:*',
+    'forms:*',
+    'records:*',
+    // Treatment Management
+    'treatment:*',
+    // Imaging Management
+    'imaging:*',
+    // Lab
+    'lab:*',
   ],
   doctor: [
     // Legacy levels
@@ -116,6 +126,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     // Communications
     'comms:view_inbox',
     'comms:send_message',
+    // Treatment Management (full access for doctors)
+    'treatment:*',
+    // Imaging Management (full access for doctors)
+    'imaging:*',
+    // Lab (create/read/update for doctors)
+    'lab:create',
+    'lab:read',
+    'lab:update',
   ],
   clinical_staff: [
     // Legacy levels
@@ -142,6 +160,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     // Communications
     'comms:view_inbox',
     'comms:send_message',
+    // Treatment Management (read only for clinical staff)
+    'treatment:read',
+    // Imaging Management (read/create for clinical staff)
+    'imaging:read',
+    'imaging:create',
+    // Lab (read access)
+    'lab:read',
   ],
   front_desk: [
     // Legacy levels
@@ -161,8 +186,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     // Operations/Orchestration
     'ops:view_dashboard',
     'ops:read',
+    'ops:*', // Full ops access for front desk
     // Communications (full access for front desk)
     'comms:*',
+    // CRM & Onboarding (full access for front desk)
+    'leads:*',
+    'forms:*',
+    'records:*',
   ],
   billing: [
     // Legacy levels

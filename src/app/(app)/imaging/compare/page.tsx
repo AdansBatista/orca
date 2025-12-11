@@ -77,7 +77,7 @@ function ComparePageContent() {
 
   // Filters for picker
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('__all__');
   const [patientIdFilter, setPatientIdFilter] = useState('');
 
   // Load initial images from URL params
@@ -120,7 +120,7 @@ function ComparePageContent() {
     try {
       const params = new URLSearchParams();
       if (patientIdFilter) params.set('patientId', patientIdFilter);
-      if (categoryFilter) params.set('category', categoryFilter);
+      if (categoryFilter && categoryFilter !== '__all__') params.set('category', categoryFilter);
       if (searchTerm) params.set('search', searchTerm);
       params.set('pageSize', '50');
 
@@ -325,7 +325,7 @@ function ComparePageContent() {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="__all__">All Categories</SelectItem>
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}

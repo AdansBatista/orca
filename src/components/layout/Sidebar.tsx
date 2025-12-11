@@ -179,7 +179,18 @@ const defaultNavGroups: NavGroup[] = [
           { label: "Tasks", href: "/ops/tasks", icon: CheckSquare },
         ],
       },
-      { label: "Treatments", href: "/treatments", icon: ClipboardList },
+      {
+        label: "Treatment",
+        href: "/treatment",
+        icon: ClipboardList,
+        children: [
+          { label: "Dashboard", href: "/treatment", icon: LayoutGrid },
+          { label: "Plans", href: "/treatment/plans", icon: ClipboardList },
+          { label: "Documentation", href: "/treatment/documentation", icon: FileText },
+          { label: "Appliances", href: "/treatment/appliances", icon: Settings },
+          { label: "Tracking", href: "/treatment/tracking", icon: TrendingUp },
+        ],
+      },
       {
         label: "CRM",
         href: "/crm",

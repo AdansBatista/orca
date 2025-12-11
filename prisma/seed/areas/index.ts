@@ -13,6 +13,8 @@ import { seedOps, clearOps } from './ops.seed';
 import { seedCommunications, clearCommunications } from './communications.seed';
 import { seedPortal, clearPortal } from './portal.seed';
 import { seedTreatment, clearTreatment } from './treatment.seed';
+import { seedCRM, clearCRM } from './crm.seed';
+import { seedImaging, clearImaging } from './imaging.seed';
 
 /**
  * Registry of all seedable areas with their dependencies.
@@ -141,14 +143,30 @@ export const areaRegistry: SeedArea[] = [
   // PHASE 3: Clinical
   // ============================================================================
   {
-    id: 'treatment',
-    name: 'Treatment Plans & Progress',
+    id: 'crm',
+    name: 'CRM & Onboarding (Leads, Activities, Tasks)',
     phase: 3,
-    dependencies: ['core', 'patients', 'auth:users'],
+    dependencies: ['core', 'auth:users', 'staff'],
+    seed: seedCRM,
+    clear: clearCRM,
+  },
+  {
+    id: 'treatment',
+    name: 'Treatment Plans, Appliances & Progress Notes',
+    phase: 3,
+    dependencies: ['core', 'patients', 'auth:users', 'staff'],
     seed: seedTreatment,
     clear: clearTreatment,
   },
-  // Areas to be added: imaging, lab
+  {
+    id: 'imaging',
+    name: 'Imaging (Patient Images, Tags, Annotations)',
+    phase: 3,
+    dependencies: ['core', 'patients', 'auth:users', 'staff'],
+    seed: seedImaging,
+    clear: clearImaging,
+  },
+  // Areas to be added: lab
 
   // ============================================================================
   // PHASE 4: Financial

@@ -135,7 +135,7 @@ export default function CephalometricPage() {
   const fetchCephImages = async () => {
     try {
       const response = await fetch(
-        '/api/imaging/images?category=CEPHALOMETRIC_XRAY&pageSize=100'
+        '/api/images?category=CEPHALOMETRIC_XRAY&pageSize=100'
       );
       const data = await response.json();
 

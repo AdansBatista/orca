@@ -318,7 +318,7 @@ _Capture, view, organize, and report on patient diagnostic imaging including pho
 - CBCT Systems (DICOM volumes) - ✅ Implemented
 - iTero (cloud API sync) - ⚠️ Deferred
 - 3Shape (file import) - ✅ STL/OBJ/PLY import implemented
-- Cloud Storage (S3-compatible) - ✅ Local storage implemented
+- Local Filesystem Storage - ✅ Implemented (on-premises only, no cloud)
 
 **AI Features:**
 
