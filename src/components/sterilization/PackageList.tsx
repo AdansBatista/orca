@@ -92,7 +92,7 @@ const statusOptions: { value: PackageStatus | 'all'; label: string }[] = [
   { value: 'RECALLED', label: 'Recalled' },
 ];
 
-const viewOptions: { value: ViewMode; label: string; icon: React.ElementType; description: string }[] = [
+const viewOptions: { value: ViewMode; label: string; icon: React.ComponentType<{ className?: string }>; description: string }[] = [
   { value: 'grid', label: 'Grid', icon: LayoutGrid, description: 'Standard card grid' },
   { value: 'condensed', label: 'Condensed', icon: List, description: 'Compact list view' },
   { value: 'table', label: 'Table', icon: Table2, description: 'Full table view' },

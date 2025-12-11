@@ -81,7 +81,7 @@ const statusOptions = [
   { value: 'VOID', label: 'Void' },
 ];
 
-const viewOptions: { value: ViewMode; label: string; icon: React.ElementType; description: string }[] = [
+const viewOptions: { value: ViewMode; label: string; icon: React.ComponentType<{ className?: string }>; description: string }[] = [
   { value: 'grid', label: 'Grid', icon: LayoutGrid, description: 'Standard card grid' },
   { value: 'condensed', label: 'Condensed', icon: List, description: 'Compact list view' },
   { value: 'expanded', label: 'Expanded', icon: Rows3, description: 'Detailed cards' },

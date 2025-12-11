@@ -28,7 +28,7 @@ interface PortalShellProps {
 interface NavItem {
   href: string;
   label: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   badge?: number;
 }
 

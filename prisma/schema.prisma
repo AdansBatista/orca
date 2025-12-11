@@ -105,6 +105,18 @@ model Clinic {
   recordsRequests            RecordsRequest[]
   intakeTokens               IntakeToken[]
 
+  // Imaging Management relations
+  patientImages              PatientImage[]
+  photoProtocols             PhotoProtocol[]
+  imageTags                  ImageTag[]
+  imageMeasurements          ImageMeasurement[]
+  collageTemplates           CollageTemplate[]
+  imageCollages              ImageCollage[]
+  progressReports            ProgressReport[]
+  cephAnalyses               CephAnalysis[]
+  imageRetentionPolicies     ImageRetentionPolicy[]
+  imageArchiveRecords        ImageArchiveRecord[]
+
   @@map("clinics")
 }
 
@@ -356,6 +368,12 @@ model Patient {
   recordsRequests            RecordsRequest[]
   intakeTokens               IntakeToken[]
 
+  // Imaging Management relations
+  patientImages              PatientImage[]
+  imageCollages              ImageCollage[]
+  progressReports            ProgressReport[]
+  cephAnalyses               CephAnalysis[]
+
   @@index([clinicId])
   @@index([lastName, firstName])
   @@map("patients")
@@ -472,6 +490,19 @@ model StaffProfile {
   createdReferralLetters ReferralLetter[]   @relation("ReferralLetterCreator")
   createdRecordsRequests RecordsRequest[]   @relation("RecordsRequestCreator")
   createdIntakeTokens    IntakeToken[]      @relation("IntakeTokenCreator")
+
+  // Imaging Management relations
+  createdImages          PatientImage[]     @relation("ImageCreator")
+  capturedImages         PatientImage[]     @relation("ImageCapturer")
+  createdAnnotations     ImageAnnotation[]  @relation("AnnotationCreator")
+  createdMeasurements    ImageMeasurement[] @relation("MeasurementCreator")
+  createdCollageTemplates CollageTemplate[] @relation("CollageTemplateCreator")
+  createdCollages        ImageCollage[]     @relation("CollageCreator")
+  createdProgressReports ProgressReport[]   @relation("ReportCreator")
+  createdCephAnalyses    CephAnalysis[]     @relation("CephAnalysisCreator")
+  createdRetentionPolicies ImageRetentionPolicy[] @relation("RetentionPolicyCreator")
+  imageLegalHoldsSet     PatientImage[]     @relation("ImageLegalHoldSetter")
+  imageArchiveActions    ImageArchiveRecord[] @relation("ArchiveRecordPerformer")
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -3892,6 +3923,10 @@ model Appointment {
   resourceOccupancy    ResourceOccupancy?
   staffAssignments     StaffAssignment[]
 
+  // Imaging Management relations
+  patientImages        PatientImage[]
+  progressReports      ProgressReport[]
+
   @@index([clinicId])
   @@index([patientId])
   @@index([providerId])
@@ -6640,6 +6675,10 @@ model TreatmentPlan {
   milestones            TreatmentMilestone[]
   progressPhotos        TreatmentPhoto[]
 
+  // Imaging Management relations
+  patientImages         PatientImage[]
+  progressReports       ProgressReport[]
+
   @@index([clinicId])
   @@index([patientId])
   @@index([status])
@@ -6683,6 +6722,7 @@ model TreatmentPhase {
   // Relations
   clinic              Clinic            @relation(fields: [clinicId], references: [id])
   treatmentPlan       TreatmentPlan     @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  images              PatientImage[]
 
   @@index([clinicId])
   @@index([treatmentPlanId])
@@ -7345,4 +7385,532 @@ model IntakeToken {
   @@index([leadId])
   @@index([patientId])
   @@map("intake_tokens")
+}
+
+// =============================================================================
+// IMAGING MANAGEMENT AREA - Patient images, protocols, organization
+// =============================================================================
+
+/// ImageCategory - Types of clinical images
+enum ImageCategory {
+  EXTRAORAL_PHOTO      // External photos (frontal, profile, smile)
+  INTRAORAL_PHOTO      // Inside mouth photos
+  PANORAMIC_XRAY       // Panoramic radiograph
+  CEPHALOMETRIC_XRAY   // Ceph X-ray for analysis
+  PERIAPICAL_XRAY      // Individual tooth X-rays
+  CBCT                 // 3D cone beam CT
+  SCAN_3D              // iTero, 3Shape scans
+  OTHER
+}
+
+/// TagCategory - Types of image tags
+enum TagCategory {
+  CLINICAL      // crowding, spacing, crossbite
+  TREATMENT     // braces, invisalign, retainer
+  QUALITY       // blurry, good-lighting
+  CUSTOM
+}
+
+/// AnnotationType - Types of image annotations
+enum AnnotationType {
+  FREEHAND
+  LINE
+  ARROW
+  CIRCLE
+  RECTANGLE
+  TEXT
+  POLYGON
+}
+
+/// PatientImage - Individual patient image record
+model PatientImage {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String          @db.ObjectId
+  patientId         String          @db.ObjectId
+
+  // File Info
+  fileName          String
+  fileUrl           String          // Storage URL (local or S3)
+  thumbnailUrl      String?         // Thumbnail version
+  fileSize          Int             // bytes
+  mimeType          String          // image/jpeg, image/png, etc.
+
+  // Classification
+  category          ImageCategory
+  subcategory       String?         // e.g., "FRONTAL_SMILE", "UPPER_OCCLUSAL"
+
+  // Metadata
+  captureDate       DateTime?       // When image was taken
+  capturedById      String?         @db.ObjectId // Who took it
+  appointmentId     String?         @db.ObjectId // Associated appointment
+  treatmentPlanId   String?         @db.ObjectId // Associated treatment plan
+  treatmentPhaseId  String?         @db.ObjectId // Associated treatment phase
+
+  // Protocol tracking
+  protocolId        String?         @db.ObjectId
+  protocolSlotId    String?         @db.ObjectId
+
+  // Quality
+  qualityScore      Int?            // 0-100, AI-assessed or manual
+
+  // Visibility
+  visibleToPatient  Boolean         @default(false)
+
+  // Description
+  description       String?
+  notes             String?
+
+  // Retention & Archival
+  retentionPolicyId   String?         @db.ObjectId
+  retentionExpiresAt  DateTime?       // When retention period ends
+  isArchived          Boolean         @default(false)
+  archivedAt          DateTime?
+  archiveStorageKey   String?         // Cold storage location
+  legalHold           Boolean         @default(false)
+  legalHoldSetAt      DateTime?
+  legalHoldSetById    String?         @db.ObjectId
+  legalHoldReason     String?
+
+  // Standard fields
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  createdById       String          @db.ObjectId
+  deletedAt         DateTime?       // Soft delete
+
+  // Relations
+  clinic            Clinic          @relation(fields: [clinicId], references: [id])
+  patient           Patient         @relation(fields: [patientId], references: [id])
+  createdBy         StaffProfile    @relation("ImageCreator", fields: [createdById], references: [id])
+  capturedBy        StaffProfile?   @relation("ImageCapturer", fields: [capturedById], references: [id])
+  appointment       Appointment?    @relation(fields: [appointmentId], references: [id])
+  treatmentPlan     TreatmentPlan?  @relation(fields: [treatmentPlanId], references: [id])
+  treatmentPhase    TreatmentPhase? @relation(fields: [treatmentPhaseId], references: [id])
+  protocol          PhotoProtocol?  @relation(fields: [protocolId], references: [id])
+  protocolSlot      PhotoProtocolSlot? @relation(fields: [protocolSlotId], references: [id])
+  retentionPolicy   ImageRetentionPolicy? @relation(fields: [retentionPolicyId], references: [id])
+  legalHoldSetBy    StaffProfile?   @relation("ImageLegalHoldSetter", fields: [legalHoldSetById], references: [id])
+  tags              ImageTagAssignment[]
+  annotations       ImageAnnotation[]
+  measurements      ImageMeasurement[]
+  cephAnalyses      CephAnalysis[]
+  archiveRecords    ImageArchiveRecord[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([category])
+  @@index([captureDate])
+  @@index([appointmentId])
+  @@index([treatmentPlanId])
+  @@index([treatmentPhaseId])
+  @@index([protocolId])
+  @@index([retentionPolicyId])
+  @@index([retentionExpiresAt])
+  @@index([isArchived])
+  @@index([legalHold])
+  @@map("patient_images")
+}
+
+/// PhotoProtocol - Standard photo series template
+model PhotoProtocol {
+  id          String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String?               @db.ObjectId  // null = system default
+
+  name        String                // "Initial Records", "Progress Check"
+  description String?
+  isActive    Boolean               @default(true)
+  isDefault   Boolean               @default(false)
+
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  // Relations
+  clinic      Clinic?               @relation(fields: [clinicId], references: [id])
+  slots       PhotoProtocolSlot[]
+  images      PatientImage[]
+
+  @@index([clinicId])
+  @@index([isActive])
+  @@map("photo_protocols")
+}
+
+/// PhotoProtocolSlot - Individual slot in a photo protocol
+model PhotoProtocolSlot {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  protocolId      String          @db.ObjectId
+
+  name            String          // "Frontal Smile", "Right Lateral"
+  category        ImageCategory
+  subcategory     String?
+  sortOrder       Int
+  isRequired      Boolean         @default(true)
+
+  // Guide for positioning
+  guideImageUrl   String?
+  instructions    String?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  protocol        PhotoProtocol   @relation(fields: [protocolId], references: [id], onDelete: Cascade)
+  images          PatientImage[]
+
+  @@index([protocolId])
+  @@map("photo_protocol_slots")
+}
+
+/// ImageTag - Tags for categorizing images
+model ImageTag {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String?             @db.ObjectId  // null = system tag
+
+  name        String
+  color       String?             // Hex color for UI
+  category    TagCategory         @default(CUSTOM)
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  clinic      Clinic?             @relation(fields: [clinicId], references: [id])
+  assignments ImageTagAssignment[]
+
+  @@unique([clinicId, name])
+  @@index([clinicId])
+  @@index([category])
+  @@map("image_tags")
+}
+
+/// ImageTagAssignment - Links tags to images
+model ImageTagAssignment {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  imageId   String       @db.ObjectId
+  tagId     String       @db.ObjectId
+
+  createdAt DateTime     @default(now())
+
+  // Relations
+  image     PatientImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  tag       ImageTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([imageId, tagId])
+  @@index([imageId])
+  @@index([tagId])
+  @@map("image_tag_assignments")
+}
+
+/// ImageAnnotation - Annotations drawn on images
+model ImageAnnotation {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  imageId     String          @db.ObjectId
+
+  type        AnnotationType
+  geometry    Json            // Coordinates, dimensions, points
+  style       Json?           // Color, stroke width, fill
+  text        String?         // For text annotations
+  label       String?         // Annotation label/name
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  createdById String          @db.ObjectId
+
+  // Relations
+  image       PatientImage    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  createdBy   StaffProfile    @relation("AnnotationCreator", fields: [createdById], references: [id])
+
+  @@index([imageId])
+  @@map("image_annotations")
+}
+
+/// MeasurementType - Types of measurements that can be made on images
+enum MeasurementType {
+  LINEAR      // Distance between 2 points
+  ANGLE       // Angle between 3 points
+  AREA        // Polygon area
+  PERIMETER   // Polygon perimeter
+}
+
+/// ImageMeasurement - Measurements made on patient images
+/// Used for tracking linear distances, angles, and areas on clinical images
+model ImageMeasurement {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String          @db.ObjectId
+  imageId     String          @db.ObjectId
+
+  type        MeasurementType
+  points      Json            // Array of {x, y} coordinates
+  value       Float           // Calculated measurement value
+  unit        String          // mm, degrees, mm², px
+
+  label       String?         // User-defined label for the measurement
+  calibration Float?          // pixels per mm (for calibrated measurements)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  createdById String          @db.ObjectId
+
+  // Relations
+  image       PatientImage    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  createdBy   StaffProfile    @relation("MeasurementCreator", fields: [createdById], references: [id])
+  clinic      Clinic          @relation(fields: [clinicId], references: [id])
+
+  @@index([imageId])
+  @@index([clinicId])
+  @@map("image_measurements")
+}
+
+/// CollageTemplate - Predefined layouts for image collages
+/// Used for creating standardized patient progress presentations
+model CollageTemplate {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String?  @db.ObjectId // null = system template
+
+  name        String
+  description String?
+  category    String   // PROGRESS, COMPARISON, TREATMENT, PRESENTATION
+
+  // Layout configuration
+  layout      Json     // Grid definition: rows, cols, slot positions
+  slots       Json     // Array of slot definitions with position, size, label
+  aspectRatio String   @default("16:9") // 16:9, 4:3, 1:1, A4, LETTER
+
+  // Styling
+  background  String   @default("#ffffff")
+  padding     Int      @default(16)
+  gap         Int      @default(8)
+
+  // Template metadata
+  isSystem    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  thumbnail   String?  // Preview image URL
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?  @db.ObjectId
+
+  // Relations
+  clinic      Clinic?       @relation(fields: [clinicId], references: [id])
+  createdBy   StaffProfile? @relation("CollageTemplateCreator", fields: [createdById], references: [id])
+  collages    ImageCollage[]
+
+  @@index([clinicId])
+  @@index([category])
+  @@map("collage_templates")
+}
+
+/// ImageCollage - A saved collage created from a template
+/// Stores patient image arrangements for presentations and reports
+model ImageCollage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String   @db.ObjectId
+  patientId   String   @db.ObjectId
+  templateId  String   @db.ObjectId
+
+  title       String
+  description String?
+
+  // Slot assignments: maps slot IDs to image IDs
+  slotAssignments Json   // { slotId: imageId, ... }
+
+  // Optional customizations
+  customizations  Json?  // Overrides for individual slots (labels, borders, etc)
+  annotations     Json?  // Text overlays, arrows, highlights
+
+  // Export tracking
+  lastExportedAt  DateTime?
+  exportFormat    String?    // PDF, PNG, JPG
+  exportUrl       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String   @db.ObjectId
+
+  // Relations
+  clinic      Clinic          @relation(fields: [clinicId], references: [id])
+  patient     Patient         @relation(fields: [patientId], references: [id])
+  template    CollageTemplate @relation(fields: [templateId], references: [id])
+  createdBy   StaffProfile    @relation("CollageCreator", fields: [createdById], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([templateId])
+  @@map("image_collages")
+}
+
+/// ProgressReport - Patient treatment progress documentation
+/// Combines multiple collages and notes into a comprehensive report
+model ProgressReport {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String   @db.ObjectId
+  patientId   String   @db.ObjectId
+
+  title       String
+  reportType  String   // INITIAL, PROGRESS, FINAL, COMPARISON
+  reportDate  DateTime @default(now())
+
+  // Report content
+  sections    Json     // Array of sections: { type, content, collageId?, imageIds? }
+  summary     String?  // Executive summary
+  notes       String?  // Clinical notes
+
+  // Metadata
+  treatmentPlanId String?  @db.ObjectId
+  appointmentId   String?  @db.ObjectId
+
+  // Export
+  exportedAt  DateTime?
+  exportUrl   String?
+
+  // Visibility
+  visibleToPatient Boolean @default(false)
+  sharedAt         DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String   @db.ObjectId
+
+  // Relations
+  clinic        Clinic          @relation(fields: [clinicId], references: [id])
+  patient       Patient         @relation(fields: [patientId], references: [id])
+  treatmentPlan TreatmentPlan?  @relation(fields: [treatmentPlanId], references: [id])
+  appointment   Appointment?    @relation(fields: [appointmentId], references: [id])
+  createdBy     StaffProfile    @relation("ReportCreator", fields: [createdById], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([reportDate])
+  @@map("progress_reports")
+}
+
+/// CephAnalysis - Cephalometric analysis for lateral skull X-rays
+/// Used for orthodontic diagnosis and treatment planning
+model CephAnalysis {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String   @db.ObjectId
+  patientId   String   @db.ObjectId
+  imageId     String   @db.ObjectId
+
+  // Analysis type
+  presetId    String   // STEINER, DOWNS, TWEED, RICKETTS, QUICK, or custom
+
+  // Landmark data
+  landmarks   Json     // Array of { landmarkId, x, y, confidence?, isAutoPlaced? }
+
+  // Calculated measurements
+  measurements Json    // Array of { measurementId, value, deviation, interpretation }
+
+  // Calibration
+  calibration Float?   // Pixels per mm (for calibrated measurements)
+
+  // Notes
+  notes       String?
+  summary     String?  // AI-generated or manual summary
+
+  // Metadata
+  analysisDate DateTime @default(now())
+  isComplete   Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String   @db.ObjectId
+
+  // Relations
+  clinic      Clinic       @relation(fields: [clinicId], references: [id])
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  image       PatientImage @relation(fields: [imageId], references: [id])
+  createdBy   StaffProfile @relation("CephAnalysisCreator", fields: [createdById], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([imageId])
+  @@index([analysisDate])
+  @@map("ceph_analyses")
+}
+
+/// ImageRetentionPolicy - Configurable retention rules for images
+model ImageRetentionPolicy {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String          @db.ObjectId
+
+  name              String          // "Standard Clinical Images", "X-Ray Retention"
+  description       String?
+  isDefault         Boolean         @default(false)
+  isActive          Boolean         @default(true)
+
+  // Which images this applies to
+  imageCategories   ImageCategory[] // Empty = all categories
+
+  // Retention periods
+  retentionYears    Int             // Years to retain from capture/creation
+  retentionForMinorsYears Int?      // Additional years for minors (age 21 + X)
+  archiveAfterYears Int?            // When to move to cold storage (null = never)
+
+  // Settings
+  notifyBeforeArchive Int?          // Days before archival to notify (null = no notification)
+  autoExtendOnAccess  Boolean       @default(false) // Extend retention when accessed
+
+  // Audit
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  createdById       String          @db.ObjectId
+
+  // Relations
+  clinic            Clinic          @relation(fields: [clinicId], references: [id])
+  createdBy         StaffProfile    @relation("RetentionPolicyCreator", fields: [createdById], references: [id])
+  images            PatientImage[]
+  archiveRecords    ImageArchiveRecord[]
+
+  @@unique([clinicId, name])
+  @@index([clinicId])
+  @@index([isDefault])
+  @@map("image_retention_policies")
+}
+
+/// ImageArchiveRecord - Tracks archival, restoration, and deletion events
+model ImageArchiveRecord {
+  id                  String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String          @db.ObjectId
+  imageId             String          @db.ObjectId
+
+  action              ImageArchiveAction
+  reason              String?         // Why this action was taken
+  policyId            String?         @db.ObjectId  // Which policy triggered this
+
+  // Storage locations
+  originalStorageKey  String          // Where it was stored before
+  archiveStorageKey   String?         // Where it was archived to (for ARCHIVED action)
+
+  // Checksum for integrity
+  fileChecksum        String?         // SHA256 of file for verification
+
+  // Timestamps
+  actionAt            DateTime        @default(now())
+  expiresAt           DateTime?       // When permanent deletion is allowed
+  restoredAt          DateTime?       // When restored from archive
+
+  // Audit
+  performedById       String          @db.ObjectId
+  metadata            Json?           // Additional context
+
+  // Relations
+  clinic              Clinic          @relation(fields: [clinicId], references: [id])
+  image               PatientImage    @relation(fields: [imageId], references: [id])
+  policy              ImageRetentionPolicy? @relation(fields: [policyId], references: [id])
+  performedBy         StaffProfile    @relation("ArchiveRecordPerformer", fields: [performedById], references: [id])
+
+  @@index([clinicId])
+  @@index([imageId])
+  @@index([action])
+  @@index([actionAt])
+  @@index([expiresAt])
+  @@map("image_archive_records")
+}
+
+enum ImageArchiveAction {
+  ARCHIVED            // Moved to cold storage
+  RESTORED            // Restored from cold storage
+  DELETED             // Permanently deleted
+  LEGAL_HOLD_SET      // Legal hold applied
+  LEGAL_HOLD_REMOVED  // Legal hold removed
+  RETENTION_EXTENDED  // Retention period extended
 }

@@ -59,6 +59,10 @@ import {
   UserPlus,
   Building2,
   ClipboardCheck,
+  Image as ImageIcon,
+  Camera,
+  Tags,
+  Archive,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -187,6 +191,16 @@ const defaultNavGroups: NavGroup[] = [
           { label: "Referrers", href: "/crm/referrers", icon: Building2 },
           { label: "Intake Forms", href: "/crm/forms", icon: ClipboardCheck },
           { label: "Records Requests", href: "/crm/records", icon: FileText },
+        ],
+      },
+      {
+        label: "Imaging",
+        href: "/imaging",
+        icon: Camera,
+        children: [
+          { label: "Dashboard", href: "/imaging", icon: ImageIcon },
+          { label: "Protocols", href: "/imaging/protocols", icon: Tags },
+          { label: "Retention", href: "/imaging/retention", icon: Archive },
         ],
       },
     ],

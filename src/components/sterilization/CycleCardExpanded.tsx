@@ -66,7 +66,7 @@ const statusLabels: Record<CycleStatus, string> = {
   VOID: 'Void',
 };
 
-function IndicatorCard({ label, pass, icon: Icon }: { label: string; pass: boolean | null; icon: React.ElementType }) {
+function IndicatorCard({ label, pass, icon: Icon }: { label: string; pass: boolean | null; icon: React.ComponentType<{ className?: string }> }) {
   const getStatus = () => {
     if (pass === true) return { color: 'bg-success-100 dark:bg-success-900/30 border-success-200', icon: CheckCircle, iconColor: 'text-success-600', text: 'Passed' };
     if (pass === false) return { color: 'bg-error-100 dark:bg-error-900/30 border-error-200', icon: XCircle, iconColor: 'text-error-600', text: 'Failed' };
