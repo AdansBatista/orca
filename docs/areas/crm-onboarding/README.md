@@ -43,6 +43,12 @@
 - ✅ Lead activities logging (`/api/leads/[id]/activities`)
 - ✅ Lead tasks management (`/api/leads/[id]/tasks`)
 
+**Patient Pages (Supporting):**
+- ✅ Patient list page with search, pagination, PHI protection (`/patients`)
+- ✅ Patient detail page with quick actions (`/patients/[id]`)
+- ✅ Patient image gallery (`/patients/[id]/images`)
+- ✅ Patient image upload (`/patients/[id]/images/upload`)
+
 **Intake Forms:**
 - ✅ Form template CRUD (`/api/forms/templates`)
 - ✅ Form template builder UI (`/crm/forms/builder`)
@@ -106,6 +112,13 @@ src/app/
 │       └── new/
 │           ├── page.tsx            # New request page
 │           └── new-records-request-form.tsx
+├── (app)/patients/
+│   ├── page.tsx                    # Patient list with search/pagination
+│   └── [id]/
+│       ├── page.tsx                # Patient detail page
+│       └── images/
+│           ├── page.tsx            # Patient image gallery
+│           └── upload/page.tsx     # Image upload page
 ├── intake/
 │   └── [token]/page.tsx            # Public intake form
 └── api/

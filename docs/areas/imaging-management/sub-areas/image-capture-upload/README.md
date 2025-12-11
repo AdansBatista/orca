@@ -27,11 +27,16 @@
 
 **Components:**
 - `ImageUploader` - Drag-drop multi-file upload with progress tracking
+  - Supports images (JPEG, PNG, etc.) and 3D models (STL, OBJ, PLY)
+  - Category-aware file type acceptance (auto-switches for SCAN_3D category)
+  - 3D model icon preview for non-image files
 - `ImageCard` - Image thumbnail with metadata display
+- `ImageGallery` - Patient gallery with search, filter, and pagination
 - Protocol management UI in `/imaging/protocols` page
 
 **API Endpoints:**
-- `POST /api/imaging/upload` - Single/batch image upload with thumbnail generation
+- `POST /api/images` - Single/batch image upload with thumbnail generation (supports images, 3D models, DICOM)
+- `GET /api/images` - List images with filtering by patient, category, etc.
 - `GET /api/imaging/protocols` - List photo protocols
 - `POST /api/imaging/protocols` - Create protocol
 - `PUT /api/imaging/protocols/[id]` - Update protocol
@@ -43,12 +48,18 @@
 
 **Pages:**
 - `/imaging/protocols` - Protocol management page
+- `/patients/[id]/images` - Patient image gallery
+- `/patients/[id]/images/upload` - Patient-specific image upload
+
+**Storage:**
+- Local filesystem storage at `public/uploads/images/{clinicId}/{patientId}/{uuid}.ext`
+- Images served directly via Next.js static file serving
 
 ### ⚠️ What's Not Implemented (Deferred)
 
 - **Intraoral Camera Integration** - Requires hardware SDK integration
 - **DSLR Tethered Capture** - Requires USB device connection
-- **3D Scanner Sync** - iTero/3Shape cloud API integration deferred
+- **3D Scanner Cloud Sync** - iTero/3Shape cloud API integration deferred
 - **Real-time camera preview** - Hardware dependent
 
 ---
