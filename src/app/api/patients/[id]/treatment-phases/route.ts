@@ -1,22 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import type { Session } from 'next-auth';
+import { NextRequest, NextResponse } from "next/server";
+import type { Session } from "next-auth";
 
-import { db } from '@/lib/db';
-import { withSoftDelete } from '@/lib/db/soft-delete';
-import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
+import { db } from "@/lib/db";
+import { withSoftDelete } from "@/lib/db/soft-delete";
+import { withAuth, getClinicFilter } from "@/lib/auth/with-auth";
 
 /**
- * GET /api/patients/[patientId]/treatment-phases
+ * GET /api/patients/[id]/treatment-phases
  * Get all treatment plans and phases for a patient (for image linking UI)
  */
 export const GET = withAuth(
   async (
     req: NextRequest,
     session: Session,
-    { params }: { params: Promise<{ patientId: string }> }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
-      const { patientId } = await params;
+      const { id: patientId } = await params;
 
       // Verify patient exists and belongs to clinic
       const patient = await db.patient.findFirst({
@@ -36,8 +36,8 @@ export const GET = withAuth(
           {
             success: false,
             error: {
-              code: 'PATIENT_NOT_FOUND',
-              message: 'Patient not found',
+              code: "PATIENT_NOT_FOUND",
+              message: "Patient not found",
             },
           },
           { status: 404 }
@@ -50,7 +50,7 @@ export const GET = withAuth(
           patientId,
           ...getClinicFilter(session),
         }),
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         select: {
           id: true,
           planNumber: true,
@@ -60,7 +60,7 @@ export const GET = withAuth(
           startDate: true,
           estimatedEndDate: true,
           phases: {
-            orderBy: { phaseNumber: 'asc' },
+            orderBy: { phaseNumber: "asc" },
             select: {
               id: true,
               phaseNumber: true,
@@ -107,18 +107,18 @@ export const GET = withAuth(
         },
       });
     } catch (error) {
-      console.error('[Patient Treatment Phases API] Error:', error);
+      console.error("[Patient Treatment Phases API] Error:", error);
       return NextResponse.json(
         {
           success: false,
           error: {
-            code: 'FETCH_ERROR',
-            message: 'Failed to fetch treatment phases',
+            code: "FETCH_ERROR",
+            message: "Failed to fetch treatment phases",
           },
         },
         { status: 500 }
       );
     }
   },
-  { permissions: ['imaging:view'] }
+  { permissions: ["imaging:view"] }
 );

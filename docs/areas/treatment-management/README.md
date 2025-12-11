@@ -12,11 +12,11 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | 📋 Planned |
+| **Status** | 🔄 In Progress (~90%) |
 | **Priority** | Critical |
 | **Phase** | 2 - Core Clinical Features |
 | **Dependencies** | Patient Management, Staff Management |
-| **Last Updated** | 2024-11-27 |
+| **Last Updated** | 2024-12-11 |
 
 ---
 
@@ -1544,6 +1544,77 @@ enum OutcomeRating {
 
 ---
 
+## Future Enhancements
+
+The following features are planned for future releases and are documented here for roadmap purposes:
+
+### External Integrations (Planned)
+
+External system integrations to enhance treatment management capabilities:
+
+| System | Integration Type | Purpose | Status |
+|--------|------------------|---------|--------|
+| **Invisalign/iTero** | API | Case submission, tracking, aligner orders | 📋 Planned |
+| **ClearCorrect** | API | Aligner case management | 📋 Planned |
+| **SureSmile** | API | Digital treatment planning, robotically customized wires | 📋 Planned |
+| **Dolphin Imaging** | Import/Export | Cephalometric analysis, treatment simulation | 📋 Planned |
+| **OrthoCAD** | Import | Digital models, setups | 📋 Planned |
+| **3Shape** | Import | Digital impressions, models | 📋 Planned |
+
+**Implementation Notes:**
+- APIs will require vendor partnerships and certification
+- Data mapping for case submission and tracking
+- Secure credential storage for API authentication
+- Webhook handlers for status updates from external systems
+
+### Voice-to-Text Documentation (Planned)
+
+Enhanced clinical documentation with voice-to-text capabilities:
+
+**Features:**
+- Real-time speech-to-text transcription for progress notes
+- Medical terminology recognition with orthodontic-specific vocabulary
+- Template-based dictation with automatic field population
+- Support for SOAP note format dictation
+- Integration with ambient listening devices in treatment rooms
+
+**Technical Considerations:**
+- Local AI processing to maintain HIPAA compliance (no cloud transcription)
+- Training on orthodontic terminology for improved accuracy
+- Speaker identification for multi-provider environments
+- Edit and correction workflow for transcribed notes
+- Estimated accuracy target: 95%+ for clinical terminology
+
+### Advanced Reporting & Analytics (Planned)
+
+Practice-wide analytics and reporting capabilities:
+
+**Treatment Analytics:**
+- Treatment duration analysis by appliance type, provider, complexity
+- Outcome correlation analysis (what predicts successful outcomes)
+- Wire sequence efficiency analysis
+- Predictive treatment duration modeling
+
+**Clinical Quality Metrics:**
+- Provider efficiency metrics (cases per month, completion rates)
+- Treatment accuracy vs. estimates
+- Complication rates and types by treatment type
+- Patient satisfaction correlation with outcomes
+
+**Practice Insights:**
+- Revenue per treatment type analysis
+- Insurance vs. self-pay outcome comparison
+- Appointment utilization for treatment visits
+- Lab cost analysis by treatment type
+
+**Export Capabilities:**
+- Scheduled report generation and delivery
+- Custom dashboard builder
+- Data export for external analysis tools
+- AAO Practice Assessment data compatibility
+
+---
+
 ## Implementation Notes
 
 ### Phase 2 Dependencies
@@ -1647,6 +1718,6 @@ docs/areas/treatment-management/
 
 ---
 
-**Status**: 📋 Planned
-**Last Updated**: 2024-11-27
+**Status**: 🔄 In Progress (~90%)
+**Last Updated**: 2024-12-11
 **Owner**: Development Team

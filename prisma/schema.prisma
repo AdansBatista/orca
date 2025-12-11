@@ -95,6 +95,27 @@ model Clinic {
   treatmentPhases            TreatmentPhase[]
   treatmentMilestones        TreatmentMilestone[]
   treatmentPhotos            TreatmentPhoto[]
+  treatmentOptions           TreatmentOption[]
+  casePresentations          CasePresentation[]
+  caseAcceptances            CaseAcceptance[]
+  planModifications          PlanModification[]
+
+  // Clinical Documentation relations
+  progressNotes              ProgressNote[]
+  procedureRecords           ProcedureRecord[]
+  clinicalFindings           ClinicalFinding[]
+  clinicalMeasurements       ClinicalMeasurement[]
+  noteTemplates              NoteTemplate[]
+  visitRecords               VisitRecord[]
+
+  // Appliance Management relations
+  applianceRecords           ApplianceRecord[]
+  wireRecords                WireRecord[]
+  alignerRecords             AlignerRecord[]
+  alignerDeliveries          AlignerDelivery[]
+  retainerRecords            RetainerRecord[]
+  elasticPrescriptions       ElasticPrescription[]
+  applianceActivations       ApplianceActivation[]
 
   // CRM & Patient Onboarding relations
   leads                      Lead[]
@@ -116,6 +137,13 @@ model Clinic {
   cephAnalyses               CephAnalysis[]
   imageRetentionPolicies     ImageRetentionPolicy[]
   imageArchiveRecords        ImageArchiveRecord[]
+
+  // Treatment Tracking relations
+  treatmentProgress          TreatmentProgress[]
+  debondReadiness            DebondReadiness[]
+  retentionProtocols         RetentionProtocol[]
+  retentionChecks            RetentionCheck[]
+  treatmentOutcomes          TreatmentOutcome[]
 
   @@map("clinics")
 }
@@ -361,6 +389,20 @@ model Patient {
   // Treatment Management relations
   treatmentPlans             TreatmentPlan[]
   treatmentPhotos            TreatmentPhoto[]
+  casePresentations          CasePresentation[]
+  caseAcceptances            CaseAcceptance[]
+  planModificationAcknowledgments PlanModification[] @relation("PlanModificationAcknowledgedBy")
+
+  // Clinical Documentation relations
+  progressNotes              ProgressNote[]
+  clinicalMeasurements       ClinicalMeasurement[]
+  visitRecords               VisitRecord[]
+
+  // Appliance Management relations
+  applianceRecords           ApplianceRecord[]
+  alignerRecords             AlignerRecord[]
+  retainerRecords            RetainerRecord[]
+  elasticPrescriptions       ElasticPrescription[]
 
   // CRM & Patient Onboarding relations
   formSubmissions            FormSubmission[]
@@ -373,6 +415,13 @@ model Patient {
   imageCollages              ImageCollage[]
   progressReports            ProgressReport[]
   cephAnalyses               CephAnalysis[]
+
+  // Treatment Tracking relations
+  treatmentProgress          TreatmentProgress[]
+  debondReadiness            DebondReadiness[]
+  retentionProtocols         RetentionProtocol[]
+  retentionChecks            RetentionCheck[]
+  treatmentOutcomes          TreatmentOutcome[]
 
   @@index([clinicId])
   @@index([lastName, firstName])
@@ -503,6 +552,43 @@ model StaffProfile {
   createdRetentionPolicies ImageRetentionPolicy[] @relation("RetentionPolicyCreator")
   imageLegalHoldsSet     PatientImage[]     @relation("ImageLegalHoldSetter")
   imageArchiveActions    ImageArchiveRecord[] @relation("ArchiveRecordPerformer")
+
+  // Clinical Documentation relations
+  progressNotesAsProvider    ProgressNote[]       @relation("ProgressNoteProvider")
+  progressNotesSupervising   ProgressNote[]       @relation("ProgressNoteSupervisor")
+  progressNotesSigned        ProgressNote[]       @relation("ProgressNoteSigner")
+  progressNotesCoSigned      ProgressNote[]       @relation("ProgressNoteCoSigner")
+  proceduresPerformed        ProcedureRecord[]    @relation("ProcedurePerformer")
+  proceduresAssisted         ProcedureRecord[]    @relation("ProcedureAssistant")
+  measurementsRecorded       ClinicalMeasurement[] @relation("MeasurementRecorder")
+  noteTemplatesOwned         NoteTemplate[]       @relation("NoteTemplateOwner")
+  visitRecordsPrimary        VisitRecord[]        @relation("VisitPrimaryProvider")
+  visitRecordsCompleted      VisitRecord[]        @relation("VisitCompletedBy")
+
+  // Treatment Plan Provider relations
+  treatmentPlansPrimary      TreatmentPlan[]      @relation("TreatmentPlanPrimaryProvider")
+  treatmentPlansSupervising  TreatmentPlan[]      @relation("TreatmentPlanSupervisingProvider")
+  casePresentationsPresented CasePresentation[]   @relation("CasePresentationPresenter")
+  caseAcceptancesWitnessed   CaseAcceptance[]     @relation("CaseAcceptanceWitness")
+  planModificationsCreated   PlanModification[]   @relation("PlanModificationModifiedBy")
+
+  // Appliance Management relations
+  appliancesPlaced           ApplianceRecord[]    @relation("AppliancePlacedBy")
+  appliancesRemoved          ApplianceRecord[]    @relation("ApplianceRemovedBy")
+  wiresPlaced                WireRecord[]         @relation("WirePlacedBy")
+  wiresRemoved               WireRecord[]         @relation("WireRemovedBy")
+  alignerDeliveries          AlignerDelivery[]    @relation("AlignerDeliveredBy")
+  retainersDelivered         RetainerRecord[]     @relation("RetainerDeliveredBy")
+  elasticPrescriptions       ElasticPrescription[]
+  applianceActivations       ApplianceActivation[]
+
+  // Treatment Tracking relations
+  treatmentProgressAssessments TreatmentProgress[]  @relation("TreatmentProgressAssessor")
+  debondReadinessAssessments   DebondReadiness[]    @relation("DebondReadinessAssessor")
+  debondReadinessApprovals     DebondReadiness[]    @relation("DebondReadinessApprover")
+  retentionProtocolsManaged    RetentionProtocol[]  @relation("RetentionProtocolProvider")
+  retentionChecksPerformed     RetentionCheck[]     @relation("RetentionCheckPerformer")
+  treatmentOutcomeAssessments  TreatmentOutcome[]   @relation("TreatmentOutcomeAssessor")
 
   @@unique([clinicId, employeeNumber])
   @@index([clinicId])
@@ -6671,18 +6757,347 @@ model TreatmentPlan {
   // Relations
   clinic                Clinic              @relation(fields: [clinicId], references: [id])
   patient               Patient             @relation(fields: [patientId], references: [id])
+  primaryProvider       StaffProfile?       @relation("TreatmentPlanPrimaryProvider", fields: [primaryProviderId], references: [id])
+  supervisingProvider   StaffProfile?       @relation("TreatmentPlanSupervisingProvider", fields: [supervisingProviderId], references: [id])
   phases                TreatmentPhase[]
   milestones            TreatmentMilestone[]
   progressPhotos        TreatmentPhoto[]
+
+  // Treatment Planning relations
+  treatmentOptions      TreatmentOption[]
+  casePresentations     CasePresentation[]
+  caseAcceptances       CaseAcceptance[]
 
   // Imaging Management relations
   patientImages         PatientImage[]
   progressReports       ProgressReport[]
 
+  // Clinical Documentation relations
+  progressNotes         ProgressNote[]
+  visitRecords          VisitRecord[]
+
+  // Appliance Management relations
+  applianceRecords        ApplianceRecord[]
+  alignerRecords          AlignerRecord[]
+  retainerRecords         RetainerRecord[]
+  elasticPrescriptions    ElasticPrescription[]
+
+  // Plan versioning relations
+  planModifications     PlanModification[]
+
+  // Treatment Tracking relations
+  treatmentProgress       TreatmentProgress[]
+  debondReadiness         DebondReadiness[]
+  retentionProtocol       RetentionProtocol[]
+  treatmentOutcome        TreatmentOutcome?
+
   @@index([clinicId])
   @@index([patientId])
+  @@index([primaryProviderId])
   @@index([status])
   @@map("treatment_plans")
+}
+
+/// TreatmentOptionStatus - Status of a treatment option
+enum TreatmentOptionStatus {
+  DRAFT           // Being developed
+  PRESENTED       // Shown to patient
+  SELECTED        // Patient chose this option
+  DECLINED        // Patient declined
+  ARCHIVED        // No longer relevant
+}
+
+/// ApplianceSystemType - Types of appliance systems
+enum ApplianceSystemType {
+  METAL_BRACKETS
+  CERAMIC_BRACKETS
+  SELF_LIGATING
+  LINGUAL
+  CLEAR_ALIGNERS
+  COMBINATION
+  FUNCTIONAL
+  SURGICAL
+  RETENTION_ONLY
+}
+
+/// TreatmentOption - Alternative treatment options within a plan
+model TreatmentOption {
+  id                  String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String                @db.ObjectId
+  treatmentPlanId     String                @db.ObjectId
+
+  // Option identification
+  optionNumber        Int                   // 1, 2, 3, etc.
+  optionName          String                // e.g., "Traditional Braces", "Invisalign"
+  description         String?               // Detailed description
+
+  // Appliance details
+  applianceSystem     ApplianceSystemType
+  applianceDetails    String?               // Specific product/brand details
+
+  // Duration and cost
+  estimatedDuration   Int?                  // In months
+  estimatedVisits     Int?                  // Expected visits
+  estimatedCost       Float?                // Treatment cost
+
+  // Recommendation
+  isRecommended       Boolean               @default(false)
+  recommendationNotes String?               // Why recommended or not
+
+  // Patient selection
+  status              TreatmentOptionStatus @default(DRAFT)
+  selectedDate        DateTime?             // When patient selected this option
+  selectionNotes      String?               // Patient's reasoning
+
+  // Pros and Cons
+  advantages          String[]              // List of pros
+  disadvantages       String[]              // List of cons
+
+  // Timestamps
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  deletedAt           DateTime?             // Soft delete
+
+  // Relations
+  clinic              Clinic                @relation(fields: [clinicId], references: [id])
+  treatmentPlan       TreatmentPlan         @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  caseAcceptances     CaseAcceptance[]      // When this option is selected
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@map("treatment_options")
+}
+
+/// CasePresentationOutcome - Result of case presentation
+enum CasePresentationOutcome {
+  ACCEPTED          // Patient accepted treatment
+  DECLINED          // Patient declined
+  THINKING          // Patient considering
+  FOLLOW_UP_NEEDED  // Needs follow-up discussion
+  SECOND_OPINION    // Seeking second opinion
+  RESCHEDULED       // Will present again later
+}
+
+/// CasePresentation - Record of treatment presentation to patient
+model CasePresentation {
+  id                  String                    @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String                    @db.ObjectId
+  treatmentPlanId     String                    @db.ObjectId
+  patientId           String                    @db.ObjectId
+
+  // Presentation details
+  presentationDate    DateTime
+  presentedById       String                    @db.ObjectId  // Provider who presented
+
+  // Location/Method
+  presentationType    String                    @default("IN_PERSON") // IN_PERSON, VIRTUAL
+  location            String?                   // Room or virtual platform
+
+  // Attendees
+  attendees           String[]                  // Names/roles of people present
+  guardianPresent     Boolean                   @default(false)
+  guardianName        String?
+
+  // Content presented
+  treatmentOptionsPresented String[]            @db.ObjectId  // IDs of options shown
+  visualsUsed         String[]                  // Types: PHOTOS, XRAYS, MODELS, SIMULATIONS
+  materialsProvided   String[]                  // Brochures, estimates given
+
+  // Outcome
+  outcome             CasePresentationOutcome   @default(THINKING)
+  outcomeNotes        String?                   // Details about outcome
+  patientQuestions    String[]                  // Questions asked
+  patientConcerns     String[]                  // Concerns raised
+
+  // Follow-up
+  followUpRequired    Boolean                   @default(false)
+  followUpDate        DateTime?
+  followUpNotes       String?
+
+  // Duration
+  durationMinutes     Int?
+
+  // Timestamps
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  deletedAt           DateTime?                 // Soft delete
+
+  // Relations
+  clinic              Clinic                    @relation(fields: [clinicId], references: [id])
+  treatmentPlan       TreatmentPlan             @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  patient             Patient                   @relation(fields: [patientId], references: [id])
+  presentedBy         StaffProfile              @relation("CasePresentationPresenter", fields: [presentedById], references: [id])
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@index([patientId])
+  @@index([presentationDate])
+  @@map("case_presentations")
+}
+
+/// ConsentType - Types of consent documents
+enum ConsentType {
+  INFORMED_CONSENT        // General treatment consent
+  FINANCIAL_AGREEMENT     // Payment terms
+  HIPAA_ACKNOWLEDGMENT    // Privacy practices
+  PHOTO_RELEASE           // Photography consent
+  MINOR_CONSENT           // Guardian consent for minor
+  TREATMENT_MODIFICATION  // Consent for plan changes
+}
+
+/// CaseAcceptanceStatus - Status of case acceptance
+enum CaseAcceptanceStatus {
+  PENDING           // Awaiting signatures
+  PARTIALLY_SIGNED  // Some signatures collected
+  FULLY_SIGNED      // All signatures collected
+  EXPIRED           // Acceptance window expired
+  WITHDRAWN         // Patient withdrew acceptance
+}
+
+/// CaseAcceptance - Patient acceptance of treatment plan
+model CaseAcceptance {
+  id                  String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String                @db.ObjectId
+  treatmentPlanId     String                @db.ObjectId
+  patientId           String                @db.ObjectId
+  casePresentationId  String?               @db.ObjectId  // Link to presentation
+
+  // Acceptance status
+  status              CaseAcceptanceStatus  @default(PENDING)
+  acceptedDate        DateTime?             // When fully accepted
+
+  // Selected option
+  selectedOptionId    String?               @db.ObjectId  // Which option patient chose
+
+  // Consent tracking
+  informedConsentSigned     Boolean         @default(false)
+  informedConsentDate       DateTime?
+  financialAgreementSigned  Boolean         @default(false)
+  financialAgreementDate    DateTime?
+  hipaaAcknowledged         Boolean         @default(false)
+  hipaaAcknowledgedDate     DateTime?
+  photoReleaseConsent       Boolean         @default(false)
+  photoReleaseDate          DateTime?
+
+  // Financial terms
+  totalTreatmentCost  Float?                // Agreed treatment cost
+  downPayment         Float?                // Initial payment
+  monthlyPayment      Float?                // If payment plan
+  paymentPlanMonths   Int?                  // Duration of payment plan
+  insuranceEstimate   Float?                // Estimated insurance coverage
+  patientResponsibility Float?              // Patient's out-of-pocket
+
+  // Signatures (stored as base64 or reference)
+  patientSignature    String?               // Digital signature data
+  patientSignedDate   DateTime?
+  guardianSignature   String?               // If minor
+  guardianSignedDate  DateTime?
+  guardianName        String?
+  guardianRelation    String?               // Parent, Guardian, etc.
+
+  // Witness
+  witnessedById       String?               @db.ObjectId
+  witnessedDate       DateTime?
+
+  // Documents
+  documentUrls        String[]              // URLs to signed documents
+
+  // Notes
+  specialConditions   String?               // Any special terms
+  notes               String?
+
+  // Timestamps
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  deletedAt           DateTime?             // Soft delete
+
+  // Relations
+  clinic              Clinic                @relation(fields: [clinicId], references: [id])
+  treatmentPlan       TreatmentPlan         @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  patient             Patient               @relation(fields: [patientId], references: [id])
+  selectedOption      TreatmentOption?      @relation(fields: [selectedOptionId], references: [id])
+  witnessedBy         StaffProfile?         @relation("CaseAcceptanceWitness", fields: [witnessedById], references: [id])
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@index([patientId])
+  @@index([status])
+  @@map("case_acceptances")
+}
+
+/// PlanModificationType - Types of treatment plan modifications
+enum PlanModificationType {
+  MINOR_ADJUSTMENT        // Small changes, no version bump
+  PHASE_ADDITION          // Adding new treatment phase
+  PHASE_REMOVAL           // Removing a treatment phase
+  APPLIANCE_CHANGE        // Changing appliance type (requires consent)
+  DURATION_EXTENSION      // Extending treatment duration
+  DURATION_REDUCTION      // Reducing treatment duration
+  TREATMENT_UPGRADE       // Upgrading treatment approach
+  TREATMENT_DOWNGRADE     // Downgrading treatment approach
+  FEE_ADJUSTMENT          // Changing treatment cost
+  PROVIDER_CHANGE         // Changing assigned provider
+  GOAL_MODIFICATION       // Changing treatment goals
+  CLINICAL_PROTOCOL       // Changing clinical approach
+  OTHER                   // Other modifications
+}
+
+/// PlanModification - Track changes to treatment plans with versioning
+model PlanModification {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+  treatmentPlanId       String                @db.ObjectId
+
+  // Modification details
+  modificationType      PlanModificationType
+  modificationDate      DateTime              @default(now())
+  modifiedById          String                @db.ObjectId    // Staff who made the change
+
+  // Version tracking
+  previousVersion       Int                   // Version before change
+  newVersion            Int                   // Version after change (null for minor)
+  createsNewVersion     Boolean               @default(false) // Whether this created a version bump
+
+  // Change details
+  changeDescription     String                // Human-readable description
+  reason                String                // Why the change was made
+  changedFields         Json?                 // Field-level changes { field: { old, new } }
+
+  // Financial impact
+  previousFee           Float?                // Fee before change
+  newFee                Float?                // Fee after change
+  feeChangeAmount       Float?                // Difference (can be negative)
+
+  // Acknowledgment (for significant changes)
+  requiresAcknowledgment  Boolean             @default(false)
+  acknowledgedAt          DateTime?
+  acknowledgedById        String?             @db.ObjectId    // Patient or guardian who acknowledged
+  acknowledgmentMethod    String?             // 'signature', 'verbal', 'portal', etc.
+  acknowledgmentNotes     String?
+
+  // New consent (for major changes like appliance change)
+  requiresNewConsent      Boolean             @default(false)
+  newConsentObtained      Boolean             @default(false)
+  consentDate             DateTime?
+  consentDocumentUrl      String?             // URL to new consent document
+
+  // Snapshot of previous state (for comparison/rollback)
+  previousStateSnapshot   Json?               // Full plan state before modification
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  treatmentPlan         TreatmentPlan         @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  modifiedBy            StaffProfile          @relation("PlanModificationModifiedBy", fields: [modifiedById], references: [id])
+  acknowledgedBy        Patient?              @relation("PlanModificationAcknowledgedBy", fields: [acknowledgedById], references: [id])
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@index([modificationDate])
+  @@index([modificationType])
+  @@map("plan_modifications")
 }
 
 /// TreatmentPhase - Individual phases within a treatment plan
@@ -6718,11 +7133,13 @@ model TreatmentPhase {
   // Timestamps
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?           // Soft delete
 
   // Relations
   clinic              Clinic            @relation(fields: [clinicId], references: [id])
   treatmentPlan       TreatmentPlan     @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
   images              PatientImage[]
+  milestones          TreatmentMilestone[]
 
   @@index([clinicId])
   @@index([treatmentPlanId])
@@ -6734,6 +7151,7 @@ model TreatmentMilestone {
   id                  String            @id @default(auto()) @map("_id") @db.ObjectId
   clinicId            String            @db.ObjectId
   treatmentPlanId     String            @db.ObjectId
+  phaseId             String?           @db.ObjectId  // Optional link to specific phase
 
   // Milestone details
   milestoneName       String            // e.g., "Initial Alignment Complete"
@@ -6758,13 +7176,16 @@ model TreatmentMilestone {
   // Timestamps
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?           // Soft delete
 
   // Relations
   clinic              Clinic            @relation(fields: [clinicId], references: [id])
   treatmentPlan       TreatmentPlan     @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  phase               TreatmentPhase?   @relation(fields: [phaseId], references: [id])
 
   @@index([clinicId])
   @@index([treatmentPlanId])
+  @@index([phaseId])
   @@map("treatment_milestones")
 }
 
@@ -6809,6 +7230,874 @@ model TreatmentPhoto {
   @@index([patientId])
   @@index([photoType])
   @@map("treatment_photos")
+}
+
+// =============================================================================
+// CLINICAL DOCUMENTATION - Progress notes, procedures, findings, measurements
+// =============================================================================
+
+/// ProgressNoteType - Types of clinical progress notes
+enum ProgressNoteType {
+  INITIAL_EXAM
+  CONSULTATION
+  RECORDS_APPOINTMENT
+  BONDING
+  ADJUSTMENT
+  EMERGENCY
+  DEBOND
+  RETENTION_CHECK
+  OBSERVATION
+  GENERAL
+}
+
+/// NoteStatus - Status of progress notes
+enum NoteStatus {
+  DRAFT
+  PENDING_SIGNATURE
+  SIGNED
+  PENDING_COSIGN
+  COSIGNED
+  AMENDED
+}
+
+/// ClinicalFindingType - Types of clinical findings
+enum ClinicalFindingType {
+  DECALCIFICATION
+  CARIES
+  GINGIVITIS
+  BRACKET_ISSUE
+  WIRE_ISSUE
+  ELASTIC_COMPLIANCE
+  ORAL_HYGIENE
+  ROOT_RESORPTION
+  IMPACTION
+  ECTOPIC_ERUPTION
+  ANKYLOSIS
+  OTHER
+}
+
+/// Severity - Severity levels for clinical findings
+enum Severity {
+  MILD
+  MODERATE
+  SEVERE
+}
+
+/// OrthoMeasurementType - Types of orthodontic measurements
+enum OrthoMeasurementType {
+  OVERJET
+  OVERBITE
+  OVERBITE_PERCENT
+  CROWDING_UPPER
+  CROWDING_LOWER
+  SPACING_UPPER
+  SPACING_LOWER
+  MIDLINE_UPPER
+  MIDLINE_LOWER
+  MOLAR_RELATIONSHIP_RIGHT
+  MOLAR_RELATIONSHIP_LEFT
+  CANINE_RELATIONSHIP_RIGHT
+  CANINE_RELATIONSHIP_LEFT
+  ARCH_LENGTH_UPPER
+  ARCH_LENGTH_LOWER
+  INTERCANINE_WIDTH_UPPER
+  INTERCANINE_WIDTH_LOWER
+  INTERMOLAR_WIDTH_UPPER
+  INTERMOLAR_WIDTH_LOWER
+  CROSSBITE
+  OPEN_BITE
+}
+
+/// MeasurementMethod - Method used to record measurement
+enum MeasurementMethod {
+  CLINICAL
+  MODEL_ANALYSIS
+  DIGITAL_SCAN
+  CEPHALOMETRIC
+}
+
+/// Quadrant - Dental quadrant identifiers
+enum Quadrant {
+  UPPER_RIGHT
+  UPPER_LEFT
+  LOWER_LEFT
+  LOWER_RIGHT
+}
+
+/// Arch - Dental arch identifiers
+enum Arch {
+  UPPER
+  LOWER
+  BOTH
+}
+
+/// ProcedureStatus - Status of procedure records
+enum ProcedureStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DEFERRED
+}
+
+/// ProgressNote - Clinical progress notes in SOAP format
+model ProgressNote {
+  id                    String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String           @db.ObjectId
+  patientId             String           @db.ObjectId
+  treatmentPlanId       String?          @db.ObjectId
+  appointmentId         String?          @db.ObjectId
+
+  // Note Details
+  noteDate              DateTime         @default(now())
+  noteType              ProgressNoteType
+  chiefComplaint        String?
+
+  // Clinical Content (SOAP format)
+  subjective            String?          // Patient-reported symptoms, concerns
+  objective             String?          // Clinical findings, observations
+  assessment            String?          // Provider's clinical assessment
+  plan                  String?          // Next steps, treatment modifications
+
+  // Procedures Summary
+  proceduresSummary     String?
+
+  // Provider
+  providerId            String           @db.ObjectId
+  supervisingProviderId String?          @db.ObjectId
+
+  // Signatures
+  status                NoteStatus       @default(DRAFT)
+  signedAt              DateTime?
+  signedById            String?          @db.ObjectId
+  coSignedAt            DateTime?
+  coSignedById          String?          @db.ObjectId
+
+  // Amendments
+  isAmended             Boolean          @default(false)
+  amendmentReason       String?
+  amendedAt             DateTime?
+
+  // Attachments
+  imageIds              String[]         @db.ObjectId
+
+  // Timestamps & Audit
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  deletedAt             DateTime?
+  createdBy             String?          @db.ObjectId
+  updatedBy             String?          @db.ObjectId
+
+  // Relations
+  clinic                Clinic           @relation(fields: [clinicId], references: [id])
+  patient               Patient          @relation(fields: [patientId], references: [id])
+  treatmentPlan         TreatmentPlan?   @relation(fields: [treatmentPlanId], references: [id])
+  provider              StaffProfile     @relation("ProgressNoteProvider", fields: [providerId], references: [id])
+  supervisingProvider   StaffProfile?    @relation("ProgressNoteSupervisor", fields: [supervisingProviderId], references: [id])
+  signedBy              StaffProfile?    @relation("ProgressNoteSigner", fields: [signedById], references: [id])
+  coSignedBy            StaffProfile?    @relation("ProgressNoteCoSigner", fields: [coSignedById], references: [id])
+  procedures            ProcedureRecord[]
+  findings              ClinicalFinding[]
+  measurements          ClinicalMeasurement[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([treatmentPlanId])
+  @@index([providerId])
+  @@index([noteDate])
+  @@index([status])
+  @@map("progress_notes")
+}
+
+/// ProcedureRecord - Documents procedures performed with ADA codes
+model ProcedureRecord {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String          @db.ObjectId
+  progressNoteId   String          @db.ObjectId
+
+  // Procedure Details
+  procedureCode    String          // ADA code (e.g., D8080)
+  procedureName    String          // Description
+  description      String?
+
+  // Location
+  toothNumbers     Int[]           // Affected teeth
+  quadrant         Quadrant?
+  arch             Arch?
+
+  // Provider
+  performedById    String          @db.ObjectId
+  assistedById     String?         @db.ObjectId
+
+  // Timing
+  performedAt      DateTime        @default(now())
+  duration         Int?            // In minutes
+
+  // Status
+  status           ProcedureStatus @default(COMPLETED)
+
+  // Notes
+  notes            String?
+  complications    String?
+
+  // Timestamps
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relations
+  clinic           Clinic          @relation(fields: [clinicId], references: [id])
+  progressNote     ProgressNote    @relation(fields: [progressNoteId], references: [id], onDelete: Cascade)
+  performedBy      StaffProfile    @relation("ProcedurePerformer", fields: [performedById], references: [id])
+  assistedBy       StaffProfile?   @relation("ProcedureAssistant", fields: [assistedById], references: [id])
+
+  @@index([clinicId])
+  @@index([progressNoteId])
+  @@index([procedureCode])
+  @@map("procedure_records")
+}
+
+/// ClinicalFinding - Clinical observations and issues
+model ClinicalFinding {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String              @db.ObjectId
+  progressNoteId   String              @db.ObjectId
+
+  // Finding Details
+  findingType      ClinicalFindingType
+  description      String
+  severity         Severity?
+
+  // Location
+  toothNumbers     Int[]
+  location         String?
+
+  // Clinical Action
+  actionRequired   Boolean             @default(false)
+  actionTaken      String?
+  followUpRequired Boolean             @default(false)
+
+  // Timestamps
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // Relations
+  clinic           Clinic              @relation(fields: [clinicId], references: [id])
+  progressNote     ProgressNote        @relation(fields: [progressNoteId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([progressNoteId])
+  @@index([findingType])
+  @@map("clinical_findings")
+}
+
+/// ClinicalMeasurement - Orthodontic measurements tracking
+model ClinicalMeasurement {
+  id               String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId         String               @db.ObjectId
+  patientId        String               @db.ObjectId
+  progressNoteId   String?              @db.ObjectId
+
+  // Measurement Details
+  measurementDate  DateTime             @default(now())
+  measurementType  OrthoMeasurementType
+  value            Float                // Measurement value
+  unit             String               @default("mm")
+
+  // Recording
+  recordedById     String               @db.ObjectId
+  method           MeasurementMethod?
+
+  // Notes
+  notes            String?
+
+  // Timestamps
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  // Relations
+  clinic           Clinic               @relation(fields: [clinicId], references: [id])
+  patient          Patient              @relation(fields: [patientId], references: [id])
+  progressNote     ProgressNote?        @relation(fields: [progressNoteId], references: [id])
+  recordedBy       StaffProfile         @relation("MeasurementRecorder", fields: [recordedById], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([measurementType])
+  @@index([measurementDate])
+  @@map("clinical_measurements")
+}
+
+/// NoteTemplate - Custom documentation templates
+model NoteTemplate {
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String?          @db.ObjectId  // null for system templates
+  providerId          String?          @db.ObjectId  // null for shared templates
+
+  // Template Details
+  templateName        String
+  templateType        ProgressNoteType
+  description         String?
+
+  // Content
+  defaultSubjective   String?
+  defaultObjective    String?
+  defaultAssessment   String?
+  defaultPlan         String?
+  defaultProcedures   String[]         // Procedure codes
+
+  // Status
+  isActive            Boolean          @default(true)
+  isSystemTemplate    Boolean          @default(false)
+
+  // Timestamps
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  // Relations
+  clinic              Clinic?          @relation(fields: [clinicId], references: [id])
+  provider            StaffProfile?    @relation("NoteTemplateOwner", fields: [providerId], references: [id])
+
+  @@index([clinicId])
+  @@index([providerId])
+  @@index([templateType])
+  @@map("note_templates")
+}
+
+/// VisitRecordStatus - Status of visit documentation
+enum VisitRecordStatus {
+  IN_PROGRESS
+  COMPLETE
+  INCOMPLETE
+  CANCELLED
+}
+
+/// VisitRecord - Aggregates all documentation for a single patient visit
+model VisitRecord {
+  id                    String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String              @db.ObjectId
+  patientId             String              @db.ObjectId
+  appointmentId         String?             @db.ObjectId @unique
+  treatmentPlanId       String?             @db.ObjectId
+
+  // Visit Details
+  visitDate             DateTime            @default(now())
+  visitType             ProgressNoteType    // Uses same types as progress notes
+  status                VisitRecordStatus   @default(IN_PROGRESS)
+
+  // Provider
+  primaryProviderId     String              @db.ObjectId
+  assistingStaffIds     String[]            @db.ObjectId
+
+  // Visit Summary
+  chiefComplaint        String?
+  visitSummary          String?
+  nextVisitRecommendation String?
+
+  // Timing
+  checkInTime           DateTime?
+  checkOutTime          DateTime?
+  treatmentDuration     Int?                // Total treatment time in minutes
+
+  // Linked Documentation IDs
+  progressNoteId        String?             @db.ObjectId @unique
+  procedureIds          String[]            @db.ObjectId
+  findingIds            String[]            @db.ObjectId
+  measurementIds        String[]            @db.ObjectId
+  imageIds              String[]            @db.ObjectId
+
+  // Completion Tracking
+  completedAt           DateTime?
+  completedById         String?             @db.ObjectId
+
+  // Timestamps & Audit
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  deletedAt             DateTime?
+  createdBy             String?             @db.ObjectId
+  updatedBy             String?             @db.ObjectId
+
+  // Relations
+  clinic                Clinic              @relation(fields: [clinicId], references: [id])
+  patient               Patient             @relation(fields: [patientId], references: [id])
+  treatmentPlan         TreatmentPlan?      @relation(fields: [treatmentPlanId], references: [id])
+  primaryProvider       StaffProfile        @relation("VisitPrimaryProvider", fields: [primaryProviderId], references: [id])
+  completedBy           StaffProfile?       @relation("VisitCompletedBy", fields: [completedById], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([visitDate])
+  @@index([status])
+  @@map("visit_records")
+}
+
+// =============================================================================
+// APPLIANCE MANAGEMENT - Brackets, wires, aligners, retainers tracking
+// =============================================================================
+
+/// ApplianceRecordType - Types of orthodontic appliances
+enum ApplianceRecordType {
+  BRACKETS
+  BANDS
+  ALIGNERS
+  RETAINER_FIXED
+  RETAINER_REMOVABLE
+  EXPANDER
+  HERBST
+  MARA
+  HEADGEAR
+  FACEMASK
+  TAD
+  ELASTICS
+  SPRING
+  POWER_CHAIN
+  OTHER
+}
+
+/// ApplianceStatus - Status of an appliance
+enum ApplianceStatus {
+  ORDERED
+  RECEIVED
+  ACTIVE
+  ADJUSTED
+  REMOVED
+  REPLACED
+  LOST
+  BROKEN
+}
+
+/// WireType - Types of orthodontic wires
+enum WireType {
+  ROUND
+  RECTANGULAR
+  SQUARE
+}
+
+/// WireMaterial - Materials for orthodontic wires
+enum WireMaterial {
+  NITI
+  NITI_HEAT
+  STAINLESS_STEEL
+  TMA
+  BETA_TITANIUM
+  COPPER_NITI
+}
+
+/// WireStatus - Status of a wire
+enum WireStatus {
+  ACTIVE
+  REMOVED
+  BROKEN
+  REPLACED
+}
+
+/// AlignerTreatmentStatus - Status of aligner treatment
+enum AlignerTreatmentStatus {
+  SUBMITTED
+  APPROVED
+  MANUFACTURING
+  IN_PROGRESS
+  REFINEMENT
+  COMPLETED
+  DISCONTINUED
+}
+
+/// RetainerType - Types of retainers
+enum RetainerType {
+  HAWLEY
+  ESSIX
+  VIVERA
+  FIXED_BONDED
+  SPRING_RETAINER
+  WRAP_AROUND
+}
+
+/// RetainerStatus - Status of a retainer
+enum RetainerStatus {
+  ORDERED
+  IN_FABRICATION
+  RECEIVED
+  DELIVERED
+  ACTIVE
+  REPLACED
+  LOST
+  BROKEN
+}
+
+/// RetentionWearSchedule - Retainer wear schedule options
+enum RetentionWearSchedule {
+  FULL_TIME
+  NIGHTS_ONLY
+  EVERY_OTHER_NIGHT
+  FEW_NIGHTS_WEEK
+  AS_NEEDED
+}
+
+/// ApplianceRecord - Tracks all orthodontic appliances
+model ApplianceRecord {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String              @db.ObjectId
+  patientId       String              @db.ObjectId
+  treatmentPlanId String?             @db.ObjectId
+
+  // Appliance Details
+  applianceType   ApplianceRecordType
+  applianceSystem String?             // Brand/system (e.g., "Damon", "In-Ovation")
+  manufacturer    String?
+
+  // Configuration
+  specification   Json?               // Detailed specs (bracket prescription, etc.)
+
+  // Placement
+  arch            Arch
+  toothNumbers    Int[]               // Which teeth
+
+  // Dates
+  placedDate      DateTime?
+  removedDate     DateTime?
+
+  // Status
+  status          ApplianceStatus     @default(ACTIVE)
+
+  // Provider
+  placedById      String?             @db.ObjectId
+  removedById     String?             @db.ObjectId
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  clinic                Clinic              @relation(fields: [clinicId], references: [id])
+  patient               Patient             @relation(fields: [patientId], references: [id])
+  treatmentPlan         TreatmentPlan?      @relation(fields: [treatmentPlanId], references: [id])
+  placedBy              StaffProfile?       @relation("AppliancePlacedBy", fields: [placedById], references: [id])
+  removedBy             StaffProfile?       @relation("ApplianceRemovedBy", fields: [removedById], references: [id])
+  wireRecords           WireRecord[]
+  elasticPrescriptions  ElasticPrescription[]
+  applianceActivations  ApplianceActivation[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([treatmentPlanId])
+  @@index([applianceType])
+  @@index([status])
+  @@map("appliance_records")
+}
+
+/// WireRecord - Tracks wire changes/progressions
+model WireRecord {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String          @db.ObjectId
+  applianceRecordId String          @db.ObjectId
+
+  // Wire Details
+  wireType          WireType
+  wireSize          String          // e.g., "0.014", "0.016x0.022"
+  wireMaterial      WireMaterial
+  manufacturer      String?
+
+  // Placement
+  arch              Arch
+
+  // Dates
+  placedDate        DateTime
+  removedDate       DateTime?
+
+  // Status
+  status            WireStatus      @default(ACTIVE)
+
+  // Provider
+  placedById        String          @db.ObjectId
+  removedById       String?         @db.ObjectId
+
+  // Sequence
+  sequenceNumber    Int             @default(1)
+
+  // Notes
+  notes             String?
+  bends             String?         // Custom bends applied
+
+  // Timestamps
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  clinic            Clinic          @relation(fields: [clinicId], references: [id])
+  applianceRecord   ApplianceRecord @relation(fields: [applianceRecordId], references: [id])
+  placedBy          StaffProfile    @relation("WirePlacedBy", fields: [placedById], references: [id])
+  removedBy         StaffProfile?   @relation("WireRemovedBy", fields: [removedById], references: [id])
+
+  @@index([clinicId])
+  @@index([applianceRecordId])
+  @@index([placedDate])
+  @@index([status])
+  @@map("wire_records")
+}
+
+/// AlignerRecord - Tracks aligner treatment cases
+model AlignerRecord {
+  id                String                  @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String                  @db.ObjectId
+  patientId         String                  @db.ObjectId
+  treatmentPlanId   String?                 @db.ObjectId
+
+  // Aligner Details
+  alignerSystem     String                  // e.g., "Invisalign", "ClearCorrect", "SureSmile"
+  caseNumber        String?                 // Lab case number
+
+  // Treatment Info
+  totalAligners     Int                     // Total aligners in treatment
+  currentAligner    Int                     @default(1)
+  refinementNumber  Int                     @default(0) // 0 = initial, 1+ = refinements
+
+  // Status
+  status            AlignerTreatmentStatus  @default(IN_PROGRESS)
+
+  // Dates
+  startDate         DateTime
+  estimatedEndDate  DateTime?
+  actualEndDate     DateTime?
+
+  // Delivery
+  alignersDelivered Int                     @default(0)
+  lastDeliveryDate  DateTime?
+
+  // Wear Compliance
+  averageWearHours  Float?                  // Average daily wear hours
+
+  // Timestamps
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  // Relations
+  clinic            Clinic                  @relation(fields: [clinicId], references: [id])
+  patient           Patient                 @relation(fields: [patientId], references: [id])
+  treatmentPlan     TreatmentPlan?          @relation(fields: [treatmentPlanId], references: [id])
+  deliveries        AlignerDelivery[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([treatmentPlanId])
+  @@index([status])
+  @@map("aligner_records")
+}
+
+/// AlignerDelivery - Individual aligner delivery records
+model AlignerDelivery {
+  id                  String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String        @db.ObjectId
+  alignerRecordId     String        @db.ObjectId
+
+  // Delivery Details
+  deliveryDate        DateTime
+  alignerNumberStart  Int           // First aligner in batch
+  alignerNumberEnd    Int           // Last aligner in batch
+
+  // Instructions
+  wearSchedule        Int           @default(14) // Days per aligner
+  wearHoursPerDay     Int           @default(22)
+
+  // Attachments
+  attachmentsPlaced   Boolean       @default(false)
+  attachmentTeeth     Int[]         // Which teeth got attachments
+
+  // IPR (Interproximal Reduction)
+  iprPerformed        Boolean       @default(false)
+  iprDetails          String?       // Details of IPR performed
+
+  // Provider
+  deliveredById       String        @db.ObjectId
+
+  // Notes
+  instructions        String?       // Patient instructions
+  notes               String?
+
+  // Timestamps
+  createdAt           DateTime      @default(now())
+
+  // Relations
+  clinic              Clinic        @relation(fields: [clinicId], references: [id])
+  alignerRecord       AlignerRecord @relation(fields: [alignerRecordId], references: [id])
+  deliveredBy         StaffProfile  @relation("AlignerDeliveredBy", fields: [deliveredById], references: [id])
+
+  @@index([clinicId])
+  @@index([alignerRecordId])
+  @@map("aligner_deliveries")
+}
+
+/// RetainerRecord - Tracks retainer management
+model RetainerRecord {
+  id                  String                  @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String                  @db.ObjectId
+  patientId           String                  @db.ObjectId
+  treatmentPlanId     String?                 @db.ObjectId
+
+  // Retainer Details
+  retainerType        RetainerType
+  arch                Arch
+  material            String?
+
+  // Lab
+  labOrderId          String?                 @db.ObjectId // Link to lab order if applicable
+
+  // Dates
+  orderedDate         DateTime?
+  receivedDate        DateTime?
+  deliveredDate       DateTime?
+
+  // Status
+  status              RetainerStatus          @default(ORDERED)
+
+  // Delivery
+  deliveredById       String?                 @db.ObjectId
+
+  // Retention Protocol
+  wearSchedule        RetentionWearSchedule?
+  wearInstructions    String?
+
+  // Replacement
+  isReplacement       Boolean                 @default(false)
+  replacementReason   String?
+  previousRetainerId  String?                 @db.ObjectId
+
+  // Notes
+  notes               String?
+
+  // Timestamps
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  // Relations
+  clinic              Clinic                  @relation(fields: [clinicId], references: [id])
+  patient             Patient                 @relation(fields: [patientId], references: [id])
+  treatmentPlan       TreatmentPlan?          @relation(fields: [treatmentPlanId], references: [id])
+  deliveredBy         StaffProfile?           @relation("RetainerDeliveredBy", fields: [deliveredById], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([treatmentPlanId])
+  @@index([status])
+  @@map("retainer_records")
+}
+
+/// ElasticType - Types of orthodontic elastics
+enum ElasticType {
+  CLASS_II
+  CLASS_III
+  VERTICAL
+  CROSS
+  BOX
+  TRIANGLE
+  ZIG_ZAG
+  CUSTOM
+}
+
+/// ElasticSize - Standard elastic sizes
+enum ElasticSize {
+  LIGHT_1_8
+  LIGHT_3_16
+  MEDIUM_1_4
+  MEDIUM_5_16
+  HEAVY_3_8
+  HEAVY_1_2
+}
+
+/// ElasticPrescription - Document elastic wear prescriptions
+model ElasticPrescription {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String              @db.ObjectId
+  patientId           String              @db.ObjectId
+  treatmentPlanId     String?             @db.ObjectId
+  applianceRecordId   String?             @db.ObjectId
+
+  // Elastic Details
+  elasticType         ElasticType
+  elasticSize         ElasticSize
+  elasticForce        String?             // Force in ounces, e.g., "4.5 oz"
+  manufacturer        String?
+
+  // Attachment Points
+  fromTooth           Int
+  toTooth             Int
+  configuration       String?             // e.g., "Upper canine to lower first molar"
+
+  // Wear Instructions
+  wearSchedule        String              // e.g., "24 hours except eating"
+  hoursPerDay         Int                 @default(22)
+  startDate           DateTime            @default(now())
+  endDate             DateTime?
+
+  // Status
+  isActive            Boolean             @default(true)
+  discontinuedDate    DateTime?
+  discontinuedReason  String?
+
+  // Compliance Notes
+  complianceNotes     String?
+
+  // Provider
+  prescribedById      String              @db.ObjectId
+
+  // Timestamps
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  clinic              Clinic              @relation(fields: [clinicId], references: [id])
+  patient             Patient             @relation(fields: [patientId], references: [id])
+  treatmentPlan       TreatmentPlan?      @relation(fields: [treatmentPlanId], references: [id])
+  applianceRecord     ApplianceRecord?    @relation(fields: [applianceRecordId], references: [id])
+  prescribedBy        StaffProfile        @relation(fields: [prescribedById], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([treatmentPlanId])
+  @@index([isActive])
+  @@map("elastic_prescriptions")
+}
+
+/// ApplianceActivation - Track activation schedule for appliances (expanders, etc.)
+model ApplianceActivation {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String              @db.ObjectId
+  applianceRecordId   String              @db.ObjectId
+
+  // Activation Details
+  activationDate      DateTime
+  activationType      String              // e.g., "Turn", "Adjust", "Activate"
+  turns               Int?                // Number of turns for expanders
+  millimeters         Float?              // Expansion in mm
+
+  // Instructions
+  instructions        String?
+  nextActivationDate  DateTime?
+
+  // Provider
+  performedById       String              @db.ObjectId
+
+  // Patient-Reported (for home activations)
+  isPatientReported   Boolean             @default(false)
+  reportedWearHours   Int?
+
+  // Notes
+  notes               String?
+
+  // Timestamps
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  clinic              Clinic              @relation(fields: [clinicId], references: [id])
+  applianceRecord     ApplianceRecord     @relation(fields: [applianceRecordId], references: [id])
+  performedBy         StaffProfile        @relation(fields: [performedById], references: [id])
+
+  @@index([clinicId])
+  @@index([applianceRecordId])
+  @@index([activationDate])
+  @@map("appliance_activations")
 }
 
 // =============================================================================
@@ -7913,4 +9202,397 @@ enum ImageArchiveAction {
   LEGAL_HOLD_SET      // Legal hold applied
   LEGAL_HOLD_REMOVED  // Legal hold removed
   RETENTION_EXTENDED  // Retention period extended
+}
+
+// =============================================================================
+// TREATMENT TRACKING - Progress monitoring, debond, retention, outcomes
+// =============================================================================
+
+/// ProgressStatus - Overall treatment progress status
+enum ProgressStatus {
+  ON_TRACK                // Treatment progressing as expected
+  AHEAD                   // Ahead of schedule
+  BEHIND                  // Behind schedule
+  SIGNIFICANTLY_BEHIND    // Significantly behind schedule
+  PAUSED                  // Treatment temporarily paused
+}
+
+/// RetentionPhase - Phases of retention protocol
+enum RetentionPhase {
+  INITIAL       // Full-time wear immediately post-treatment
+  TRANSITION    // Transitioning to reduced wear
+  MAINTENANCE   // Regular maintenance phase
+  LONG_TERM     // Long-term/indefinite retention
+}
+
+/// PatientComplianceLevel - Patient compliance rating for treatment/retention
+enum PatientComplianceLevel {
+  EXCELLENT       // Fully compliant
+  GOOD            // Mostly compliant
+  FAIR            // Partial compliance
+  POOR            // Low compliance
+  NON_COMPLIANT   // Not following instructions
+}
+
+/// RetainerCondition - Condition of retainer
+enum RetainerCondition {
+  GOOD              // In good condition
+  WORN              // Shows wear but functional
+  DAMAGED           // Has damage
+  LOST              // Retainer lost
+  NEEDS_REPLACEMENT // Needs to be replaced
+}
+
+/// StabilityStatus - Post-treatment stability
+enum StabilityStatus {
+  STABLE              // Teeth stable
+  MINOR_RELAPSE       // Minor movement detected
+  SIGNIFICANT_RELAPSE // Significant movement
+  REQUIRES_TREATMENT  // Needs re-treatment
+}
+
+/// OutcomeRating - Overall treatment outcome rating
+enum OutcomeRating {
+  EXCELLENT     // Exceptional results
+  GOOD          // Good results
+  SATISFACTORY  // Acceptable results
+  FAIR          // Below expected
+  POOR          // Unsatisfactory
+  INCOMPLETE    // Treatment not completed
+}
+
+/// TreatmentProgress - Snapshot of treatment progress at a point in time
+model TreatmentProgress {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String              @db.ObjectId
+  treatmentPlanId     String              @db.ObjectId
+  patientId           String              @db.ObjectId
+
+  // Progress metrics
+  snapshotDate        DateTime            @default(now())
+  status              ProgressStatus      @default(ON_TRACK)
+  percentComplete     Float               // 0-100 percentage complete
+  currentPhase        String?             // Current phase name
+  currentPhaseNumber  Int?                // Phase number (1, 2, 3...)
+
+  // Visit tracking
+  completedVisits     Int                 @default(0)
+  expectedVisits      Int?                // Expected visits by this point
+  totalPlannedVisits  Int?                // Total planned visits
+  missedAppointments  Int                 @default(0)
+
+  // Duration tracking
+  daysInTreatment     Int?                // Days since start
+  expectedDays        Int?                // Expected days by this point
+  estimatedDaysRemaining Int?             // Estimated days to completion
+
+  // Milestone tracking
+  milestonesAchieved  Int                 @default(0)
+  totalMilestones     Int?
+  nextMilestone       String?             // Name of next milestone
+  nextMilestoneDate   DateTime?           // Target date for next milestone
+
+  // Compliance
+  complianceScore     Float?              // 0-100 compliance score
+  complianceNotes     String?
+
+  // Clinical notes
+  clinicalProgress    String?             // Clinical progress notes
+  concerns            String[]            // Any concerns noted
+  recommendations     String[]            // Provider recommendations
+
+  // Comparison to expected
+  daysAhead           Int?                // Positive = ahead, negative = behind
+  varianceReason      String?             // Explanation for variance
+
+  // Provider
+  assessedById        String              @db.ObjectId
+
+  // Timestamps
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  clinic              Clinic              @relation(fields: [clinicId], references: [id])
+  treatmentPlan       TreatmentPlan       @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  patient             Patient             @relation(fields: [patientId], references: [id])
+  assessedBy          StaffProfile        @relation("TreatmentProgressAssessor", fields: [assessedById], references: [id])
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@index([patientId])
+  @@index([snapshotDate])
+  @@index([status])
+  @@map("treatment_progress")
+}
+
+/// DebondReadiness - Assessment for debond eligibility
+model DebondReadiness {
+  id                    String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String            @db.ObjectId
+  treatmentPlanId       String            @db.ObjectId
+  patientId             String            @db.ObjectId
+
+  // Assessment date
+  assessmentDate        DateTime          @default(now())
+
+  // Readiness criteria checklist
+  alignmentComplete     Boolean           @default(false)
+  spaceClosure          Boolean           @default(false)
+  overbiteCorrection    Boolean           @default(false)
+  overjetCorrection     Boolean           @default(false)
+  midlineAlignment      Boolean           @default(false)
+  occlusionSatisfactory Boolean           @default(false)
+  patientSatisfied      Boolean           @default(false)
+  rootParallelism       Boolean           @default(false)
+  marginalRidges        Boolean           @default(false)
+  interproximalContacts Boolean           @default(false)
+
+  // Additional criteria (custom)
+  additionalCriteria    Json?             // Array of custom criteria with status
+
+  // Overall assessment
+  isReady               Boolean           @default(false)
+  readinessScore        Float?            // Percentage of criteria met
+  notReadyReasons       String[]          // Why not ready
+
+  // Provider notes
+  clinicalNotes         String?
+  recommendations       String[]
+
+  // Approval workflow
+  assessedById          String            @db.ObjectId
+  approvedById          String?           @db.ObjectId
+  approvedDate          DateTime?
+  approvalNotes         String?
+
+  // Scheduled debond
+  scheduledDebondDate   DateTime?
+  debondCompleted       Boolean           @default(false)
+  debondCompletedDate   DateTime?
+
+  // Timestamps
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // Relations
+  clinic                Clinic            @relation(fields: [clinicId], references: [id])
+  treatmentPlan         TreatmentPlan     @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  patient               Patient           @relation(fields: [patientId], references: [id])
+  assessedBy            StaffProfile      @relation("DebondReadinessAssessor", fields: [assessedById], references: [id])
+  approvedBy            StaffProfile?     @relation("DebondReadinessApprover", fields: [approvedById], references: [id])
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@index([patientId])
+  @@index([isReady])
+  @@index([scheduledDebondDate])
+  @@map("debond_readiness")
+}
+
+/// RetentionProtocol - Post-treatment retention management
+model RetentionProtocol {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+  treatmentPlanId       String                @db.ObjectId
+  patientId             String                @db.ObjectId
+
+  // Protocol start
+  startDate             DateTime              @default(now())
+  debondDate            DateTime?             // Date braces removed
+
+  // Current phase
+  currentPhase          RetentionPhase        @default(INITIAL)
+  phaseStartDate        DateTime              @default(now())
+
+  // Wear schedule
+  wearSchedule          RetentionWearSchedule @default(FULL_TIME)
+  wearHoursPerDay       Int?                  // Specific hours if applicable
+  wearInstructions      String?               // Specific instructions
+
+  // Retainer information
+  upperRetainerType     String?               // "Hawley", "Essix", "Fixed"
+  lowerRetainerType     String?
+  upperRetainerId       String?               @db.ObjectId // Link to RetainerRecord
+  lowerRetainerId       String?               @db.ObjectId
+
+  // Compliance tracking
+  complianceStatus      PatientComplianceLevel @default(EXCELLENT)
+  lastComplianceUpdate  DateTime?
+
+  // Check schedule
+  checkIntervalMonths   Int                   @default(6)  // Months between checks
+  nextCheckDate         DateTime?
+  totalChecks           Int                   @default(0)
+
+  // Stability
+  stabilityStatus       StabilityStatus       @default(STABLE)
+  lastStabilityAssessment DateTime?
+  stabilityNotes        String?
+
+  // Protocol adjustments
+  adjustmentHistory     Json?                 // Array of adjustments made
+  currentNotes          String?
+
+  // Provider
+  managingProviderId    String                @db.ObjectId
+
+  // Protocol status
+  isActive              Boolean               @default(true)
+  endDate               DateTime?
+  endReason             String?
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  treatmentPlan         TreatmentPlan         @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  patient               Patient               @relation(fields: [patientId], references: [id])
+  managingProvider      StaffProfile          @relation("RetentionProtocolProvider", fields: [managingProviderId], references: [id])
+  retentionChecks       RetentionCheck[]
+
+  @@index([clinicId])
+  @@index([treatmentPlanId])
+  @@index([patientId])
+  @@index([currentPhase])
+  @@index([nextCheckDate])
+  @@index([isActive])
+  @@map("retention_protocols")
+}
+
+/// RetentionCheck - Individual retention check visit record
+model RetentionCheck {
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String                @db.ObjectId
+  retentionProtocolId   String                @db.ObjectId
+  patientId             String                @db.ObjectId
+
+  // Check details
+  checkDate             DateTime              @default(now())
+  checkNumber           Int                   // 1, 2, 3, etc.
+
+  // Assessment
+  wearScheduleFollowed  Boolean?
+  reportedWearHours     Int?                  // Patient-reported hours
+  complianceStatus      PatientComplianceLevel?
+
+  // Retainer condition
+  upperRetainerCondition RetainerCondition?
+  lowerRetainerCondition RetainerCondition?
+  retainerFit           String?               // "Good", "Tight", "Loose"
+
+  // Stability assessment
+  stabilityStatus       StabilityStatus?
+  movementObserved      String[]              // Any tooth movement noted
+  measurementsJson      Json?                 // Clinical measurements
+
+  // Actions taken
+  adjustmentsMade       String[]
+  retainerReplaced      Boolean               @default(false)
+  newRetainerOrdered    Boolean               @default(false)
+
+  // Provider notes
+  clinicalFindings      String?
+  patientConcerns       String?
+  instructions          String?
+  recommendations       String[]
+
+  // Next steps
+  phaseAdvanced         Boolean               @default(false)
+  newPhase              RetentionPhase?
+  newWearSchedule       RetentionWearSchedule?
+  nextCheckDate         DateTime?
+
+  // Provider
+  performedById         String                @db.ObjectId
+
+  // Timestamps
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  clinic                Clinic                @relation(fields: [clinicId], references: [id])
+  retentionProtocol     RetentionProtocol     @relation(fields: [retentionProtocolId], references: [id], onDelete: Cascade)
+  patient               Patient               @relation(fields: [patientId], references: [id])
+  performedBy           StaffProfile          @relation("RetentionCheckPerformer", fields: [performedById], references: [id])
+
+  @@index([clinicId])
+  @@index([retentionProtocolId])
+  @@index([patientId])
+  @@index([checkDate])
+  @@map("retention_checks")
+}
+
+/// TreatmentOutcome - Final treatment outcome assessment
+model TreatmentOutcome {
+  id                    String              @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String              @db.ObjectId
+  treatmentPlanId       String              @db.ObjectId
+  patientId             String              @db.ObjectId
+
+  // Assessment date
+  assessmentDate        DateTime            @default(now())
+
+  // Treatment summary
+  treatmentStartDate    DateTime?
+  treatmentEndDate      DateTime?
+  totalDurationMonths   Int?
+  totalVisits           Int?
+
+  // Overall outcome
+  overallRating         OutcomeRating       @default(GOOD)
+  objectivesAchieved    String[]            // List of achieved objectives
+  objectivesPartial     String[]            // Partially achieved
+  objectivesNotMet      String[]            // Not achieved
+
+  // Clinical outcomes
+  alignmentScore        Float?              // 0-100
+  occlusionScore        Float?              // 0-100
+  aestheticScore        Float?              // 0-100
+  functionalScore       Float?              // 0-100
+
+  // Measurements comparison
+  initialMeasurements   Json?               // Initial clinical measurements
+  finalMeasurements     Json?               // Final clinical measurements
+
+  // Patient satisfaction
+  patientSatisfactionScore Int?             // 1-10
+  patientFeedback       String?
+  wouldRecommend        Boolean?
+
+  // Provider assessment
+  clinicalNotes         String?
+  treatmentChallenges   String[]            // Challenges encountered
+  lessonsLearned        String?
+  wouldDoAnythingDifferent String?
+
+  // Follow-up
+  followUpRecommendations String[]
+  retentionProtocolId   String?             @db.ObjectId // Link to retention
+
+  // Photos
+  beforePhotoIds        String[]            @db.ObjectId
+  afterPhotoIds         String[]            @db.ObjectId
+
+  // Provider
+  assessedById          String              @db.ObjectId
+
+  // Timestamps
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  // Relations
+  clinic                Clinic              @relation(fields: [clinicId], references: [id])
+  treatmentPlan         TreatmentPlan       @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  patient               Patient             @relation(fields: [patientId], references: [id])
+  assessedBy            StaffProfile        @relation("TreatmentOutcomeAssessor", fields: [assessedById], references: [id])
+
+  @@unique([treatmentPlanId]) // One outcome per plan
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([overallRating])
+  @@index([assessmentDate])
+  @@map("treatment_outcomes")
 }
