@@ -16,7 +16,7 @@
 | **Priority** | High |
 | **Phase** | 3 - Clinical |
 | **Dependencies** | Phase 1 (Auth, Staff), Phase 2 (Booking), Treatment Management |
-| **Last Updated** | 2024-12-10 |
+| **Last Updated** | 2024-12-11 |
 
 ---
 
@@ -440,70 +440,92 @@ docs/areas/imaging-management/
 
 ### What's Implemented
 
-**Components (40+ components):**
-- `ImageUploader.tsx` - Drag-drop upload with progress
-- `ImageGallery.tsx` - Patient gallery with search/filter/pagination
-- `ImageViewer.tsx` - Full viewer with adjustments (brightness, contrast, saturation, etc.)
-- `ImageCard.tsx` - Card display component
-- `AnnotationCanvas.tsx`, `AnnotationToolbar.tsx` - Drawing and annotation tools
-- `MeasurementCanvas.tsx`, `MeasurementToolbar.tsx` - Linear, angle, area measurements
-- `CephAnalysis.tsx`, `CephCanvas.tsx`, `CephToolbar.tsx`, `CephMeasurementsPanel.tsx` - Full cephalometric analysis
-- `Model3DViewer.tsx`, `Model3DCanvas.tsx`, `Model3DToolbar.tsx` - STL/PLY/OBJ viewer
-- `DicomViewer.tsx`, `DicomToolbar.tsx` - DICOM X-ray viewing
-- `CollageEditor.tsx`, `CollagePreview.tsx`, `TemplateSelector.tsx` - Collage building
-- `ReportBuilder.tsx`, `ReportSectionEditor.tsx`, `ReportTemplateSelector.tsx` - Progress reports
-- `PresentationBuilder.tsx`, `PresentationViewer.tsx`, `BeforeAfterPairSelector.tsx` - Presentations
-- `TreatmentPhaseSelector.tsx`, `TreatmentPhaseBadge.tsx`, `TreatmentPhaseImageGallery.tsx` - Phase linking
-- `AIAnalysisPanel.tsx`, `AICephLandmarks.tsx`, `AIProgressComparison.tsx`, `AIStatusIndicator.tsx` - AI features
-- `RetentionPolicyList.tsx`, `RetentionPolicyForm.tsx`, `RetentionDashboard.tsx`, `ArchiveManagement.tsx`, `LegalHoldManager.tsx` - Retention management
+**Prisma Models:**
+- `PatientImage` - Core image storage with metadata, categorization, retention, archival, legal hold
+- `PhotoProtocol` - Standard photo series templates with slots
+- `PhotoProtocolSlot` - Individual slots in protocols (name, category, instructions, guide image)
+- `ImageTag` - Custom tags with colors and categories
+- `ImageTagAssignment` - Junction table for image-tag relationships
+- `ImageAnnotation` - Annotations with type, geometry, style, text
+- `ImageMeasurement` - Linear, angle, area, perimeter measurements with calibration
+- `CollageTemplate` - Layout templates with slots, styling, aspect ratio
+- `ImageCollage` - Generated collages with slot assignments and customizations
+- `ProgressReport` - Treatment progress reports with sections, summary, notes
+- `CephAnalysis` - Cephalometric analysis with landmarks, measurements, presets
+- `ImageRetentionPolicy` - Configurable retention rules by category
+- `ImageArchiveRecord` - Audit trail for archival/restoration/deletion events
 
-**Pages (11 pages):**
-- `/imaging` - Dashboard
-- `/imaging/protocols` - Photo protocol management
-- `/imaging/compare` - Image comparison (side-by-side, slider)
+**Components (40+ components):**
+- `ImageUploader.tsx` - Drag-drop upload with progress, supports images + 3D models (STL/OBJ/PLY)
+- `ImageGallery.tsx` - Patient gallery with search/filter/pagination
+- `ImageViewer.tsx` - Full viewer with adjustments (brightness, contrast, saturation, hue, blur)
+- `ImageCard.tsx` - Card display with variants (default, compact, list)
+- `ImageAdjustments.tsx` - Image filter controls with CSS filter generation
+- `BeforeAfterSlider.tsx` - Interactive before/after comparison slider
+- `ImageComparison.tsx` - Side-by-side or overlay comparison modes
+- `annotations/AnnotationCanvas.tsx`, `AnnotationToolbar.tsx` - Drawing tools (text, rect, circle, line, polygon, freehand)
+- `measurements/MeasurementCanvas.tsx`, `MeasurementToolbar.tsx` - LINEAR, ANGLE, AREA, PERIMETER measurements
+- `cephalometric/CephAnalysis.tsx`, `CephCanvas.tsx`, `CephToolbar.tsx`, `CephMeasurementsPanel.tsx` - Full cephalometric analysis with 40+ landmarks, multiple presets (STEINER, DOWNS, TWEED, RICKETTS, QUICK)
+- `model-viewer/Model3DViewer.tsx`, `Model3DCanvas.tsx`, `Model3DToolbar.tsx` - Three.js-based STL/PLY/OBJ viewer with view presets, material options, measurements
+- `dicom-viewer/DicomViewer.tsx`, `DicomToolbar.tsx` - Cornerstone.js-based DICOM viewing with window/level, multi-modality support
+- `collage/CollageEditor.tsx`, `CollagePreview.tsx`, `TemplateSelector.tsx` - Collage building with templates
+- `progress-report/ReportBuilder.tsx`, `ReportSectionEditor.tsx`, `TemplateSelector.tsx` - Progress reports (INITIAL, PROGRESS, FINAL, COMPARISON)
+- `presentations/PresentationBuilder.tsx`, `PresentationViewer.tsx`, `BeforeAfterPairSelector.tsx` - Before/after presentations with layouts
+- `treatment-phase/TreatmentPhaseSelector.tsx`, `TreatmentPhaseBadge.tsx`, `TreatmentPhaseImageGallery.tsx` - Phase linking
+- `ai-analysis/AIAnalysisPanel.tsx`, `AICephLandmarks.tsx`, `AIProgressComparison.tsx`, `QualityAnalysisPanel.tsx`, `CategorizationPanel.tsx`, `AIStatusIndicator.tsx` - AI features
+- `retention/RetentionPolicyList.tsx`, `RetentionPolicyForm.tsx`, `RetentionDashboard.tsx`, `ArchiveManagement.tsx`, `LegalHoldManager.tsx` - Retention management
+
+**Pages (12 pages):**
+- `/imaging` - Dashboard with stats, quick actions, info cards
+- `/imaging/protocols` - Photo protocol management (CRUD)
+- `/imaging/compare` - Image comparison tool
 - `/imaging/collages` - Collage builder
 - `/imaging/reports` - Progress report builder
 - `/imaging/presentations` - Before/after presentations
-- `/imaging/cephalometric` - Cephalometric analysis
-- `/imaging/cephalometric/[id]` - Individual analysis view
-- `/imaging/3d-viewer` - 3D model viewer
-- `/imaging/dicom` - DICOM viewer
-- `/imaging/retention` - Retention & archival management
+- `/imaging/cephalometric` - Cephalometric analysis list with filtering
+- `/imaging/cephalometric/[id]` - Individual ceph analysis editor
+- `/imaging/3d-viewer` - 3D model viewer (STL/OBJ/PLY)
+- `/imaging/dicom` - DICOM medical image viewer
+- `/imaging/retention` - Retention policy and archive management
+- `/patients/[id]/images` - Patient image gallery
+- `/patients/[id]/images/upload` - Patient-specific image upload
 
 **API Endpoints (30+ endpoints):**
-- `GET/POST /api/images` - Image upload and listing
-- `GET/DELETE /api/images/[id]` - Individual image operations
+- `GET/POST /api/images` - Image upload (multipart/form-data) and listing with pagination/filtering
+- `GET/PUT/DELETE /api/images/[id]` - Individual image operations with metadata updates
 - `GET/POST /api/images/[id]/annotations` - Annotation CRUD
+- `GET/PUT/DELETE /api/images/[id]/annotations/[annotationId]` - Individual annotation operations
 - `GET/POST /api/images/[id]/measurements` - Measurement CRUD
-- `POST /api/images/phase-link` - Treatment phase linking
-- `GET /api/patients/[id]/images` - Patient images
-- `GET /api/treatment-phases/[phaseId]/images` - Phase images
-- `GET/POST /api/photo-protocols` - Protocol management
-- `GET/POST /api/image-tags` - Tag management
-- `GET/POST /api/collage-templates` - Template CRUD
-- `GET/POST /api/collages` - Collage CRUD
-- `GET/POST /api/progress-reports` - Report CRUD
-- `GET/POST /api/imaging/ceph-analyses` - Ceph analysis CRUD
-- `POST /api/ai/imaging/analyze` - AI image analysis
-- `POST /api/ai/imaging/ceph-landmarks` - AI landmark detection
-- `POST /api/ai/imaging/compare` - AI comparison
-- `POST /api/ai/imaging/report` - AI report generation
+- `GET/PUT/DELETE /api/images/[id]/measurements/[measurementId]` - Individual measurement operations
+- `POST /api/images/phase-link` - Link/unlink images from treatment phases
+- `GET/POST /api/imaging/protocols` - Protocol management
+- `PUT/DELETE /api/imaging/protocols/[id]` - Protocol updates
+- `GET/POST /api/imaging/ceph-analyses` - Ceph analysis CRUD with filtering
+- `GET/PUT/DELETE /api/imaging/ceph-analyses/[id]` - Individual analysis operations
 - `GET/POST /api/imaging/retention/policies` - Retention policy CRUD
-- `POST /api/imaging/retention/archive` - Archive images
-- `POST /api/imaging/retention/restore` - Restore images
-- `POST /api/imaging/retention/legal-hold` - Legal hold management
-- `GET /api/imaging/retention/report` - Compliance reporting
-- `GET /api/imaging/retention/storage` - Storage usage
-- `POST /api/cron/image-retention` - Auto-archival cron job
+- `GET/PUT/DELETE /api/imaging/retention/policies/[policyId]` - Policy operations
+- `POST /api/imaging/retention/archive` - Trigger archival
+- `POST /api/imaging/retention/restore` - Restore archived images
+- `POST /api/imaging/retention/legal-hold` - Apply/remove legal holds
+- `POST /api/imaging/retention/report` - Generate retention reports
+- `GET /api/imaging/retention/storage` - Storage usage statistics
+
+**Storage:**
+- Local filesystem at `public/uploads/images/{clinicId}/{patientId}/{uuid}.ext`
+- Images served via Next.js static file serving
+- Thumbnail generation for images
+- Support for images, 3D models (STL/OBJ/PLY), and DICOM files
 
 **Hooks:**
 - `useRetention` - Retention management hook
 
 ### What's Not Yet Implemented
 
-- Device Integration (hardware-dependent):
-  - Direct intraoral camera capture (USB)
+- **Device Integration** (hardware-dependent, deferred):
+  - Direct intraoral camera capture (USB SDK)
   - DSLR tethered/WiFi capture
-  - DICOM network import (PACS)
+  - DICOM network import (PACS integration)
   - 3D scanner cloud API (iTero, 3Shape)
-- Presentation API endpoint (UI exists)
+- **Advanced AI features** - Auto-placement refinement for ceph landmarks
+- **Batch operations** - Bulk image operations
+- **Additional export formats** - More export options

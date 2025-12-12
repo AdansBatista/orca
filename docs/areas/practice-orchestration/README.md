@@ -12,11 +12,11 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Status** | ✅ Complete (88%) |
+| **Status** | ✅ Complete (~90%) |
 | **Priority** | High |
 | **Phase** | 2 - Core Operations |
 | **Dependencies** | Phase 1 (Auth, Staff, Resources), Booking & Scheduling |
-| **Last Updated** | 2025-12-06 |
+| **Last Updated** | 2024-12-11 |
 | **Completion** | 3/4 sub-areas (30/34 functions), AI Manager deferred |
 
 ---
@@ -725,8 +725,101 @@ src/app/api/ops/
 
 ---
 
-**Status**: ✅ Complete (88%)
-**Last Updated**: 2025-12-06
+**Status**: ✅ Complete (~90%)
+**Last Updated**: 2024-12-11
 **Completed**: Operations Dashboard, Patient Flow, Resource Coordination
 **Deferred**: AI Manager (requires AI infrastructure planning)
 **Owner**: Development Team
+
+---
+
+## Implementation Summary
+
+### What's Implemented
+
+**Prisma Models:**
+- `Room` - Treatment rooms with type, floor, wing, capacity, capabilities, status
+- `TreatmentChair` - Chairs with equipment details, features, maintenance tracking
+- `ResourceOccupancy` - Real-time chair/room status with activity sub-stages
+- `PatientFlowState` - Patient journey tracking through stages with timestamps
+- `FlowStageHistory` - Stage transition audit trail with durations
+- `StaffAssignment` - Staff-to-appointment role assignments
+- `OperationsTask` - Task management (MANUAL, AI_GENERATED, SYSTEM)
+- `DailyMetrics` - Day-level metrics (wait times, utilization, completion)
+
+**Chair Activity Sub-Stages (6-stage workflow for occupied chairs):**
+1. `SETUP` - Patient seated, room being prepared (slate gray)
+2. `ASSISTANT_WORKING` - Assistant working on patient (violet)
+3. `READY_FOR_DOCTOR` - Ready for doctor evaluation (amber, pulsing)
+4. `DOCTOR_CHECKING` - Doctor actively checking/treating (green)
+5. `FINISHING` - Completing treatment (blue)
+6. `CLEANING` - Post-treatment cleanup (yellow)
+
+**Components:**
+- `orchestration/ChairStatusSidebar.tsx` - Global floating sidebar with 3 expansion levels
+- `orchestration/ChairStatusCircle.tsx` - SVG donut chart visualization with color-coding
+- `orchestration/VerticalStackView.tsx` - Semi-expanded chair segments view
+- `orchestration/FullCardsView.tsx` - Fully expanded chair cards with filters
+- `orchestration/ChairCard.tsx` - Detailed chair status card with sub-stage controls
+- `rooms/ChairForm.tsx` - Create/edit treatment chair dialog
+- `rooms/ChairSection.tsx` - List of chairs in a room with management
+- `ops/FloorPlanView.tsx` - Full floor plan visualization with real-time updates
+- `ops/PatientFlowBoard.tsx` - Kanban-style patient flow board
+- `ops/QueueDisplay.tsx` - Queue/list view of patient flow
+- `ops/ChairSelectionDialog.tsx` - Patient-to-chair assignment dialog
+- `ops/PatientDetailSheet.tsx` - Slide-out patient details panel
+- `ops/WeekView.tsx`, `ops/MonthView.tsx` - Analytics views
+
+**Context/State:**
+- `ChairSidebarContext` - Global sidebar expansion state (Level 0, 1, 2) with localStorage persistence
+- `useChairStatus` hook - Fetches chair status with 30-second polling, provides summary stats
+
+**Pages:**
+- `/ops` - Main operations dashboard with metrics, tabs (Day/Week/Month), Kanban/Queue views
+- `/ops/floor-plan` - Full floor plan view with fullscreen toggle
+- `/ops/tasks` - Operations tasks management
+
+**API Endpoints:**
+- `GET /api/ops/resources/status` - All chairs/rooms with current status, sub-stages, patients
+- `PUT /api/ops/chairs/[chairId]/sub-stage` - Update chair activity sub-stage
+- `GET /api/ops/chairs/[chairId]/sub-stage` - Get current sub-stage
+- `PUT /api/ops/chairs/[chairId]/ready-for-doctor` - Quick transition to READY_FOR_DOCTOR
+- `PUT /api/ops/chairs/[chairId]/block` - Block chair (maintenance/cleaning)
+- `PUT /api/ops/chairs/[chairId]/unblock` - Unblock chair
+- `PUT /api/ops/chairs/[chairId]/note` - Add procedure notes
+- `POST /api/ops/flow/check-in` - Check in patient
+- `POST /api/ops/flow/call` - Call patient to treatment area
+- `POST /api/ops/flow/seat` - Seat patient in chair (creates occupancy, sets SETUP sub-stage)
+- `POST /api/ops/flow/complete` - Mark treatment complete
+- `POST /api/ops/flow/check-out` - Check out patient
+- `POST /api/ops/flow/waiting` - Mark patient as waiting
+- `POST /api/ops/flow/revert` - Revert to previous flow stage
+- `GET /api/ops/flow` - Get current queue/flow status
+- `GET /api/ops/dashboard/metrics` - Day metrics
+- `GET /api/ops/dashboard/day` - Day-level analytics
+- `GET /api/ops/dashboard/week` - Week-level analytics
+- `GET /api/ops/dashboard/month` - Month-level analytics
+- `GET /api/ops/floor-plan/layout` - Floor plan layout data
+- `GET/POST /api/ops/tasks` - Task management
+
+**Features:**
+- Real-time chair status visualization via donut chart
+- 3-level expandable sidebar (floating button → vertical stack → full cards)
+- Chair activity sub-stage tracking with time-in-stage display
+- Ready-for-doctor chairs pulsate with amber glow
+- Color-coded status indicators
+- Patient flow stages: SCHEDULED → CHECKED_IN → WAITING → CALLED → IN_CHAIR → COMPLETED → CHECKED_OUT → DEPARTED
+- Stage history with timestamps and durations
+- Chair utilization metrics
+- Wait time monitoring and analytics
+- Day/Week/Month dashboard views
+- Floor plan with room-based grouping
+- Kanban board and queue list views
+- 30-second auto-refresh polling
+- PHI protection with fake data generators
+- Permission-gated (requires `ops:read`, `ops:update`, `ops:manage_flow`)
+
+### What's Not Yet Implemented
+- **AI Manager** (deferred) - Natural language queries, anomaly detection, schedule optimization
+- WebSocket/SSE real-time updates (currently using polling)
+- Advanced analytics dashboards
