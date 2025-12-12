@@ -145,6 +145,26 @@ model Clinic {
   retentionChecks            RetentionCheck[]
   treatmentOutcomes          TreatmentOutcome[]
 
+  // Lab Work Management relations
+  labVendors                 LabVendor[]
+  labProducts                LabProduct[]
+  labFeeSchedules            LabFeeSchedule[]
+  labContracts               LabContract[]
+  labPreferenceRules         LabPreferenceRule[]
+  labVendorMetrics           LabVendorMetrics[]
+  labMessages                LabMessage[]
+  labOrders                  LabOrder[]
+  labOrderTemplates          LabOrderTemplate[]
+  labInspections             LabInspection[]
+  remakeRequests             RemakeRequest[]
+  labWarranties              LabWarranty[]
+  qualityIssues              QualityIssue[]
+  labFeedback                LabFeedback[]
+  patientPickupItems         PatientPickupItem[]
+  reorderReminders           ReorderReminder[]
+  orderDueDateAlerts         OrderDueDateAlert[]
+  labIntegrations            LabIntegration[]
+
   @@map("clinics")
 }
 
@@ -422,6 +442,11 @@ model Patient {
   retentionProtocols         RetentionProtocol[]
   retentionChecks            RetentionCheck[]
   treatmentOutcomes          TreatmentOutcome[]
+
+  // Lab Work Management relations
+  labOrders                  LabOrder[]
+  patientPickupItems         PatientPickupItem[]
+  reorderReminders           ReorderReminder[]
 
   @@index([clinicId])
   @@index([lastName, firstName])
@@ -6791,6 +6816,9 @@ model TreatmentPlan {
   retentionProtocol       RetentionProtocol[]
   treatmentOutcome        TreatmentOutcome?
 
+  // Lab Work Management relations
+  labOrders               LabOrder[]
+
   @@index([clinicId])
   @@index([patientId])
   @@index([primaryProviderId])
@@ -8784,6 +8812,9 @@ model PatientImage {
   cephAnalyses      CephAnalysis[]
   archiveRecords    ImageArchiveRecord[]
 
+  // Lab Work Management relations
+  labOrderAttachments LabOrderAttachment[]
+
   @@index([clinicId])
   @@index([patientId])
   @@index([category])
@@ -9595,4 +9626,1225 @@ model TreatmentOutcome {
   @@index([overallRating])
   @@index([assessmentDate])
   @@map("treatment_outcomes")
+}
+
+// =============================================================================
+// LAB WORK MANAGEMENT AREA - Lab orders, vendors, tracking, and quality
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Lab Vendor Management Models
+// -----------------------------------------------------------------------------
+
+/// LabVendor - External dental laboratory company
+model LabVendor {
+  id                    String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId              String          @db.ObjectId
+  name                  String
+  code                  String          // Short code (e.g., "OSL")
+  legalName             String?
+  taxId                 String?
+  website               String?
+  accountNumber         String?
+  status                LabVendorStatus @default(ACTIVE)
+
+  // Contact info (embedded)
+  address               Json?           // {street, city, state, zip, country}
+  primaryPhone          String?
+  primaryEmail          String?
+
+  // Integration
+  portalUrl             String?
+  apiEndpoint           String?
+  credentials           String?         // Encrypted
+
+  // Capabilities
+  capabilities          String[]        // Product categories they support
+  specialties           String[]
+
+  // Shipping
+  defaultCarrier        ShippingCarrier?
+  shippingAccountNumber String?
+
+  // Billing
+  paymentTerms          Int?            @default(30) // Days
+  billingEmail          String?
+
+  // Audit
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  deletedAt             DateTime?
+  createdBy             String?         @db.ObjectId
+  updatedBy             String?         @db.ObjectId
+
+  // Relations
+  clinic                Clinic          @relation(fields: [clinicId], references: [id])
+  contacts              LabVendorContact[]
+  products              LabProduct[]
+  feeSchedules          LabFeeSchedule[]
+  contracts             LabContract[]
+  orders                LabOrder[]
+  metrics               LabVendorMetrics[]
+  messages              LabMessage[]
+  preferenceRules       LabPreferenceRule[]
+  integrations          LabIntegration[]
+
+  @@unique([clinicId, code])
+  @@index([clinicId])
+  @@index([status])
+  @@map("lab_vendors")
+}
+
+/// LabVendorContact - Contact person at a lab vendor
+model LabVendorContact {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  vendorId  String         @db.ObjectId
+  name      String
+  title     String?
+  phone     String?
+  email     String?
+  role      LabContactRole @default(PRIMARY)
+  isPrimary Boolean        @default(false)
+  notes     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  vendor    LabVendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("lab_vendor_contacts")
+}
+
+/// LabProduct - Product in the lab catalog
+model LabProduct {
+  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId           String             @db.ObjectId
+  vendorId           String?            @db.ObjectId  // Null = clinic-wide product
+  name               String
+  description        String?
+  sku                String?
+  category           LabProductCategory
+
+  // Prescription schema (JSON schema for Rx fields)
+  prescriptionSchema Json?
+
+  // Turnaround
+  standardTurnaround Int                @default(7)  // Days
+  rushTurnaround     Int?               // Days for rush
+
+  // Status
+  isActive           Boolean            @default(true)
+
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
+
+  // Relations
+  clinic             Clinic             @relation(fields: [clinicId], references: [id])
+  vendor             LabVendor?         @relation(fields: [vendorId], references: [id])
+  feeSchedules       LabFeeSchedule[]
+  orderItems         LabOrderItem[]
+
+  @@index([clinicId])
+  @@index([vendorId])
+  @@index([category])
+  @@index([isActive])
+  @@map("lab_products")
+}
+
+/// LabFeeSchedule - Pricing for lab products by vendor
+model LabFeeSchedule {
+  id                  String     @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId            String     @db.ObjectId
+  vendorId            String     @db.ObjectId
+  productId           String     @db.ObjectId
+
+  basePrice           Float
+  rushUpchargePercent Float?     @default(50)
+  rushUpchargeFlat    Float?
+
+  effectiveDate       DateTime
+  endDate             DateTime?
+
+  // Volume discounts (JSON array)
+  volumeDiscounts     Json?
+
+  isActive            Boolean    @default(true)
+
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  // Relations
+  clinic              Clinic     @relation(fields: [clinicId], references: [id])
+  vendor              LabVendor  @relation(fields: [vendorId], references: [id])
+  product             LabProduct @relation(fields: [productId], references: [id])
+
+  @@index([clinicId])
+  @@index([vendorId])
+  @@index([productId])
+  @@index([isActive])
+  @@map("lab_fee_schedules")
+}
+
+/// LabContract - Contract agreement with a lab vendor
+model LabContract {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String            @db.ObjectId
+  vendorId          String            @db.ObjectId
+
+  contractNumber    String?
+  name              String
+  status            LabContractStatus @default(ACTIVE)
+
+  startDate         DateTime
+  endDate           DateTime?
+  autoRenew         Boolean           @default(false)
+  renewalNoticeDays Int?              @default(30)
+
+  // Terms
+  discountPercent   Float?
+  minimumVolume     Int?
+  slaTerms          String?
+  notes             String?
+
+  // Document
+  documentUrl       String?
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+
+  // Relations
+  clinic            Clinic            @relation(fields: [clinicId], references: [id])
+  vendor            LabVendor         @relation(fields: [vendorId], references: [id])
+
+  @@index([clinicId])
+  @@index([vendorId])
+  @@index([status])
+  @@map("lab_contracts")
+}
+
+/// LabPreferenceRule - Rule for automatic lab selection
+model LabPreferenceRule {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String    @db.ObjectId
+  vendorId    String    @db.ObjectId
+
+  name        String
+  description String?
+  priority    Int       @default(0)  // Lower = higher priority
+  isActive    Boolean   @default(true)
+
+  // Rule conditions (JSON)
+  conditions  Json      // {productCategory?, productId?, isRush?, etc.}
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  clinic      Clinic    @relation(fields: [clinicId], references: [id])
+  vendor      LabVendor @relation(fields: [vendorId], references: [id])
+
+  @@index([clinicId])
+  @@index([vendorId])
+  @@index([priority])
+  @@map("lab_preference_rules")
+}
+
+/// LabVendorMetrics - Aggregated vendor performance metrics
+model LabVendorMetrics {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String           @db.ObjectId
+  vendorId          String           @db.ObjectId
+
+  periodType        MetricPeriodType // DAILY, WEEKLY, MONTHLY, YEARLY
+  periodStart       DateTime
+  periodEnd         DateTime
+
+  // Volume
+  orderCount        Int              @default(0)
+  itemCount         Int              @default(0)
+  totalSpend        Float            @default(0)
+
+  // Performance
+  avgTurnaroundDays Float?
+  onTimeRate        Float?           // Percentage
+  remakeRate        Float?           // Percentage
+  qualityScore      Float?           // 0-100
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  // Relations
+  clinic            Clinic           @relation(fields: [clinicId], references: [id])
+  vendor            LabVendor        @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, periodType, periodStart])
+  @@index([clinicId])
+  @@index([vendorId])
+  @@map("lab_vendor_metrics")
+}
+
+/// LabMessage - Communication with lab vendors
+model LabMessage {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId    String           @db.ObjectId
+  vendorId    String           @db.ObjectId
+  orderId     String?          @db.ObjectId
+
+  threadId    String?          @db.ObjectId  // For threading
+  direction   MessageDirection // OUTBOUND, INBOUND
+
+  subject     String?
+  content     String
+
+  sentAt      DateTime?
+  readAt      DateTime?
+
+  sentBy      String?          @db.ObjectId
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  clinic      Clinic           @relation(fields: [clinicId], references: [id])
+  vendor      LabVendor        @relation(fields: [vendorId], references: [id])
+  order       LabOrder?        @relation(fields: [orderId], references: [id])
+
+  @@index([clinicId])
+  @@index([vendorId])
+  @@index([orderId])
+  @@index([threadId])
+  @@map("lab_messages")
+}
+
+// -----------------------------------------------------------------------------
+// Lab Vendor Management Enums
+// -----------------------------------------------------------------------------
+
+enum LabVendorStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum LabContactRole {
+  PRIMARY
+  BILLING
+  TECHNICAL
+  SHIPPING
+  EMERGENCY
+}
+
+enum LabProductCategory {
+  RETAINER
+  APPLIANCE
+  ALIGNER
+  INDIRECT_BONDING
+  ARCHWIRE
+  MODEL
+  SURGICAL
+  OTHER
+}
+
+enum LabContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+enum MetricPeriodType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+// Note: MessageDirection enum already exists in schema (line 5979)
+
+enum ShippingCarrier {
+  FEDEX
+  UPS
+  USPS
+  DHL
+  LAB_COURIER
+  OTHER
+}
+
+// -----------------------------------------------------------------------------
+// Lab Orders Models
+// -----------------------------------------------------------------------------
+
+/// LabOrder - Lab order header
+model LabOrder {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String          @db.ObjectId
+  patientId         String          @db.ObjectId
+  vendorId          String?         @db.ObjectId
+
+  orderNumber       String          // Clinic-generated (e.g., "LAB-2024-0001")
+  externalOrderId   String?         // From lab system
+
+  status            LabOrderStatus  @default(DRAFT)
+  priority          OrderPriority   @default(STANDARD)
+
+  // Rush handling
+  isRush            Boolean         @default(false)
+  rushLevel         RushLevel?
+  rushReason        String?
+
+  // Dates
+  orderDate         DateTime        @default(now())
+  submittedAt       DateTime?
+  neededByDate      DateTime?
+  estimatedDelivery DateTime?
+  actualDelivery    DateTime?
+
+  // Treatment links
+  treatmentPlanId   String?         @db.ObjectId
+  milestoneId       String?         @db.ObjectId
+  appointmentId     String?         @db.ObjectId
+
+  // Financial
+  subtotal          Float           @default(0)
+  rushUpcharge      Float           @default(0)
+  shippingCost      Float           @default(0)
+  totalCost         Float           @default(0)
+
+  // Notes
+  clinicNotes       String?
+  labNotes          String?
+
+  // Audit
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+  createdBy         String?         @db.ObjectId
+  updatedBy         String?         @db.ObjectId
+
+  // Relations
+  clinic            Clinic          @relation(fields: [clinicId], references: [id])
+  patient           Patient         @relation(fields: [patientId], references: [id])
+  vendor            LabVendor?      @relation(fields: [vendorId], references: [id])
+  treatmentPlan     TreatmentPlan?  @relation(fields: [treatmentPlanId], references: [id])
+  items             LabOrderItem[]
+  attachments       LabOrderAttachment[]
+  statusLogs        LabOrderStatusLog[]
+  shipments         LabShipment[]
+  messages          LabMessage[]
+  inspections       LabInspection[]
+  pickupItems       PatientPickupItem[]
+
+  @@unique([clinicId, orderNumber])
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([orderDate])
+  @@index([neededByDate])
+  @@map("lab_orders")
+}
+
+/// LabOrderItem - Individual item on a lab order
+model LabOrderItem {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  orderId         String              @db.ObjectId
+  productId       String              @db.ObjectId
+
+  productName     String              // Denormalized
+  quantity        Int                 @default(1)
+
+  // Prescription details (JSON)
+  prescription    Json?
+
+  // Arch/tooth specification
+  arch            Arch?
+  toothNumbers    Int[]
+
+  // Pricing
+  unitPrice       Float
+  totalPrice      Float
+
+  // Item status
+  status          LabOrderItemStatus  @default(PENDING)
+
+  // Notes
+  notes           String?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  order           LabOrder            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         LabProduct          @relation(fields: [productId], references: [id])
+  inspections     LabInspection[]
+  warranties      LabWarranty[]
+  remakeRequests  RemakeRequest[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([status])
+  @@map("lab_order_items")
+}
+
+/// LabOrderAttachment - File attached to a lab order
+model LabOrderAttachment {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  orderId         String           @db.ObjectId
+
+  fileName        String
+  fileType        LabAttachmentType
+  mimeType        String
+  fileSize        Int              // Bytes
+  storageKey      String           // Cloud storage key
+
+  // Source tracking
+  source          AttachmentSource @default(MANUAL_UPLOAD)
+  patientImageId  String?          @db.ObjectId  // If from imaging
+
+  description     String?
+
+  createdAt       DateTime         @default(now())
+  uploadedBy      String?          @db.ObjectId
+
+  // Relations
+  order           LabOrder         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  patientImage    PatientImage?    @relation(fields: [patientImageId], references: [id])
+
+  @@index([orderId])
+  @@index([patientImageId])
+  @@map("lab_order_attachments")
+}
+
+/// LabOrderTemplate - Reusable order template
+model LabOrderTemplate {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String   @db.ObjectId
+
+  name            String
+  description     String?
+
+  // Scope
+  isClinicWide    Boolean  @default(false)
+  createdByUserId String?  @db.ObjectId
+
+  // Template content
+  vendorId        String?  @db.ObjectId
+  items           Json     // Array of item templates
+  defaultNotes    String?
+
+  usageCount      Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  clinic          Clinic   @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([isClinicWide])
+  @@map("lab_order_templates")
+}
+
+/// LabOrderStatusLog - Status change history for orders
+model LabOrderStatusLog {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  orderId         String             @db.ObjectId
+
+  fromStatus      LabOrderStatus?
+  toStatus        LabOrderStatus
+
+  source          StatusChangeSource @default(USER)
+  notes           String?
+
+  createdAt       DateTime           @default(now())
+  changedBy       String?            @db.ObjectId
+
+  // Relations
+  order           LabOrder           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("lab_order_status_logs")
+}
+
+// -----------------------------------------------------------------------------
+// Lab Orders Enums
+// -----------------------------------------------------------------------------
+
+enum LabOrderStatus {
+  DRAFT
+  SUBMITTED
+  ACKNOWLEDGED
+  IN_PROGRESS
+  COMPLETED
+  SHIPPED
+  DELIVERED
+  RECEIVED
+  PATIENT_PICKUP
+  PICKED_UP
+  CANCELLED
+  REMAKE_REQUESTED
+  ON_HOLD
+}
+
+enum OrderPriority {
+  LOW
+  STANDARD
+  HIGH
+  URGENT
+}
+
+enum RushLevel {
+  EMERGENCY    // Same day / next day
+  RUSH         // 2-3 days
+  PRIORITY     // 4-5 days
+}
+
+// Note: Arch enum already exists in schema (line 7355)
+
+enum LabOrderItemStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SHIPPED
+  DELIVERED
+  INSPECTED
+  ACCEPTED
+  REJECTED
+}
+
+enum LabAttachmentType {
+  STL_SCAN
+  PHOTO
+  XRAY
+  DOCUMENT
+  OTHER
+}
+
+enum AttachmentSource {
+  MANUAL_UPLOAD
+  ITERO_SYNC
+  THREESHAPE_IMPORT
+  IMAGING_SYSTEM
+}
+
+enum StatusChangeSource {
+  USER
+  LAB
+  SYSTEM
+  SHIPPING
+}
+
+// -----------------------------------------------------------------------------
+// Order Tracking Models
+// -----------------------------------------------------------------------------
+
+/// LabShipment - Shipment tracking for lab orders
+model LabShipment {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  orderId           String          @db.ObjectId
+
+  carrier           ShippingCarrier
+  trackingNumber    String?
+  trackingUrl       String?
+
+  status            ShipmentStatus  @default(PENDING)
+
+  shippedAt         DateTime?
+  estimatedDelivery DateTime?
+  actualDelivery    DateTime?
+
+  // Delivery details
+  deliveredTo       String?
+  signatureUrl      String?
+
+  // Package info
+  packageCount      Int             @default(1)
+  weight            Float?
+  dimensions        String?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  order             LabOrder        @relation(fields: [orderId], references: [id])
+  events            ShipmentEvent[]
+
+  @@index([orderId])
+  @@index([trackingNumber])
+  @@index([status])
+  @@map("lab_shipments")
+}
+
+/// ShipmentEvent - Individual tracking event for a shipment
+model ShipmentEvent {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  shipmentId      String              @db.ObjectId
+
+  status          String
+  description     String?
+  location        String?
+  timestamp       DateTime
+
+  source          ShipmentEventSource @default(CARRIER_API)
+
+  createdAt       DateTime            @default(now())
+
+  // Relations
+  shipment        LabShipment         @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@index([timestamp])
+  @@map("shipment_events")
+}
+
+/// PatientPickupItem - Items awaiting patient pickup
+model PatientPickupItem {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String       @db.ObjectId
+  orderId         String       @db.ObjectId
+  patientId       String       @db.ObjectId
+
+  itemDescription String
+  storageLocation String?
+
+  status          PickupStatus @default(AWAITING_PICKUP)
+
+  // Reminders
+  reminderCount   Int          @default(0)
+  lastReminderAt  DateTime?
+  nextReminderAt  DateTime?
+
+  // Pickup
+  pickedUpAt      DateTime?
+  pickedUpBy      String?      // Name of person who picked up
+  verifiedBy      String?      @db.ObjectId
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  clinic          Clinic       @relation(fields: [clinicId], references: [id])
+  order           LabOrder     @relation(fields: [orderId], references: [id])
+  patient         Patient      @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([orderId])
+  @@index([patientId])
+  @@index([status])
+  @@map("patient_pickup_items")
+}
+
+/// ReorderReminder - Automatic reorder reminders for patients
+model ReorderReminder {
+  id                String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId          String                @db.ObjectId
+  patientId         String                @db.ObjectId
+  originalOrderId   String?               @db.ObjectId
+
+  productCategory   LabProductCategory
+  productName       String
+
+  reminderType      LabReminderType       @default(SCHEDULED)
+  scheduledFor      DateTime
+  intervalMonths    Int?
+
+  status            ReorderReminderStatus @default(PENDING)
+
+  // Response tracking
+  respondedAt       DateTime?
+  response          String?
+  newOrderId        String?               @db.ObjectId
+
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  // Relations
+  clinic            Clinic                @relation(fields: [clinicId], references: [id])
+  patient           Patient               @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("reorder_reminders")
+}
+
+/// OrderDueDateAlert - Alerts for order due dates
+model OrderDueDateAlert {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String           @db.ObjectId
+  orderId         String           @db.ObjectId
+
+  alertType       DueDateAlertType
+  severity        AlertSeverity    @default(WARNING)
+
+  message         String
+  dueDate         DateTime?
+  appointmentId   String?          @db.ObjectId
+
+  isResolved      Boolean          @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?          @db.ObjectId
+  resolutionNotes String?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  clinic          Clinic           @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([orderId])
+  @@index([isResolved])
+  @@index([severity])
+  @@map("order_due_date_alerts")
+}
+
+// -----------------------------------------------------------------------------
+// Order Tracking Enums
+// -----------------------------------------------------------------------------
+
+enum ShipmentStatus {
+  PENDING
+  LABEL_CREATED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  EXCEPTION
+  RETURNED
+}
+
+enum ShipmentEventSource {
+  CARRIER_API
+  MANUAL
+  WEBHOOK
+}
+
+enum PickupStatus {
+  AWAITING_PICKUP
+  NOTIFIED
+  REMINDED
+  PICKED_UP
+  RETURNED_TO_LAB
+  DISCARDED
+}
+
+enum LabReminderType {
+  SCHEDULED
+  WARRANTY_EXPIRING
+  REPLACEMENT_DUE
+}
+
+enum ReorderReminderStatus {
+  PENDING
+  SENT
+  RESPONDED
+  ORDERED
+  DECLINED
+  CANCELLED
+}
+
+enum DueDateAlertType {
+  APPROACHING_DUE
+  DUE_TODAY
+  OVERDUE
+  APPOINTMENT_AT_RISK
+  SHIPMENT_DELAYED
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+// -----------------------------------------------------------------------------
+// Quality & Remakes Models
+// -----------------------------------------------------------------------------
+
+/// LabInspection - Receiving inspection for lab items
+model LabInspection {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String           @db.ObjectId
+  orderId         String           @db.ObjectId
+  orderItemId     String           @db.ObjectId
+
+  result          InspectionResult @default(PENDING)
+
+  // Checklist (JSON array)
+  checklist       Json?
+
+  notes           String?
+
+  inspectedAt     DateTime?
+  inspectedBy     String?          @db.ObjectId
+
+  // Link to remake if failed
+  remakeRequestId String?          @db.ObjectId
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  clinic          Clinic           @relation(fields: [clinicId], references: [id])
+  order           LabOrder         @relation(fields: [orderId], references: [id])
+  orderItem       LabOrderItem     @relation(fields: [orderItemId], references: [id])
+  photos          InspectionPhoto[]
+
+  @@index([clinicId])
+  @@index([orderId])
+  @@index([orderItemId])
+  @@index([result])
+  @@map("lab_inspections")
+}
+
+/// InspectionPhoto - Photo documentation for inspections
+model InspectionPhoto {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  inspectionId    String        @db.ObjectId
+
+  fileName        String
+  storageKey      String
+  description     String?
+
+  createdAt       DateTime      @default(now())
+
+  // Relations
+  inspection      LabInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@index([inspectionId])
+  @@map("inspection_photos")
+}
+
+/// RemakeRequest - Request to remake a lab item
+model RemakeRequest {
+  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId           String             @db.ObjectId
+  originalOrderId    String             @db.ObjectId
+  originalItemId     String             @db.ObjectId
+
+  requestNumber      String             // Clinic-generated
+
+  status             RemakeStatus       @default(REQUESTED)
+  reason             RemakeReason
+  reasonDetails      String?
+
+  // Warranty
+  isWarrantyClaim    Boolean            @default(false)
+  warrantyId         String?            @db.ObjectId
+
+  // Cost responsibility
+  costResponsibility CostResponsibility @default(LAB)
+  estimatedCost      Float?
+  actualCost         Float?
+
+  // Approval
+  requiresApproval   Boolean            @default(false)
+  approvedAt         DateTime?
+  approvedBy         String?            @db.ObjectId
+
+  // New order created
+  newOrderId         String?            @db.ObjectId
+
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  requestedBy        String?            @db.ObjectId
+
+  // Relations
+  clinic             Clinic             @relation(fields: [clinicId], references: [id])
+  originalItem       LabOrderItem       @relation(fields: [originalItemId], references: [id])
+
+  @@unique([clinicId, requestNumber])
+  @@index([clinicId])
+  @@index([originalOrderId])
+  @@index([originalItemId])
+  @@index([status])
+  @@map("remake_requests")
+}
+
+/// LabWarranty - Warranty tracking for lab items
+model LabWarranty {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  orderItemId     String         @db.ObjectId
+
+  startDate       DateTime
+  endDate         DateTime
+  warrantyMonths  Int
+
+  status          WarrantyStatus @default(ACTIVE)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+  orderItem       LabOrderItem   @relation(fields: [orderItemId], references: [id])
+  claims          WarrantyClaim[]
+
+  @@index([clinicId])
+  @@index([orderItemId])
+  @@index([status])
+  @@index([endDate])
+  @@map("lab_warranties")
+}
+
+/// WarrantyClaim - Claim against a warranty
+model WarrantyClaim {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  warrantyId      String      @db.ObjectId
+  remakeRequestId String?     @db.ObjectId
+
+  claimDate       DateTime    @default(now())
+  reason          String
+
+  status          ClaimStatus @default(PENDING)
+  approvedAt      DateTime?
+
+  claimValue      Float?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  warranty        LabWarranty @relation(fields: [warrantyId], references: [id])
+
+  @@index([warrantyId])
+  @@index([status])
+  @@map("warranty_claims")
+}
+
+/// QualityIssue - Logged quality issue
+model QualityIssue {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String             @db.ObjectId
+  vendorId        String             @db.ObjectId
+  orderId         String?            @db.ObjectId
+  orderItemId     String?            @db.ObjectId
+
+  category        QualityCategory
+  severity        IssueSeverity
+
+  description     String
+  status          QualityIssueStatus @default(OPEN)
+
+  resolution      String?
+  resolvedAt      DateTime?
+  resolvedBy      String?            @db.ObjectId
+
+  // Linked feedback
+  feedbackSent    Boolean            @default(false)
+  feedbackId      String?            @db.ObjectId
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  reportedBy      String?            @db.ObjectId
+
+  // Relations
+  clinic          Clinic             @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([vendorId])
+  @@index([orderId])
+  @@index([status])
+  @@index([severity])
+  @@map("quality_issues")
+}
+
+/// LabFeedback - Feedback sent to labs
+model LabFeedback {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String         @db.ObjectId
+  vendorId        String         @db.ObjectId
+  orderId         String?        @db.ObjectId
+  qualityIssueId  String?        @db.ObjectId
+
+  feedbackType    FeedbackType
+  subject         String
+  content         String
+
+  status          FeedbackStatus @default(DRAFT)
+
+  sentAt          DateTime?
+  acknowledgedAt  DateTime?
+
+  labResponse     String?
+  respondedAt     DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?        @db.ObjectId
+
+  // Relations
+  clinic          Clinic         @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([vendorId])
+  @@index([orderId])
+  @@index([status])
+  @@map("lab_feedback")
+}
+
+// -----------------------------------------------------------------------------
+// Quality & Remakes Enums
+// -----------------------------------------------------------------------------
+
+enum InspectionResult {
+  PASS
+  PASS_WITH_NOTES
+  FAIL_REMAKE
+  FAIL_ADJUSTMENT
+  PENDING
+}
+
+enum RemakeStatus {
+  REQUESTED
+  ACKNOWLEDGED
+  IN_PROGRESS
+  SHIPPED
+  RECEIVED
+  INSPECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum RemakeReason {
+  FIT_ISSUE
+  DESIGN_ISSUE
+  MATERIAL_DEFECT
+  SHIPPING_DAMAGE
+  WRONG_PATIENT
+  SPECIFICATION_ERROR
+  OTHER
+}
+
+enum CostResponsibility {
+  LAB
+  CLINIC
+  PATIENT
+  WARRANTY
+}
+
+enum WarrantyStatus {
+  ACTIVE
+  EXPIRED
+  CLAIMED
+  VOIDED
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  DENIED
+  PROCESSED
+}
+
+enum QualityCategory {
+  FIT
+  APPEARANCE
+  FUNCTION
+  MATERIAL
+  DESIGN
+  LABELING
+  SHIPPING
+}
+
+enum IssueSeverity {
+  CRITICAL
+  MAJOR
+  MINOR
+  COSMETIC
+}
+
+enum QualityIssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum FeedbackType {
+  ISSUE_REPORT
+  POSITIVE_FEEDBACK
+  SUGGESTION
+  QUESTION
+}
+
+enum FeedbackStatus {
+  DRAFT
+  SENT
+  ACKNOWLEDGED
+  RESPONDED
+  CLOSED
+}
+
+// -----------------------------------------------------------------------------
+// Lab Integrations Models
+// -----------------------------------------------------------------------------
+
+/// LabIntegration - External system integration configuration
+model LabIntegration {
+  id            String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String               @db.ObjectId
+
+  type          LabIntegrationType
+  name          String
+  enabled       Boolean              @default(false)
+
+  // Configuration (encrypted sensitive data)
+  config        Json?
+
+  // Status
+  status        IntegrationStatus    @default(NOT_CONFIGURED)
+  errorMessage  String?
+
+  // Sync tracking
+  lastSyncAt    DateTime?
+
+  // Optional vendor association
+  vendorId      String?              @db.ObjectId
+
+  // Audit fields
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  createdBy     String?              @db.ObjectId
+  updatedBy     String?              @db.ObjectId
+  deletedAt     DateTime?
+  deletedBy     String?              @db.ObjectId
+
+  // Relations
+  clinic        Clinic               @relation(fields: [clinicId], references: [id])
+  vendor        LabVendor?           @relation(fields: [vendorId], references: [id])
+
+  @@unique([clinicId, type])
+  @@index([clinicId])
+  @@index([type])
+  @@index([status])
+  @@map("lab_integrations")
+}
+
+enum LabIntegrationType {
+  ITERO_SCANNER
+  THREESHAPE_SCANNER
+  CARESTREAM_SCANNER
+  FEDEX_SHIPPING
+  UPS_SHIPPING
+  USPS_SHIPPING
+  LAB_PORTAL
+}
+
+enum IntegrationStatus {
+  NOT_CONFIGURED
+  PENDING_SETUP
+  PENDING_CONNECTION
+  CONNECTED
+  ERROR
+  INACTIVE
 }

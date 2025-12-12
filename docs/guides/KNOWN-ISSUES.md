@@ -38,34 +38,72 @@ export const GET = withAuth(
 
 ### useSearchParams Requires Suspense Boundary
 
-**Problem:** `useSearchParams()` causes prerender errors in Next.js 15 without Suspense.
+**Problem:** `useSearchParams()` causes prerender errors in Next.js 15 without Suspense. This happens because `useSearchParams()` opts the page out of static generation and requires client-side rendering.
 
 **Error:**
 ```
-useSearchParams() should be wrapped in a suspense boundary at page "/login"
+useSearchParams() should be wrapped in a suspense boundary at page "/lab/orders/new"
+Error occurred prerendering page "/lab/orders/new". Read more: https://nextjs.org/docs/messages/prerender-error
 ```
 
-**Solution:** Extract component using `useSearchParams` and wrap in Suspense:
+**Solution:** Extract the component using `useSearchParams` into a separate component and wrap it in a Suspense boundary:
 
 ```typescript
-// ✅ CORRECT
-function LoginForm() {
+'use client';
+
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+
+// Step 1: Extract the component that uses useSearchParams
+function PageContent() {
   const searchParams = useSearchParams();
-  // ... form logic
-}
+  const patientId = searchParams.get('patientId');
 
-function LoginFormFallback() {
-  return <Loader2 className="animate-spin" />;
-}
-
-export default function LoginPage() {
+  // ... rest of component logic using searchParams
   return (
-    <Suspense fallback={<LoginFormFallback />}>
-      <LoginForm />
+    <div>
+      {/* Your page content */}
+    </div>
+  );
+}
+
+// Step 2: Create a loading fallback component
+function PageLoading() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+// Step 3: Export main component wrapped in Suspense
+export default function MyPage() {
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <PageContent />
     </Suspense>
   );
 }
 ```
+
+**Why This Happens:**
+- Next.js 15 App Router tries to statically generate pages at build time
+- `useSearchParams()` reads URL query parameters which are only available at runtime
+- Without Suspense, Next.js cannot determine what to render during static generation
+- The Suspense boundary provides a fallback during the hydration phase
+
+**IMPORTANT:** This pattern is REQUIRED for ANY page that uses:
+- `useSearchParams()`
+- `usePathname()` when reading dynamic segments
+- Any hook that depends on client-side URL state
+
+**Quick Fix Checklist:**
+1. [ ] Add `'use client'` directive at top of file (if not already present)
+2. [ ] Import `Suspense` from 'react'
+3. [ ] Rename your existing component (e.g., `MyPage` → `MyPageContent`)
+4. [ ] Create a simple loading fallback component
+5. [ ] Create new default export that wraps content in `<Suspense>`
 
 ---
 
@@ -345,14 +383,15 @@ Error occurred prerendering page "/404"
 Before committing, verify:
 
 1. [ ] `npx tsc --noEmit` passes without errors
-2. [ ] All API routes use `withAuth` with typed params if dynamic
-3. [ ] Forms using Zod + react-hook-form have resolver cast
-4. [ ] Any `useSearchParams` usage is wrapped in Suspense
-5. [ ] Prisma JSON fields are properly cast
-6. [ ] Zod error handling uses `.issues` not `.errors`
-7. [ ] Select.Item values are never empty strings (use `'__all__'` for "All" options)
-8. [ ] MongoDB null queries use `OR: [{ field: { isSet: false } }, { field: null }]`
+2. [ ] `npm run build` passes without errors (catches issues dev mode misses)
+3. [ ] All API routes use `withAuth` with typed params if dynamic
+4. [ ] Forms using Zod + react-hook-form have resolver cast
+5. [ ] **Any `useSearchParams` usage is wrapped in Suspense** (common build failure!)
+6. [ ] Prisma JSON fields are properly cast
+7. [ ] Zod error handling uses `.issues` not `.errors`
+8. [ ] Select.Item values are never empty strings (use `'__all__'` for "All" options)
+9. [ ] MongoDB null queries use `OR: [{ field: { isSet: false } }, { field: null }]`
 
 ---
 
-**Last Updated:** 2025-12-03
+**Last Updated:** 2025-12-12

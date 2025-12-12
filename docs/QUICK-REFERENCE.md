@@ -292,4 +292,4 @@ const patients = await db.patient.findMany({
 
 ---
 
-**Last Updated**: 2025-12-09
+**Last Updated**: 2025-12-12

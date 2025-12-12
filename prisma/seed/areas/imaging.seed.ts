@@ -417,11 +417,23 @@ export async function clearImaging(ctx: SeedContext): Promise<void> {
 
   logger.info('Clearing Imaging data...');
 
-  // Delete in reverse dependency order
+  // Delete in reverse dependency order - must delete all models that reference PatientImage first
+  // Models with required relations to PatientImage (no cascade)
+  await db.cephAnalysis.deleteMany({});
+  await db.progressReport.deleteMany({}); // ProgressReport references Patient, must be cleared before patients
+  await db.imageArchiveRecord.deleteMany({});
+  await db.imageMeasurement.deleteMany({});
+
+  // Models with cascade delete (but clear explicitly for safety)
   await db.imageAnnotation.deleteMany({});
   await db.imageTagAssignment.deleteMany({});
+
+  // Now safe to delete PatientImage
   await db.patientImage.deleteMany({});
+
+  // Finally, clear supporting tables
   await db.imageTag.deleteMany({});
+  await db.imageRetentionPolicy.deleteMany({});
 
   logger.info('  Imaging data cleared');
 }

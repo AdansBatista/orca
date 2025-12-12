@@ -80,16 +80,18 @@ export function ImageUploader({
   );
 
   // Determine accepted file types based on category
-  const acceptedFileTypes = category === 'SCAN_3D'
-    ? {
-        'model/stl': ['.stl'],
-        'model/obj': ['.obj'],
-        'model/ply': ['.ply'],
-        'application/octet-stream': ['.stl', '.obj', '.ply'],
-      }
-    : {
-        'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.bmp', '.tiff'],
-      };
+  const scan3DTypes: Record<string, string[]> = {
+    'model/stl': ['.stl'],
+    'model/obj': ['.obj'],
+    'model/ply': ['.ply'],
+    'application/octet-stream': ['.stl', '.obj', '.ply'],
+  };
+
+  const imageTypes: Record<string, string[]> = {
+    'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.bmp', '.tiff'],
+  };
+
+  const acceptedFileTypes = category === 'SCAN_3D' ? scan3DTypes : imageTypes;
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

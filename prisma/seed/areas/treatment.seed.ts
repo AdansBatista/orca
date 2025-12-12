@@ -817,18 +817,30 @@ export async function clearTreatment(ctx: SeedContext): Promise<void> {
   logger.info('Clearing treatment data...');
 
   // Delete in reverse dependency order
+
+  // Aligner-related models
+  await db.alignerDelivery.deleteMany({});
+  await db.alignerRecord.deleteMany({});
+
+  // Appliance-related models
+  await db.applianceActivation.deleteMany({});
+  await db.wireRecord.deleteMany({});
+  await db.applianceRecord.deleteMany({});
+
   // Clinical documentation
+  await db.clinicalMeasurement.deleteMany({});
   await db.clinicalFinding.deleteMany({});
   await db.progressNote.deleteMany({});
 
-  // Appliances and wires
-  await db.wireRecord.deleteMany({});
-  await db.applianceRecord.deleteMany({});
+  // Treatment progress and outcomes
+  await db.treatmentOutcome.deleteMany({});
+  await db.treatmentProgress.deleteMany({});
 
   // Treatment photos, milestones, phases
   await db.treatmentPhoto.deleteMany({});
   await db.treatmentMilestone.deleteMany({});
   await db.treatmentPhase.deleteMany({});
+  await db.treatmentOption.deleteMany({});
   await db.treatmentPlan.deleteMany({});
 
   logger.info('  Treatment data cleared');

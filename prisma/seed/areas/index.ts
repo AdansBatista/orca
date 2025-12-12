@@ -15,6 +15,7 @@ import { seedPortal, clearPortal } from './portal.seed';
 import { seedTreatment, clearTreatment } from './treatment.seed';
 import { seedCRM, clearCRM } from './crm.seed';
 import { seedImaging, clearImaging } from './imaging.seed';
+import { seedLab, clearLab } from './lab.seed';
 
 /**
  * Registry of all seedable areas with their dependencies.
@@ -166,7 +167,14 @@ export const areaRegistry: SeedArea[] = [
     seed: seedImaging,
     clear: clearImaging,
   },
-  // Areas to be added: lab
+  {
+    id: 'lab',
+    name: 'Lab Work Management (Vendors, Products, Orders)',
+    phase: 3,
+    dependencies: ['core', 'patients', 'auth:users', 'staff'],
+    seed: seedLab,
+    clear: clearLab,
+  },
 
   // ============================================================================
   // PHASE 4: Financial

@@ -584,9 +584,14 @@ export async function clearCRM(ctx: SeedContext): Promise<void> {
   logger.info('Clearing CRM data...');
 
   // Delete in reverse dependency order
+  // Lead-related models
   await db.leadTask.deleteMany({});
   await db.leadActivity.deleteMany({});
   await db.lead.deleteMany({});
+
+  // Referral-related models
+  await db.referralLetter.deleteMany({});
+  await db.referringProvider.deleteMany({});
 
   logger.info('  CRM data cleared');
 }

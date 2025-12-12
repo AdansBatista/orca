@@ -17,8 +17,8 @@ export interface BreadcrumbItem {
 }
 
 interface PageHeaderProps {
-  /** Page title */
-  title: string;
+  /** Page title - can be string or ReactNode (e.g., for PhiProtected wrapping) */
+  title: React.ReactNode;
   /** Optional subtitle/description */
   description?: string;
   /** Breadcrumb items (last item is current page) */
