@@ -102,6 +102,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     'imaging:*',
     // Lab
     'lab:*',
+    // Payment Processing (new)
+    'payment:*',
+    'insurance:*',
+    'collections:*',
   ],
   doctor: [
     // Legacy levels
@@ -205,6 +209,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
     // CRUD actions
     'patients:read',
     'booking:read',
+    // Payment Processing (full access for billing role)
+    'payment:*',
+    'insurance:*',
+    'collections:*',
   ],
   read_only: [
     // Legacy levels

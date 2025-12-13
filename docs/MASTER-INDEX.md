@@ -10,9 +10,9 @@
 
 | Attribute                 | Value                                                                                      |
 | ------------------------- | ------------------------------------------------------------------------------------------ |
-| **Current Phase**         | Phase 3 - Clinical (Nearing Completion)                                                    |
-| **In Progress**           | Phase 4 Planning (Billing & Insurance next target)                                         |
-| **Implementation Status** | ✅ Auth, 🔄 Staff (~75%), ✅ Resources, ✅ Booking, ✅ Practice Orchestration (88%), 🔄 Patient Comms (~75%), ✅ CRM & Onboarding (~95%), ✅ Imaging (~90%), ✅ Treatment (~90%), ✅ Lab Work (~90%) |
+| **Current Phase**         | Phase 4 - Financial (Patient Billing Started)                                              |
+| **In Progress**           | Billing & Insurance - Patient Billing sub-area                                             |
+| **Implementation Status** | ✅ Auth, 🔄 Staff (~75%), ✅ Resources, ✅ Booking, ✅ Practice Orchestration (88%), 🔄 Patient Comms (~75%), ✅ CRM & Onboarding (~95%), ✅ Imaging (~90%), ✅ Treatment (~90%), ✅ Lab Work (~90%), 🔄 Billing (~25%) |
 
 ### What to Work On
 
@@ -51,12 +51,12 @@
 ### Progress Overview
 
 ```
-[████████████████████] 80% Complete
+[████████████████████] 82% Complete
 
 Phase 1: Foundation    [████░] Auth ✅, Staff ~75%, Resources ✅
 Phase 2: Operations    [████░] Booking ✅, Orchestration 88%, Patient Comms ~75%
 Phase 3: Clinical      [█████] CRM ~95%, Imaging ~90%, Treatment ~90%, Lab Work ~90% ✅
-Phase 4: Financial     [░░░░░] Not Started
+Phase 4: Financial     [█░░░░] Billing ~25% (Patient Billing sub-area: Prisma + API done)
 Phase 5: Support       [░░░░░] Not Started
 ```
 
@@ -112,11 +112,11 @@ _Patient care and treatment_
 
 _Revenue and regulatory_
 
-| #   | Area                       | Status     | Priority | Dependencies |
-| --- | -------------------------- | ---------- | -------- | ------------ |
-| 4.1 | Billing & Insurance        | 📋 Planned | Critical | Phase 3      |
-| 4.2 | Financial Management       | 📋 Planned | High     | Billing      |
-| 4.3 | Compliance & Documentation | 📋 Planned | High     | All clinical |
+| #   | Area                       | Status                  | Priority | Dependencies |
+| --- | -------------------------- | ----------------------- | -------- | ------------ |
+| 4.1 | Billing & Insurance        | 🔄 In Progress (~25%)   | Critical | Phase 3      |
+| 4.2 | Financial Management       | 📋 Planned              | High     | Billing      |
+| 4.3 | Compliance & Documentation | 📋 Planned              | High     | All clinical |
 
 ### Phase 5: Support
 
@@ -145,7 +145,7 @@ _Supporting systems_
 | [CRM & Onboarding](./areas/crm-onboarding/)                     | ✅ Complete (~95%) | 4         | 24 impl    | [View](./areas/crm-onboarding/)           |
 | [Patient Communications](./areas/patient-communications/)       | 🔄 ~75%         | 4         | ~16/21 impl | [View](./areas/patient-communications/) |
 | [Financial Management](./areas/financial-management/)           | 📋 Planned      | 4         | 24         | [View](./areas/financial-management/)     |
-| [Billing & Insurance](./areas/billing-insurance/)               | 📋 Planned      | 4         | 31         | [View](./areas/billing-insurance/)        |
+| [Billing & Insurance](./areas/billing-insurance/)               | 🔄 ~25%         | 4         | 31         | [View](./areas/billing-insurance/)        |
 | [Compliance & Documentation](./areas/compliance-documentation/) | 📋 Planned      | 4         | 24         | [View](./areas/compliance-documentation/) |
 | [Vendors Management](./areas/vendors-management/)               | 📋 Planned      | TBD       | TBD        | [View](./areas/vendors-management/)       |
 
@@ -693,11 +693,19 @@ _Revenue cycle, claims processing, and payment collection_
 
 **Documentation**: [Full Area Documentation](./areas/billing-insurance/)
 
+**Overall Status**: 🔄 **In Progress (~25%)**
+
 **Sub-Areas:**
 
-- 11.1 [Patient Billing](./areas/billing-insurance/sub-areas/patient-billing/) - `📋 Planned`
-  - Patient Account Management, Statement Generation, Treatment Cost Estimator
-  - Payment Plan Builder, Family Accounts, Credit Balance Management
+- 11.1 [Patient Billing](./areas/billing-insurance/sub-areas/patient-billing/) - `🔄 In Progress (~80%)`
+  - ✅ Patient Account Management - CRUD, balance tracking, aging buckets
+  - ✅ Invoices - CRUD, line items, status workflow (Draft→Sent→Partial→Paid→Void)
+  - ✅ Payment Plans - CRUD, scheduled payments, activate/pause/cancel/resume
+  - ✅ Treatment Estimates - CRUD, scenarios, present/accept/decline/expire
+  - ✅ Statements - Generation with period aggregation, delivery tracking
+  - ✅ Credit Balance Management - CRUD, apply to invoice, transfer between accounts
+  - ✅ Family Groups - CRUD, add/remove members, consolidated statements
+  - ⚠️ UI pages not yet implemented
 - 11.2 [Insurance Claims](./areas/billing-insurance/sub-areas/insurance-claims/) - `📋 Planned`
   - Insurance Company Database, Patient Insurance, Eligibility Verification
   - Claims Submission, Claims Tracking, Denial Management, EOB Processing
@@ -708,27 +716,46 @@ _Revenue cycle, claims processing, and payment collection_
   - Aging Reports, Collection Workflows, Payment Reminders
   - Collection Agency Integration, Bad Debt Management
 
+**What's Implemented:**
+- 35+ Prisma models for billing domain (PatientAccount, Invoice, InvoiceItem, PaymentPlan, ScheduledPayment, TreatmentEstimate, EstimateScenario, Statement, CreditBalance, FamilyGroup, etc.)
+- ~1800 lines of Zod validation schemas
+- 15+ API routes for Patient Billing sub-area:
+  - `/api/billing/accounts` - Patient accounts CRUD
+  - `/api/billing/invoices` - Invoice CRUD with line items
+  - `/api/billing/payment-plans` - Payment plans with scheduled payments
+  - `/api/billing/estimates` - Treatment estimates with scenarios
+  - `/api/billing/statements` - Statement generation
+  - `/api/billing/credits` - Credit balance management
+  - `/api/billing/family-groups` - Family grouping
+- Utility functions for number generation (ACC-, INV-, PLN-, EST-, STM-, etc.)
+
+**What's Not Yet Implemented:**
+- ⚠️ Patient Billing UI pages (list, detail, forms)
+- ⚠️ Insurance Claims sub-area (Prisma + API + UI)
+- ⚠️ Payment Processing sub-area (Stripe/Square integration)
+- ⚠️ Collections Management sub-area
+
 **Key Functions (31 total):**
 | Sub-Area | Functions |
 |----------|-----------|
-| Patient Billing | 6 functions |
+| Patient Billing | 6 functions (~80% impl) |
 | Insurance Claims | 10 functions |
 | Payment Processing | 8 functions |
 | Collections | 7 functions |
 
 **External Integrations:**
 
-- Stripe / Square (Payment Gateway)
-- Stripe Terminal / Square Reader (Card Readers)
-- Clearinghouse (EDI 837/835 for claims)
-- Collection Agencies
+- Stripe / Square (Payment Gateway) - ⚠️ Not yet integrated
+- Stripe Terminal / Square Reader (Card Readers) - ⚠️ Not yet integrated
+- Clearinghouse (EDI 837/835 for claims) - ⚠️ Not yet integrated
+- Collection Agencies - ⚠️ Not yet integrated
 
 **AI Features:**
 
-- EOB data extraction from scanned documents
-- Insurance fax/letter parsing
-- Payment prediction and collection prioritization
-- Claims optimization suggestions
+- EOB data extraction from scanned documents - ⚠️ Deferred
+- Insurance fax/letter parsing - ⚠️ Deferred
+- Payment prediction and collection prioritization - ⚠️ Deferred
+- Claims optimization suggestions - ⚠️ Deferred
 
 ---
 
@@ -843,6 +870,7 @@ _Supplier relationships and procurement_
 
 | Date       | Change                                                                                   | Author |
 | ---------- | ---------------------------------------------------------------------------------------- | ------ |
+| 2025-12-13 | Billing & Insurance Phase 4 started: Patient Billing sub-area ~80% complete (35+ Prisma models, 15+ APIs, validation schemas) | Claude |
 | 2025-12-12 | Lab Work Management ~90% complete: 15+ pages, 20+ components, 25+ APIs, full vendor/order/tracking system | Claude |
 | 2024-12-10 | Imaging Management ~90% complete: 40+ components, 11 pages, 30+ APIs, full retention system | Claude |
 | 2024-12-10 | CRM & Onboarding ~95% complete: Lead Management, Intake Forms, Referral Tracking, Records Requests all implemented | Claude |
@@ -868,6 +896,6 @@ _Supplier relationships and procurement_
 ---
 
 **Status**: Active
-**Last Updated**: 2025-12-12
-**Last Area Updated**: Lab Work Management (~90% complete)
+**Last Updated**: 2025-12-13
+**Last Area Updated**: Billing & Insurance - Patient Billing (~80% backend complete)
 **Owner**: Development Team

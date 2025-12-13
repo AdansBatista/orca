@@ -16,6 +16,7 @@ import { seedTreatment, clearTreatment } from './treatment.seed';
 import { seedCRM, clearCRM } from './crm.seed';
 import { seedImaging, clearImaging } from './imaging.seed';
 import { seedLab, clearLab } from './lab.seed';
+import { seedBilling, clearBilling } from './billing.seed';
 
 /**
  * Registry of all seedable areas with their dependencies.
@@ -179,7 +180,15 @@ export const areaRegistry: SeedArea[] = [
   // ============================================================================
   // PHASE 4: Financial
   // ============================================================================
-  // Areas to be added: billing, insurance, compliance
+  {
+    id: 'billing',
+    name: 'Billing (Patient Accounts, Invoices, Payment Plans)',
+    phase: 4,
+    dependencies: ['core', 'patients', 'auth:users'],
+    seed: seedBilling,
+    clear: clearBilling,
+  },
+  // Areas to be added: insurance, compliance
 
   // ============================================================================
   // PHASE 5: Support

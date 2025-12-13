@@ -1,6 +1,6 @@
 # Current Development Focus
 
-> **Last Updated**: 2025-12-12 (Updated after Lab Work Management implementation)
+> **Last Updated**: 2025-12-13 (Updated after Patient Billing sub-area UI completion)
 >
 > **Purpose**: Single source of truth for what LLMs and developers should work on
 
@@ -10,8 +10,8 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Current Phase** | Phase 3 - Clinical (Complete!) |
-| **Implementation Status** | ✅ Phase 1 ~95%, ✅ Phase 2 ~95%, ✅ Phase 3 (CRM ~95%, Treatment ~90%, Imaging ~90%, Lab ~90%) |
+| **Current Phase** | Phase 4 - Financial (Started!) |
+| **Implementation Status** | ✅ Phase 1 ~95%, ✅ Phase 2 ~95%, ✅ Phase 3 ~92%, 🔄 Phase 4 ~55% (Payment Processing in progress) |
 | **Documentation Status** | ✅ Complete for all 13 areas |
 
 ---
@@ -100,11 +100,47 @@ These areas have no dependencies and can be started immediately:
 
 ---
 
+## 🚀 Phase 4: Financial - IN PROGRESS
+
+### 1. Billing & Insurance 🔄 IN PROGRESS (~55%)
+- **Documentation**: [docs/areas/billing-insurance/](areas/billing-insurance/)
+- **Depends On**: Treatment ✅, CRM ✅, Lab ✅
+- **Status**: 🔄 Patient Billing + Payment Processing (partial) complete
+- **Sub-Area Status**:
+  - ✅ Patient Billing (100%) - Prisma models + API routes + UI pages done
+  - 🔄 Payment Processing (~60%) - Stripe integration, payments/refunds/links API + UI
+  - 📋 Insurance Claims - Planned
+  - 📋 Collections Management - Planned
+- **Completed (Patient Billing)**:
+  - ✅ 35+ Prisma models (PatientAccount, Invoice, PaymentPlan, TreatmentEstimate, Statement, CreditBalance, FamilyGroup, etc.)
+  - ✅ ~1800 lines of Zod validation schemas
+  - ✅ 15+ API routes (accounts, invoices, payment-plans, estimates, statements, credits, family-groups)
+  - ✅ Utility functions (number generation: ACC-, INV-, PLN-, EST-, STM-, etc.)
+  - ✅ UI Pages:
+    - `/billing` - Dashboard with stats, recent invoices, A/R aging
+    - `/billing/accounts` - Account list with search, filters, balance info
+    - `/billing/invoices` - Invoice list with status tracking
+    - `/billing/payment-plans` - Payment plan list with progress tracking
+    - `/billing/estimates` - Treatment estimates list with workflow status
+    - `/billing/statements` - Statement list with delivery tracking
+- **Completed (Payment Processing)**:
+  - ✅ Stripe utility library (src/lib/payments/stripe.ts)
+  - ✅ Payment API routes (payments, refunds, payment-links, payment-methods)
+  - ✅ Stripe webhook handler
+  - ✅ Payment UI pages (payments list, refunds list, payment-links list)
+- **Next Steps**:
+  - ⏳ Build detail pages (payment detail, refund detail, etc.)
+  - ⏳ Build process payment form
+  - ⏳ Build public payment page (/pay/[code])
+  - ⏳ Implement Insurance Claims
+  - ⏳ Implement Collections Management
+
+---
+
 ## What's Blocked
 
 | Area | Phase | Blocked By | Status |
 |------|-------|------------|--------|
-| Billing & Insurance | 4 | Treatment ✅, CRM ✅, Lab ✅ | ⏳ **Next Priority** (Phase 4) |
 | Financial Management | 4 | Billing | ⏳ Waiting |
 | Compliance & Audit | 4 | All clinical areas ✅ | ⏳ Ready after Billing |
 | Vendors Management | 5 | Financial | ⏳ Waiting |
@@ -123,9 +159,9 @@ Phase 1: Foundation ~95%     Phase 2: Core Operations ~95%  Phase 3: Clinical ~9
                                                            └─────────────────────┘
                                                                      │
                                                                      ▼
-                            Phase 5: Support               Phase 4: Financial
+                            Phase 5: Support               Phase 4: Financial ~25%
                             ┌─────────────────────┐        ┌─────────────────────┐
-                            │ • Vendors Mgmt      │ ◀───── │ • Billing (NEXT)    │
+                            │ • Vendors Mgmt      │ ◀───── │ 🔄 Billing (Active) │
                             └─────────────────────┘        │ • Financial Mgmt    │
                                                            │ • Compliance        │
                                                            └─────────────────────┘
@@ -157,8 +193,12 @@ Phase 3 Complete? ✅ YES (~92%)
 ├── ✅ Treatment Management - ~90% COMPLETE
 ├── ✅ Imaging Management - ~90% COMPLETE
 └── ✅ Lab Work Management - ~90% COMPLETE
-Phase 4 Next? ⏳ YES
-└── 📋 Billing & Insurance - Next Priority
+Phase 4 In Progress? 🔄 YES (~25%)
+└── 🔄 Billing & Insurance - Patient Billing backend done (~80%)
+    ├── ✅ Prisma models (35+)
+    ├── ✅ API routes (15+)
+    ├── ✅ Validation schemas
+    └── ⏳ UI pages (Next Priority)
 ```
 
 ---
@@ -167,6 +207,7 @@ Phase 4 Next? ⏳ YES
 
 | Date | Area/Feature | Status |
 |------|--------------|--------|
+| 2025-12-13 | Billing & Insurance - Patient Billing backend (~80%): 35+ Prisma models, 15+ APIs, validation schemas | ✅ Complete |
 | 2025-12-12 | Lab Work Management - Full area implementation (~90%): 15+ pages, 20+ components, 25+ APIs | ✅ Complete |
 | 2025-12-11 | Treatment Management - Verified complete (~90%): 56 pages, 26 components, 18+ APIs | ✅ Complete |
 | 2025-12-10 | Imaging Management - Full area implementation (~90%) | ✅ Complete |
@@ -204,16 +245,16 @@ Phase 4 Next? ⏳ YES
 
 | Area | Sub-Area | Assignee | Started | Status |
 |------|----------|----------|---------|--------|
-| Billing & Insurance | All | - | - | 📋 **Next Priority** (Phase 4) |
-| Patient Communications | Patient Portal | - | - | 🔄 ~75% (billing blocked by Phase 4) |
+| Billing & Insurance | Patient Billing | Claude | 2025-12-13 | 🔄 Backend ~80%, UI pending |
+| Billing & Insurance | Payment Processing | - | - | 📋 Next (after UI) |
+| Patient Communications | Patient Portal | - | - | 🔄 ~75% (billing blocked) |
 | Staff Management | Roles & Permissions | - | - | 🔄 ~40% (hierarchy incomplete) |
-| Staff Management | Performance & Training | - | - | 🔄 ~50% (visualization incomplete) |
 
 ### Next Priority (Unblocked)
-1. **Billing & Insurance** - First Phase 4 area (all dependencies complete: CRM ✅, Treatment ✅, Lab ✅)
-2. Staff Management - Role hierarchy & permission templates
-3. Staff Management - Performance visualization dashboards
-4. Staff Management - Training workflows & certification alerts
+1. **Patient Billing UI** - Build pages for accounts, invoices, payment plans, estimates
+2. **Payment Processing** - Stripe/Square integration
+3. **Insurance Claims** - Claims submission, tracking, EOB processing
+4. Staff Management - Role hierarchy & permission templates
 
 ---
 

@@ -166,6 +166,35 @@ model Clinic {
   labIntegrations            LabIntegration[]
   autoclaveIntegrations      AutoclaveIntegration[]
 
+  // Billing & Insurance relations
+  patientAccounts            PatientAccount[]
+  familyGroups               FamilyGroup[]
+  invoices                   Invoice[]
+  paymentPlans               PaymentPlan[]
+  statements                 Statement[]
+  creditBalances             CreditBalance[]
+  treatmentEstimates         TreatmentEstimate[]
+  payments                   Payment[]
+  paymentMethods             PaymentMethod[]
+  refunds                    Refund[]
+  paymentLinks               PaymentLink[]
+  scheduledPayments          ScheduledPayment[]
+  receipts                   Receipt[]
+  paymentSettlements         PaymentSettlement[]
+  insuranceCompanies         InsuranceCompany[]
+  patientInsurances          PatientInsurance[]
+  eligibilityChecks          EligibilityCheck[]
+  preauthorizations          Preauthorization[]
+  insuranceClaims            InsuranceClaim[]
+  eobs                       EOB[]
+  insurancePayments          InsurancePayment[]
+  collectionWorkflows        CollectionWorkflow[]
+  accountCollections         AccountCollection[]
+  collectionAgencies         CollectionAgency[]
+  agencyReferrals            AgencyReferral[]
+  writeOffs                  WriteOff[]
+  paymentReminders           PaymentReminder[]
+
   @@map("clinics")
 }
 
@@ -448,6 +477,18 @@ model Patient {
   labOrders                  LabOrder[]
   patientPickupItems         PatientPickupItem[]
   reorderReminders           ReorderReminder[]
+
+  // Billing & Insurance relations
+  patientAccounts            PatientAccount[]
+  guarantorAccounts          PatientAccount[]        @relation("AccountGuarantor")
+  invoices                   Invoice[]
+  payments                   Payment[]
+  paymentMethods             PaymentMethod[]
+  paymentLinks               PaymentLink[]
+  treatmentEstimates         TreatmentEstimate[]
+  patientInsurances          PatientInsurance[]
+  preauthorizations          Preauthorization[]
+  insuranceClaims            InsuranceClaim[]
 
   @@index([clinicId])
   @@index([lastName, firstName])
@@ -10907,4 +10948,1912 @@ model AutoclaveIntegration {
   @@index([equipmentId])
   @@index([status])
   @@map("autoclave_integrations")
+}
+
+// =============================================================================
+// BILLING & INSURANCE AREA - Patient billing, payments, insurance, collections
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Patient Billing Models
+// -----------------------------------------------------------------------------
+
+/// PatientAccount - Core financial account for billing
+model PatientAccount {
+  id            String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String               @db.ObjectId
+  patientId     String               @db.ObjectId
+
+  // Account info
+  accountNumber String               @unique
+  status        PatientAccountStatus @default(ACTIVE)
+  accountType   AccountType          @default(INDIVIDUAL)
+
+  // Balances (computed fields stored for performance)
+  currentBalance    Float            @default(0)
+  insuranceBalance  Float            @default(0)
+  patientBalance    Float            @default(0)
+  creditBalance     Float            @default(0)
+
+  // Aging buckets
+  aging30           Float            @default(0)
+  aging60           Float            @default(0)
+  aging90           Float            @default(0)
+  aging120Plus      Float            @default(0)
+
+  // Relationships
+  guarantorId       String?          @db.ObjectId
+  familyGroupId     String?          @db.ObjectId
+
+  // Timestamps
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+
+  // Audit
+  createdBy         String?          @db.ObjectId
+  updatedBy         String?          @db.ObjectId
+
+  // Relations
+  clinic            Clinic           @relation(fields: [clinicId], references: [id])
+  patient           Patient          @relation(fields: [patientId], references: [id])
+  guarantor         Patient?         @relation("AccountGuarantor", fields: [guarantorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  familyGroup       FamilyGroup?     @relation(fields: [familyGroupId], references: [id])
+  invoices          Invoice[]
+  payments          Payment[]
+  paymentPlans      PaymentPlan[]
+  statements        Statement[]
+  credits           CreditBalance[]
+  estimates         TreatmentEstimate[]
+  paymentLinks      PaymentLink[]
+  accountCollections AccountCollection[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([guarantorId])
+  @@index([familyGroupId])
+  @@index([status])
+  @@index([clinicId, deletedAt])
+  @@map("patient_accounts")
+}
+
+enum PatientAccountStatus {
+  ACTIVE
+  SUSPENDED
+  COLLECTIONS
+  CLOSED
+  SETTLED
+}
+
+enum AccountType {
+  INDIVIDUAL
+  FAMILY
+  GUARANTOR
+}
+
+/// FamilyGroup - Links family member accounts together
+model FamilyGroup {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String        @db.ObjectId
+
+  // Group info
+  groupName     String
+  primaryGuarantorId String   @db.ObjectId
+
+  // Settings
+  consolidateStatements Boolean @default(true)
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  // Audit
+  createdBy     String?       @db.ObjectId
+
+  // Relations
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  accounts      PatientAccount[]
+
+  @@index([clinicId])
+  @@index([primaryGuarantorId])
+  @@map("family_groups")
+}
+
+/// Invoice - Bill for services rendered
+model Invoice {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String        @db.ObjectId
+  accountId     String        @db.ObjectId
+  patientId     String        @db.ObjectId
+
+  // Invoice details
+  invoiceNumber String        @unique
+  invoiceDate   DateTime
+  dueDate       DateTime
+  status        InvoiceStatus @default(DRAFT)
+
+  // Amounts
+  subtotal      Float
+  adjustments   Float         @default(0)
+  insuranceAmount Float       @default(0)
+  patientAmount Float
+  paidAmount    Float         @default(0)
+  balance       Float
+
+  // Source references
+  treatmentPlanId String?     @db.ObjectId
+  appointmentId   String?     @db.ObjectId
+
+  // Notes
+  notes         String?
+  internalNotes String?
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  // Audit
+  createdBy     String?       @db.ObjectId
+  updatedBy     String?       @db.ObjectId
+
+  // Relations
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  account       PatientAccount @relation(fields: [accountId], references: [id])
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  items         InvoiceItem[]
+  allocations   PaymentAllocation[]
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([patientId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([clinicId, deletedAt])
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  SENT
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELLED
+  VOID
+}
+
+/// InvoiceItem - Line items on an invoice
+model InvoiceItem {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceId     String        @db.ObjectId
+
+  // Item details
+  procedureCode String
+  description   String
+  quantity      Int           @default(1)
+  unitPrice     Float
+  discount      Float         @default(0)
+  total         Float
+
+  // Insurance allocation
+  insuranceAmount Float       @default(0)
+  patientAmount Float
+
+  // Source reference
+  procedureId   String?       @db.ObjectId
+  toothNumbers  String[]
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+
+  // Relations
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([procedureCode])
+  @@map("invoice_items")
+}
+
+/// PaymentPlan - Recurring payment arrangement
+model PaymentPlan {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+  accountId     String            @db.ObjectId
+
+  // Plan details
+  planNumber    String            @unique
+  status        PaymentPlanStatus @default(PENDING)
+
+  // Amounts
+  totalAmount       Float
+  downPayment       Float
+  financedAmount    Float
+  monthlyPayment    Float
+  remainingBalance  Float
+
+  // Terms
+  numberOfPayments  Int
+  completedPayments Int           @default(0)
+  startDate         DateTime
+  nextPaymentDate   DateTime?
+  endDate           DateTime
+
+  // Payment method
+  paymentMethodId   String?       @db.ObjectId
+  autoPayEnabled    Boolean       @default(false)
+
+  // Notes
+  notes             String?
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  // Audit
+  createdBy     String?           @db.ObjectId
+  updatedBy     String?           @db.ObjectId
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  account       PatientAccount    @relation(fields: [accountId], references: [id])
+  paymentMethod PaymentMethod?    @relation(fields: [paymentMethodId], references: [id])
+  scheduledPayments ScheduledPayment[]
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([status])
+  @@index([nextPaymentDate])
+  @@index([clinicId, deletedAt])
+  @@map("payment_plans")
+}
+
+enum PaymentPlanStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  COMPLETED
+  DEFAULTED
+  CANCELLED
+}
+
+/// Statement - Generated patient statement
+model Statement {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String        @db.ObjectId
+  accountId     String        @db.ObjectId
+
+  // Statement details
+  statementNumber String      @unique
+  statementDate DateTime
+  periodStart   DateTime
+  periodEnd     DateTime
+
+  // Amounts
+  previousBalance Float
+  newCharges    Float
+  payments      Float
+  adjustments   Float
+  currentBalance Float
+  amountDue     Float
+  dueDate       DateTime
+
+  // Delivery
+  deliveryMethod StatementDeliveryMethod
+  sentAt        DateTime?
+  viewedAt      DateTime?
+
+  // Storage
+  documentUrl   String?
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+
+  // Audit
+  createdBy     String?       @db.ObjectId
+
+  // Relations
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  account       PatientAccount @relation(fields: [accountId], references: [id])
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([statementDate])
+  @@map("statements")
+}
+
+enum StatementDeliveryMethod {
+  EMAIL
+  PRINT
+  PORTAL
+  SMS
+}
+
+/// CreditBalance - Patient credit/overpayment tracking
+model CreditBalance {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String        @db.ObjectId
+  accountId     String        @db.ObjectId
+
+  // Credit details
+  amount        Float
+  remainingAmount Float
+  source        CreditSource
+  description   String?
+
+  // Expiration
+  expiresAt     DateTime?
+
+  // Status
+  status        CreditStatus  @default(AVAILABLE)
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Audit
+  createdBy     String?       @db.ObjectId
+
+  // Relations
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  account       PatientAccount @relation(fields: [accountId], references: [id])
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([status])
+  @@map("credit_balances")
+}
+
+enum CreditSource {
+  OVERPAYMENT
+  INSURANCE_REFUND
+  ADJUSTMENT
+  PROMOTIONAL
+  TRANSFER
+}
+
+enum CreditStatus {
+  AVAILABLE
+  APPLIED
+  EXPIRED
+  REFUNDED
+}
+
+/// TreatmentEstimate - Cost estimates for treatment
+model TreatmentEstimate {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String        @db.ObjectId
+  accountId     String        @db.ObjectId
+  patientId     String        @db.ObjectId
+
+  // Estimate details
+  estimateNumber String       @unique
+  status        EstimateStatus @default(DRAFT)
+  estimateDate  DateTime      @default(now())
+  validUntil    DateTime
+
+  // Treatment reference
+  treatmentPlanId String?     @db.ObjectId
+
+  // Amounts
+  totalCost     Float
+  insuranceEstimate Float     @default(0)
+  patientEstimate Float
+  downPayment   Float         @default(0)
+
+  // Presentation
+  presentedAt   DateTime?
+  presentedBy   String?       @db.ObjectId
+
+  // Response
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  declineReason String?
+
+  // Document
+  documentUrl   String?
+
+  // Notes
+  notes         String?
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  // Audit
+  createdBy     String?       @db.ObjectId
+
+  // Relations
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  account       PatientAccount @relation(fields: [accountId], references: [id])
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  scenarios     EstimateScenario[]
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([patientId])
+  @@index([status])
+  @@index([clinicId, deletedAt])
+  @@map("treatment_estimates")
+}
+
+enum EstimateStatus {
+  DRAFT
+  PRESENTED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+/// EstimateScenario - Alternative estimate options
+model EstimateScenario {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  estimateId    String        @db.ObjectId
+
+  // Scenario details
+  name          String
+  description   String?
+  isRecommended Boolean       @default(false)
+
+  // Amounts
+  totalCost     Float
+  insuranceEstimate Float     @default(0)
+  patientEstimate Float
+
+  // Procedures
+  procedures    Json          // Array of procedure details
+
+  // Selection
+  isSelected    Boolean       @default(false)
+
+  // Relations
+  estimate      TreatmentEstimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+
+  @@index([estimateId])
+  @@map("estimate_scenarios")
+}
+
+// -----------------------------------------------------------------------------
+// Payment Processing Models
+// -----------------------------------------------------------------------------
+
+/// Payment - Payment transaction record
+model Payment {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String        @db.ObjectId
+  accountId     String        @db.ObjectId
+  patientId     String        @db.ObjectId
+
+  // Payment identification
+  paymentNumber    String     @unique
+  gatewayPaymentId String?    // Stripe/Square payment ID
+  gatewayChargeId  String?    // Stripe/Square charge ID
+
+  // Payment details
+  paymentDate   DateTime
+  amount        Float
+  currency      String        @default("USD")
+  status        PaymentStatus @default(PENDING)
+
+  // Method
+  paymentType   PaymentType
+  paymentMethodType PaymentMethodType
+  cardBrand     String?       // visa, mastercard, etc.
+  cardLast4     String?
+  paymentMethodId String?     @db.ObjectId  // Stored payment method
+
+  // Source
+  sourceType    PaymentSourceType
+  sourceId      String?       // Invoice, payment plan, etc.
+
+  // Processing
+  gateway       PaymentGateway
+  transactionType TransactionType @default(CHARGE)
+  captureMethod CaptureMethod?
+  receiptUrl    String?
+
+  // Reconciliation
+  settlementId  String?
+  settledAt     DateTime?
+  depositDate   DateTime?
+  processingFee Float?
+
+  // Metadata
+  description   String?
+  metadata      Json?
+  ipAddress     String?
+  deviceId      String?
+
+  // Refund tracking
+  refundedAmount Float        @default(0)
+  isFullyRefunded Boolean     @default(false)
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  // Audit
+  createdBy     String?       @db.ObjectId
+  processedBy   String?       @db.ObjectId
+
+  // Relations
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  account       PatientAccount @relation(fields: [accountId], references: [id])
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  storedMethod  PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  allocations   PaymentAllocation[]
+  refunds       Refund[]
+  receipts      Receipt[]
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([patientId])
+  @@index([gatewayPaymentId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([settlementId])
+  @@index([clinicId, deletedAt])
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
+}
+
+enum PaymentType {
+  PATIENT       // Patient payment
+  INSURANCE     // Insurance payment
+  THIRD_PARTY   // Third party (employer, school, etc.)
+}
+
+enum PaymentMethodType {
+  CREDIT_CARD
+  DEBIT_CARD
+  ACH
+  CASH
+  CHECK
+  E_TRANSFER
+  WIRE
+  OTHER
+}
+
+enum PaymentSourceType {
+  MANUAL        // Manual payment collection
+  INVOICE       // Payment on invoice
+  PAYMENT_PLAN  // Scheduled payment plan charge
+  PAYMENT_LINK  // Payment link
+  PORTAL        // Patient portal
+  TERMINAL      // Card reader
+}
+
+enum PaymentGateway {
+  STRIPE
+  SQUARE
+  MANUAL        // Cash, check, etc.
+}
+
+enum TransactionType {
+  CHARGE
+  CAPTURE
+  VOID
+  REFUND
+}
+
+enum CaptureMethod {
+  AUTOMATIC
+  MANUAL        // Pre-auth then capture
+}
+
+/// PaymentMethod - Stored payment method (tokenized)
+model PaymentMethod {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+  patientId     String            @db.ObjectId
+
+  // Gateway info
+  gateway       PaymentGateway
+  gatewayCustomerId String?       // Stripe customer ID
+  gatewayMethodId   String?       // Stripe payment method ID
+
+  // Card details (masked)
+  type          PaymentMethodType
+  cardBrand     String?
+  cardLast4     String?
+  cardExpMonth  Int?
+  cardExpYear   Int?
+
+  // Bank account (for ACH)
+  bankName      String?
+  bankLast4     String?
+  bankAccountType BankAccountType?
+
+  // Billing address
+  billingName   String?
+  billingStreet String?
+  billingCity   String?
+  billingState  String?
+  billingZip    String?
+  billingCountry String?
+
+  // Settings
+  isDefault     Boolean           @default(false)
+  nickname      String?
+
+  // Status
+  status        PaymentMethodStatus @default(ACTIVE)
+  expirationWarningsSent Int      @default(0)
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  patient       Patient           @relation(fields: [patientId], references: [id])
+  payments      Payment[]
+  paymentPlans  PaymentPlan[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([gatewayMethodId])
+  @@index([status])
+  @@index([clinicId, deletedAt])
+  @@map("payment_methods")
+}
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+}
+
+enum PaymentMethodStatus {
+  ACTIVE
+  EXPIRED
+  INVALID
+  REMOVED
+}
+
+/// PaymentAllocation - Maps payments to invoices
+model PaymentAllocation {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  paymentId   String        @db.ObjectId
+  invoiceId   String        @db.ObjectId
+
+  // Allocation details
+  amount      Float
+  allocatedAt DateTime      @default(now())
+  allocatedBy String?       @db.ObjectId
+
+  // Relations
+  payment     Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id])
+
+  @@index([paymentId])
+  @@index([invoiceId])
+  @@map("payment_allocations")
+}
+
+/// Refund - Refund record
+model Refund {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String        @db.ObjectId
+  paymentId     String        @db.ObjectId
+
+  // Refund identification
+  refundNumber  String        @unique
+  gatewayRefundId String?
+
+  // Refund details
+  amount        Float
+  reason        RefundReason
+  reasonDetails String?
+  status        RefundStatus  @default(PENDING)
+
+  // Processing
+  processedAt   DateTime?
+  processedBy   String?       @db.ObjectId
+
+  // Approval (for large refunds)
+  requiresApproval Boolean    @default(false)
+  approvedAt    DateTime?
+  approvedBy    String?       @db.ObjectId
+  rejectedAt    DateTime?
+  rejectedBy    String?       @db.ObjectId
+  rejectionReason String?
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Audit
+  createdBy     String?       @db.ObjectId
+
+  // Relations
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  payment       Payment       @relation(fields: [paymentId], references: [id])
+
+  @@index([clinicId])
+  @@index([paymentId])
+  @@index([status])
+  @@map("refunds")
+}
+
+enum RefundReason {
+  OVERPAYMENT
+  TREATMENT_CANCELLED
+  INSURANCE_ADJUSTMENT
+  DUPLICATE_PAYMENT
+  PATIENT_REQUEST
+  BILLING_ERROR
+  OTHER
+}
+
+enum RefundStatus {
+  PENDING
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// PaymentLink - Payment link for remote payment
+model PaymentLink {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+  patientId     String            @db.ObjectId
+  accountId     String            @db.ObjectId
+
+  // Link details
+  linkCode      String            @unique
+  linkUrl       String
+  amount        Float
+  description   String?
+
+  // Options
+  allowPartial  Boolean           @default(false)
+  minimumAmount Float?
+
+  // Related invoices
+  invoiceIds    String[]          @db.ObjectId
+
+  // Status
+  status        PaymentLinkStatus @default(ACTIVE)
+  expiresAt     DateTime?
+
+  // Usage
+  viewedAt      DateTime?
+  paidAt        DateTime?
+  paymentId     String?           @db.ObjectId
+
+  // Delivery
+  sentVia       DeliveryMethod?
+  sentAt        DateTime?
+  sentTo        String?           // Email or phone
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Audit
+  createdBy     String?           @db.ObjectId
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  patient       Patient           @relation(fields: [patientId], references: [id])
+  account       PatientAccount    @relation(fields: [accountId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("payment_links")
+}
+
+enum PaymentLinkStatus {
+  ACTIVE
+  EXPIRED
+  PAID
+  CANCELLED
+}
+
+/// ScheduledPayment - Recurring payment schedule
+model ScheduledPayment {
+  id              String                  @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId        String                  @db.ObjectId
+  paymentPlanId   String                  @db.ObjectId
+  paymentMethodId String?                 @db.ObjectId
+
+  // Schedule
+  scheduledDate   DateTime
+  amount          Float
+
+  // Status
+  status          ScheduledPaymentStatus  @default(PENDING)
+
+  // Processing
+  attemptCount    Int                     @default(0)
+  lastAttemptAt   DateTime?
+  nextAttemptAt   DateTime?
+  processedAt     DateTime?
+
+  // Result
+  resultPaymentId String?                 @db.ObjectId
+  failureReason   String?
+  failureCode     String?
+
+  // Notifications
+  reminderSentAt  DateTime?
+  failureNotifiedAt DateTime?
+
+  // Timestamps
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  // Relations
+  clinic          Clinic                  @relation(fields: [clinicId], references: [id])
+  paymentPlan     PaymentPlan             @relation(fields: [paymentPlanId], references: [id])
+
+  @@index([clinicId])
+  @@index([paymentPlanId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@map("scheduled_payments")
+}
+
+enum ScheduledPaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  SKIPPED
+  CANCELLED
+}
+
+/// Receipt - Payment receipt
+model Receipt {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String        @db.ObjectId
+  paymentId     String        @db.ObjectId
+
+  // Receipt details
+  receiptNumber String        @unique
+  receiptDate   DateTime
+  amount        Float
+
+  // Content
+  receiptUrl    String?       // PDF URL
+
+  // Delivery
+  deliveryMethod StatementDeliveryMethod?
+  sentTo        String?
+  sentAt        DateTime?
+  viewedAt      DateTime?
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+
+  // Relations
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  payment       Payment       @relation(fields: [paymentId], references: [id])
+
+  @@index([clinicId])
+  @@index([paymentId])
+  @@map("receipts")
+}
+
+/// PaymentSettlement - Daily settlement record
+model PaymentSettlement {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+
+  // Settlement details
+  settlementId  String            @unique
+  gateway       PaymentGateway
+  settlementDate DateTime
+  depositDate   DateTime?
+
+  // Amounts
+  grossAmount   Float
+  feeAmount     Float
+  netAmount     Float
+  refundAmount  Float             @default(0)
+  chargebackAmount Float          @default(0)
+
+  // Reconciliation
+  status        SettlementStatus  @default(PENDING)
+  reconciledAt  DateTime?
+  reconciledBy  String?           @db.ObjectId
+  discrepancy   Float?
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([settlementDate])
+  @@index([status])
+  @@map("payment_settlements")
+}
+
+enum SettlementStatus {
+  PENDING
+  DEPOSITED
+  RECONCILED
+  DISCREPANCY
+}
+
+// -----------------------------------------------------------------------------
+// Insurance Claims Models
+// -----------------------------------------------------------------------------
+
+/// InsuranceCompany - Insurance payer master data
+model InsuranceCompany {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+
+  // Company info
+  name          String
+  payerId       String            // Electronic payer ID
+  type          InsuranceType     @default(DENTAL)
+
+  // Contact
+  phone         String?
+  fax           String?
+  email         String?
+  website       String?
+
+  // Claims address
+  claimsStreet  String?
+  claimsCity    String?
+  claimsState   String?
+  claimsZip     String?
+
+  // Electronic submission
+  clearinghouseId  String?
+  supportsEligibility Boolean    @default(true)
+  supportsEdi837   Boolean       @default(true)
+  supportsEdi835   Boolean       @default(true)
+
+  // Ortho-specific
+  orthoPaymentType OrthoPaymentType @default(MONTHLY)
+  requiresPreauth  Boolean       @default(false)
+
+  // Notes
+  notes         String?
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  patientInsurances PatientInsurance[]
+  claims        InsuranceClaim[]
+
+  @@index([clinicId])
+  @@index([payerId])
+  @@index([name])
+  @@index([clinicId, deletedAt])
+  @@map("insurance_companies")
+}
+
+enum InsuranceType {
+  DENTAL
+  MEDICAL
+  DISCOUNT_PLAN
+}
+
+enum OrthoPaymentType {
+  LUMP_SUM        // Pays full amount at start
+  MONTHLY         // Pays monthly during treatment
+  QUARTERLY       // Pays quarterly
+  MILESTONE       // Pays at treatment milestones
+  COMPLETION      // Pays at treatment completion
+}
+
+/// PatientInsurance - Patient's insurance coverage
+model PatientInsurance {
+  id            String               @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String               @db.ObjectId
+  patientId     String               @db.ObjectId
+  insuranceCompanyId String          @db.ObjectId
+
+  // Coverage order
+  priority      InsurancePriority    @default(PRIMARY)
+
+  // Subscriber info
+  subscriberId  String
+  groupNumber   String?
+  subscriberName String
+  subscriberDob DateTime
+  relationToSubscriber RelationToSubscriber
+
+  // Coverage dates
+  effectiveDate DateTime
+  terminationDate DateTime?
+
+  // Verification
+  lastVerified  DateTime?
+  verificationStatus VerificationStatus @default(NOT_VERIFIED)
+
+  // Ortho benefits
+  hasOrthoBenefit     Boolean       @default(false)
+  orthoLifetimeMax    Float?
+  orthoUsedAmount     Float         @default(0)
+  orthoRemainingAmount Float?
+  orthoAgeLimit       Int?
+  orthoWaitingPeriod  Int?          // months
+  orthoCoveragePercent Float?
+  orthoDeductible     Float?
+  orthoDeductibleMet  Float         @default(0)
+
+  // Card images
+  cardFrontUrl  String?
+  cardBackUrl   String?
+
+  // Timestamps
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  clinic        Clinic               @relation(fields: [clinicId], references: [id])
+  patient       Patient              @relation(fields: [patientId], references: [id])
+  company       InsuranceCompany     @relation(fields: [insuranceCompanyId], references: [id])
+  claims        InsuranceClaim[]
+  eligibilityChecks EligibilityCheck[]
+  preauthorizations Preauthorization[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([insuranceCompanyId])
+  @@index([subscriberId])
+  @@index([clinicId, deletedAt])
+  @@map("patient_insurances")
+}
+
+enum InsurancePriority {
+  PRIMARY
+  SECONDARY
+  TERTIARY
+}
+
+enum RelationToSubscriber {
+  SELF
+  SPOUSE
+  CHILD
+  OTHER
+}
+
+enum VerificationStatus {
+  NOT_VERIFIED
+  VERIFIED
+  FAILED
+  EXPIRED
+}
+
+/// EligibilityCheck - Insurance eligibility verification record
+model EligibilityCheck {
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId           String           @db.ObjectId
+  patientInsuranceId String           @db.ObjectId
+
+  // Check details
+  checkDate     DateTime             @default(now())
+  serviceDate   DateTime
+  status        EligibilityStatus
+
+  // Results
+  isEligible    Boolean?
+  eligibilityData Json?              // Full response data
+
+  // Ortho-specific results
+  hasOrthoBenefit   Boolean?
+  orthoLifetimeMax  Float?
+  orthoUsed         Float?
+  orthoRemaining    Float?
+  orthoCoverage     Float?
+  orthoDeductible   Float?
+  orthoDeductibleMet Float?
+
+  // Error handling
+  errorCode     String?
+  errorMessage  String?
+
+  // Timestamps
+  createdAt     DateTime             @default(now())
+
+  // Audit
+  checkedBy     String?              @db.ObjectId
+
+  // Relations
+  clinic        Clinic               @relation(fields: [clinicId], references: [id])
+  patientInsurance PatientInsurance  @relation(fields: [patientInsuranceId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientInsuranceId])
+  @@index([checkDate])
+  @@map("eligibility_checks")
+}
+
+enum EligibilityStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  NO_RESPONSE
+}
+
+/// Preauthorization - Insurance pre-authorization request
+model Preauthorization {
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId           String           @db.ObjectId
+  patientId          String           @db.ObjectId
+  patientInsuranceId String           @db.ObjectId
+
+  // Auth details
+  authNumber    String?
+  status        PreauthStatus        @default(PENDING)
+  requestDate   DateTime             @default(now())
+  responseDate  DateTime?
+  expirationDate DateTime?
+
+  // Treatment info
+  treatmentPlanId String?            @db.ObjectId
+  procedureCodes  String[]
+  requestedAmount Float
+
+  // Response
+  approvedAmount Float?
+  denialReason  String?
+
+  // Documents
+  attachments   String[]             // URLs to supporting docs
+
+  // Timestamps
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  // Audit
+  createdBy     String?              @db.ObjectId
+
+  // Relations
+  clinic        Clinic               @relation(fields: [clinicId], references: [id])
+  patient       Patient              @relation(fields: [patientId], references: [id])
+  patientInsurance PatientInsurance  @relation(fields: [patientInsuranceId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([status])
+  @@map("preauthorizations")
+}
+
+enum PreauthStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  PARTIAL
+  DENIED
+  EXPIRED
+}
+
+/// InsuranceClaim - Insurance claim record
+model InsuranceClaim {
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId           String           @db.ObjectId
+  patientId          String           @db.ObjectId
+  patientInsuranceId String           @db.ObjectId
+  insuranceCompanyId String           @db.ObjectId
+
+  // Claim identification
+  claimNumber   String               @unique
+  internalClaimId String?            // Clearinghouse tracking ID
+  payerClaimId  String?              // Insurance company's claim ID
+
+  // Claim details
+  claimType     ClaimType            @default(ORIGINAL)
+  serviceDate   DateTime
+  filingDate    DateTime?
+  status        InsuranceClaimStatus @default(DRAFT)
+
+  // Amounts
+  billedAmount  Float
+  allowedAmount Float?
+  paidAmount    Float?
+  patientResponsibility Float?
+  adjustmentAmount Float?
+
+  // Related
+  originalClaimId String?            @db.ObjectId  // For corrected/replacement claims
+  preauthNumber String?
+
+  // Rendering provider
+  renderingProviderId String?        @db.ObjectId
+  npi           String?
+
+  // Submission tracking
+  submissionMethod SubmissionMethod?
+  submittedAt   DateTime?
+  submittedBy   String?              @db.ObjectId
+  acceptedAt    DateTime?
+  rejectedAt    DateTime?
+  rejectionReason String?
+
+  // Denial tracking
+  deniedAt      DateTime?
+  denialCode    String?
+  denialReason  String?
+  appealDeadline DateTime?
+
+  // Timestamps
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  deletedAt     DateTime?
+
+  // Audit
+  createdBy     String?              @db.ObjectId
+  updatedBy     String?              @db.ObjectId
+
+  // Relations
+  clinic        Clinic               @relation(fields: [clinicId], references: [id])
+  patient       Patient              @relation(fields: [patientId], references: [id])
+  patientInsurance PatientInsurance  @relation(fields: [patientInsuranceId], references: [id])
+  insuranceCompany InsuranceCompany  @relation(fields: [insuranceCompanyId], references: [id])
+  items         ClaimItem[]
+  eobs          EOB[]
+  statusHistory ClaimStatusHistory[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([patientInsuranceId])
+  @@index([status])
+  @@index([serviceDate])
+  @@index([filingDate])
+  @@index([clinicId, deletedAt])
+  @@map("insurance_claims")
+}
+
+enum ClaimType {
+  ORIGINAL
+  CORRECTED
+  REPLACEMENT
+  VOID
+}
+
+enum InsuranceClaimStatus {
+  DRAFT
+  READY
+  SUBMITTED
+  ACCEPTED
+  IN_PROCESS
+  PAID
+  PARTIAL
+  DENIED
+  APPEALED
+  VOID
+  CLOSED
+}
+
+enum SubmissionMethod {
+  ELECTRONIC
+  PAPER
+  PORTAL
+}
+
+/// ClaimItem - Line item on an insurance claim
+model ClaimItem {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  claimId       String            @db.ObjectId
+
+  // Line details
+  lineNumber    Int
+  procedureCode String            // CDT code
+  procedureCodeModifier String?
+  description   String
+  serviceDate   DateTime
+  quantity      Int               @default(1)
+  toothNumbers  String[]
+
+  // Amounts
+  billedAmount  Float
+  allowedAmount Float?
+  paidAmount    Float?
+  adjustmentAmount Float?
+  patientResponsibility Float?
+
+  // Status
+  status        ClaimItemStatus   @default(PENDING)
+  denialCode    String?
+  denialReason  String?
+
+  // Source
+  procedureId   String?           @db.ObjectId
+
+  // Relations
+  claim         InsuranceClaim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([procedureCode])
+  @@map("claim_items")
+}
+
+enum ClaimItemStatus {
+  PENDING
+  PAID
+  DENIED
+  ADJUSTED
+}
+
+/// EOB - Explanation of Benefits
+model EOB {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+  claimId       String?           @db.ObjectId
+
+  // EOB identification
+  eobNumber     String?
+  checkNumber   String?
+  eftNumber     String?
+  receivedDate  DateTime
+
+  // Source
+  receiptMethod EOBReceiptMethod
+  documentUrl   String?           // Scanned EOB image
+  rawData       Json?             // EDI 835 parsed data
+
+  // Amounts
+  totalPaid     Float
+  totalAdjusted Float             @default(0)
+  patientResponsibility Float     @default(0)
+
+  // Processing
+  status        EOBStatus         @default(PENDING)
+  processedAt   DateTime?
+  processedBy   String?           @db.ObjectId
+
+  // AI extraction (for paper EOBs)
+  extractionConfidence Float?
+  extractedData Json?
+  needsReview   Boolean           @default(false)
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  claim         InsuranceClaim?   @relation(fields: [claimId], references: [id])
+  payments      InsurancePayment[]
+
+  @@index([clinicId])
+  @@index([claimId])
+  @@index([status])
+  @@index([receivedDate])
+  @@map("eobs")
+}
+
+enum EOBReceiptMethod {
+  ELECTRONIC    // EDI 835
+  SCANNED       // Paper scanned
+  MANUAL        // Manually entered
+  PORTAL        // Downloaded from payer portal
+}
+
+enum EOBStatus {
+  PENDING
+  REVIEWING
+  PROCESSED
+  DISCREPANCY
+  VOID
+}
+
+/// InsurancePayment - Insurance payment record
+model InsurancePayment {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+  eobId         String            @db.ObjectId
+  claimId       String            @db.ObjectId
+  accountId     String            @db.ObjectId
+
+  // Payment details
+  paymentDate   DateTime
+  amount        Float
+  adjustmentAmount Float          @default(0)
+  adjustmentReason String?
+
+  // Posting
+  postedAt      DateTime?
+  postedBy      String?           @db.ObjectId
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  eob           EOB               @relation(fields: [eobId], references: [id])
+
+  @@index([clinicId])
+  @@index([eobId])
+  @@index([claimId])
+  @@index([paymentDate])
+  @@map("insurance_payments")
+}
+
+/// ClaimStatusHistory - Claim status change tracking
+model ClaimStatusHistory {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  claimId       String            @db.ObjectId
+
+  // Status change
+  previousStatus InsuranceClaimStatus?
+  newStatus     InsuranceClaimStatus
+  changedAt     DateTime          @default(now())
+  changedBy     String?           @db.ObjectId
+
+  // Details
+  notes         String?
+  errorCode     String?
+  errorMessage  String?
+
+  // Relations
+  claim         InsuranceClaim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([changedAt])
+  @@map("claim_status_history")
+}
+
+// -----------------------------------------------------------------------------
+// Collections Management Models
+// -----------------------------------------------------------------------------
+
+/// CollectionWorkflow - Automated collection workflow definition
+model CollectionWorkflow {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+
+  // Workflow definition
+  name          String
+  description   String?
+  isActive      Boolean           @default(true)
+  isDefault     Boolean           @default(false)
+
+  // Trigger criteria
+  triggerDays   Int               // Days overdue to trigger
+  minBalance    Float             @default(0)
+  patientType   CollectionPatientType? // Patient, Insurance, or Both
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  stages        CollectionStage[]
+  accounts      AccountCollection[]
+
+  @@index([clinicId])
+  @@index([isActive])
+  @@index([clinicId, deletedAt])
+  @@map("collection_workflows")
+}
+
+enum CollectionPatientType {
+  PATIENT
+  INSURANCE
+  BOTH
+}
+
+/// CollectionStage - Stage in a collection workflow
+model CollectionStage {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  workflowId    String            @db.ObjectId
+
+  // Stage definition
+  stageNumber   Int
+  name          String
+  description   String?
+
+  // Timing
+  daysFromPrevious Int            // Days after previous stage
+  daysOverdue   Int               // Days overdue when this stage triggers
+
+  // Actions (stored as JSON array)
+  actions       Json              // Array of CollectionAction objects
+
+  // Escalation
+  escalateAfterDays Int?          // Days before auto-escalate to next stage
+
+  // Relations
+  workflow      CollectionWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([stageNumber])
+  @@map("collection_stages")
+}
+
+/// AccountCollection - Collection status for an account
+model AccountCollection {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+  accountId     String            @db.ObjectId
+  workflowId    String            @db.ObjectId
+
+  // Status
+  status        CollectionStatus  @default(ACTIVE)
+  currentStage  Int               @default(1)
+  enteredStageAt DateTime         @default(now())
+
+  // Balance tracking
+  startingBalance Float
+  currentBalance Float
+  paidAmount    Float             @default(0)
+
+  // Dates
+  startedAt     DateTime          @default(now())
+  lastActionAt  DateTime?
+  pausedAt      DateTime?
+  pauseReason   String?
+  completedAt   DateTime?
+  completionReason String?
+
+  // Agency referral
+  sentToAgencyAt DateTime?
+  agencyId      String?           @db.ObjectId
+  agencyAccountNumber String?
+
+  // Write-off
+  writtenOffAt  DateTime?
+  writeOffAmount Float?
+  writeOffReason WriteOffReason?
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  account       PatientAccount    @relation(fields: [accountId], references: [id])
+  workflow      CollectionWorkflow @relation(fields: [workflowId], references: [id])
+  activities    CollectionActivity[]
+  promises      PaymentPromise[]
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([workflowId])
+  @@index([status])
+  @@index([currentStage])
+  @@map("account_collections")
+}
+
+enum CollectionStatus {
+  ACTIVE
+  PAUSED
+  PAYMENT_PLAN
+  SETTLED
+  WRITTEN_OFF
+  AGENCY
+  COMPLETED
+}
+
+enum WriteOffReason {
+  BANKRUPTCY
+  DECEASED
+  UNCOLLECTIBLE
+  STATUTE_OF_LIMITATIONS
+  SMALL_BALANCE
+  HARDSHIP
+  OTHER
+}
+
+/// CollectionActivity - Activity log for collections
+model CollectionActivity {
+  id                 String               @id @default(auto()) @map("_id") @db.ObjectId
+  accountCollectionId String              @db.ObjectId
+
+  // Activity details
+  activityType  CollectionActivityType
+  stageNumber   Int?
+  description   String
+
+  // Communication details
+  channel       CommunicationChannel?
+  templateUsed  String?
+  sentTo        String?               // Email or phone
+
+  // Results
+  result        String?
+  responseReceived Boolean?
+  paymentReceived Float?
+
+  // Timestamps
+  occurredAt    DateTime              @default(now())
+  performedBy   String?               @db.ObjectId
+
+  // Relations
+  accountCollection AccountCollection @relation(fields: [accountCollectionId], references: [id], onDelete: Cascade)
+
+  @@index([accountCollectionId])
+  @@index([activityType])
+  @@index([occurredAt])
+  @@map("collection_activities")
+}
+
+enum CollectionActivityType {
+  WORKFLOW_STARTED
+  STAGE_ADVANCED
+  EMAIL_SENT
+  SMS_SENT
+  LETTER_SENT
+  PHONE_CALL
+  TASK_CREATED
+  PAYMENT_RECEIVED
+  PROMISE_MADE
+  PROMISE_BROKEN
+  PAUSED
+  RESUMED
+  SENT_TO_AGENCY
+  RECALLED_FROM_AGENCY
+  WRITTEN_OFF
+  COMPLETED
+  MANUAL_NOTE
+}
+
+enum CommunicationChannel {
+  EMAIL
+  SMS
+  LETTER
+  PHONE
+  PORTAL
+}
+
+/// PaymentPromise - Payment promise tracking
+model PaymentPromise {
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  accountCollectionId String           @db.ObjectId
+  accountId          String            @db.ObjectId
+
+  // Promise details
+  promisedAmount Float
+  promisedDate  DateTime
+  notes         String?
+
+  // Status
+  status        PromiseStatus         @default(PENDING)
+
+  // Outcome
+  paidAmount    Float?
+  paidDate      DateTime?
+  brokenAt      DateTime?
+  brokenReason  String?
+
+  // Timestamps
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  // Audit
+  recordedBy    String?               @db.ObjectId
+
+  // Relations
+  accountCollection AccountCollection @relation(fields: [accountCollectionId], references: [id])
+
+  @@index([accountCollectionId])
+  @@index([accountId])
+  @@index([promisedDate])
+  @@index([status])
+  @@map("payment_promises")
+}
+
+enum PromiseStatus {
+  PENDING
+  FULFILLED
+  PARTIAL
+  BROKEN
+  CANCELLED
+}
+
+/// CollectionAgency - Collection agency partner
+model CollectionAgency {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+
+  // Agency info
+  name          String
+  contactName   String?
+  phone         String?
+  email         String?
+  street        String?
+  city          String?
+  state         String?
+  zip           String?
+
+  // Integration
+  exportFormat  String            // CSV, XML, etc.
+  feePercentage Float?            // Agency fee percentage
+
+  // Settings
+  minBalance    Float             @default(0)  // Minimum balance to send
+  minDays       Int               @default(120) // Minimum days overdue
+  isActive      Boolean           @default(true)
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  referrals     AgencyReferral[]
+
+  @@index([clinicId])
+  @@index([isActive])
+  @@index([clinicId, deletedAt])
+  @@map("collection_agencies")
+}
+
+/// AgencyReferral - Account referral to collection agency
+model AgencyReferral {
+  id            String                @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String                @db.ObjectId
+  agencyId      String                @db.ObjectId
+  accountId     String                @db.ObjectId
+
+  // Referral details
+  referralDate  DateTime              @default(now())
+  referredBalance Float
+  agencyAccountNumber String?
+
+  // Status
+  status        AgencyReferralStatus  @default(ACTIVE)
+
+  // Collections
+  collectedAmount Float               @default(0)
+  agencyFees    Float                 @default(0)
+  netRecovered  Float                 @default(0)
+
+  // Recall
+  recalledAt    DateTime?
+  recallReason  String?
+
+  // Timestamps
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  // Relations
+  clinic        Clinic                @relation(fields: [clinicId], references: [id])
+  agency        CollectionAgency      @relation(fields: [agencyId], references: [id])
+
+  @@index([clinicId])
+  @@index([agencyId])
+  @@index([accountId])
+  @@index([status])
+  @@map("agency_referrals")
+}
+
+enum AgencyReferralStatus {
+  ACTIVE
+  COLLECTED
+  PARTIAL
+  RETURNED
+  RECALLED
+}
+
+/// WriteOff - Bad debt write-off record
+model WriteOff {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+  accountId     String            @db.ObjectId
+  invoiceId     String?           @db.ObjectId
+
+  // Write-off details
+  writeOffNumber String           @unique
+  amount        Float
+  reason        WriteOffReason
+  reasonDetails String?
+
+  // Approval
+  status        WriteOffStatus    @default(PENDING)
+  requestedBy   String            @db.ObjectId
+  requestedAt   DateTime          @default(now())
+  approvedBy    String?           @db.ObjectId
+  approvedAt    DateTime?
+  rejectedBy    String?           @db.ObjectId
+  rejectedAt    DateTime?
+  rejectionReason String?
+
+  // Recovery (if paid later)
+  recoveredAmount Float           @default(0)
+  recoveredAt   DateTime?
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([status])
+  @@map("write_offs")
+}
+
+enum WriteOffStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PARTIALLY_RECOVERED
+  FULLY_RECOVERED
+}
+
+/// PaymentReminder - Payment reminder record
+model PaymentReminder {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  clinicId      String            @db.ObjectId
+  accountId     String            @db.ObjectId
+
+  // Reminder details
+  reminderType  ReminderTypeCollection
+  templateId    String?
+  daysOverdue   Int
+
+  // Delivery
+  channel       CommunicationChannel
+  sentTo        String            // Email, phone, or address
+  sentAt        DateTime
+
+  // Content
+  subject       String?
+  body          String?
+  paymentLinkId String?           @db.ObjectId
+
+  // Response tracking
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  clickedAt     DateTime?
+  paymentReceived Boolean         @default(false)
+  paymentDate   DateTime?
+  paymentAmount Float?
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+
+  // Relations
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([accountId])
+  @@index([sentAt])
+  @@index([reminderType])
+  @@map("payment_reminders")
+}
+
+enum ReminderTypeCollection {
+  UPCOMING_DUE      // Before due date
+  PAST_DUE_GENTLE   // 1-30 days
+  PAST_DUE_FIRM     // 31-60 days
+  PAST_DUE_URGENT   // 61-90 days
+  FINAL_NOTICE      // 90+ days
+  PAYMENT_PLAN_DUE  // Upcoming payment plan
+  PAYMENT_PLAN_LATE // Missed payment plan
 }

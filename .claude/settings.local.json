@@ -26,7 +26,8 @@
       "Bash(wmic process where \"name=''''node.exe''''\" get ProcessId)",
       "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
       "Bash(wmic process where \"name=''node.exe''\" get ProcessId)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
