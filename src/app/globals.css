@@ -452,3 +452,56 @@
     transform: scale(0.97);
   }
 }
+
+/* ============================================
+   Print Styles
+   ============================================ */
+@media print {
+  /* Reset page margins */
+  @page {
+    margin: 0.25in;
+    size: letter;
+  }
+
+  /* Ensure colors print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide navigation elements */
+  nav,
+  aside,
+  header:not(.print-header),
+  footer:not(.print-footer) {
+    display: none !important;
+  }
+
+  /* Reset body/html styles */
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  /* Remove shadows and borders that don't print well */
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl {
+    box-shadow: none !important;
+  }
+
+  /* Ensure backgrounds print */
+  .bg-primary-100,
+  .bg-success-100,
+  .bg-error-100,
+  .bg-warning-100,
+  .bg-muted,
+  .bg-muted\/30 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

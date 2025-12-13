@@ -14,6 +14,12 @@ type CycleWithCounts = SterilizationCycle & {
     biologicalIndicators: number;
     chemicalIndicators: number;
   };
+  autoclave?: {
+    id: string;
+    name: string;
+  } | null;
+  isNew?: boolean;
+  externalCycleNumber?: number | null;
 };
 
 interface CycleCardCondensedProps {
@@ -65,6 +71,10 @@ export function CycleCardCondensed({ cycle }: CycleCardCondensedProps) {
         }
         trailing={
           <div className="flex items-center gap-3">
+            {/* New badge for recently imported cycles */}
+            {cycle.isNew && (
+              <Badge variant="accent" size="sm">New</Badge>
+            )}
             {/* Indicator dots */}
             <div className="hidden sm:flex items-center gap-1.5" title="M / C / B">
               <IndicatorDot pass={cycle.mechanicalPass} />
@@ -81,7 +91,10 @@ export function CycleCardCondensed({ cycle }: CycleCardCondensedProps) {
           <div className="min-w-0 flex-1">
             <ListItemTitle>{cycle.cycleNumber}</ListItemTitle>
             <ListItemDescription>
-              {cycleTypeLabels[cycle.cycleType]} • {formatDistanceToNow(new Date(cycle.startTime), { addSuffix: true })}
+              {cycle.autoclave
+                ? `${cycle.autoclave.name}${cycle.externalCycleNumber ? ` #${cycle.externalCycleNumber}` : ''}`
+                : cycleTypeLabels[cycle.cycleType]
+              } • {formatDistanceToNow(new Date(cycle.startTime), { addSuffix: true })}
               {cycle._count.loads > 0 && ` • ${cycle._count.loads} item${cycle._count.loads !== 1 ? 's' : ''}`}
             </ListItemDescription>
           </div>

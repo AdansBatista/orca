@@ -2,13 +2,14 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, Settings } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContent } from '@/components/layout/PageContent';
 import { CycleList } from '@/components/sterilization/CycleList';
+import { ImportDropdown } from '@/components/sterilization/ImportDropdown';
 
 function CycleListFallback() {
   return (
@@ -48,12 +49,21 @@ export default function SterilizationPage() {
           { label: 'Sterilization' },
         ]}
         actions={
-          <Link href="/resources/sterilization/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Cycle
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/resources/sterilization/settings">
+              <Button variant="outline">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            </Link>
+            <ImportDropdown />
+            <Link href="/resources/sterilization/new">
+              <Button>
+                <Plus className="h-4 w-4" />
+                New Cycle
+              </Button>
+            </Link>
+          </div>
         }
       />
       <PageContent density="comfortable">

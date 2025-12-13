@@ -97,6 +97,12 @@ export const GET = withAuth(
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
+        autoclave: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         _count: {
           select: {
             loads: true,

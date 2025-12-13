@@ -17,6 +17,7 @@ import {
   TestTube,
   FileText,
   Edit,
+  Printer,
 } from 'lucide-react';
 import type {
   SterilizationCycle,
@@ -186,9 +187,15 @@ export default function CycleDetailPage() {
         ]}
         actions={
           <div className="flex gap-2">
+            <Link href={`/resources/sterilization/${cycle.id}/print`}>
+              <Button variant="outline">
+                <Printer className="h-4 w-4" />
+                Print Labels
+              </Button>
+            </Link>
             <Link href={`/resources/sterilization/${cycle.id}/edit`}>
               <Button variant="outline">
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4" />
                 Edit
               </Button>
             </Link>

@@ -50,6 +50,12 @@ type CycleWithCounts = SterilizationCycle & {
     biologicalIndicators: number;
     chemicalIndicators: number;
   };
+  autoclave?: {
+    id: string;
+    name: string;
+  } | null;
+  isNew?: boolean;
+  externalCycleNumber?: number | null;
 };
 
 interface PaginatedResponse {

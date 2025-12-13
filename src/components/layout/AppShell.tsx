@@ -46,18 +46,26 @@ function AppShellContent({ children, className }: AppShellProps) {
 
   return (
     <div className={cn("flex min-h-screen bg-background overflow-hidden", className)}>
-      <Sidebar />
+      {/* Hide sidebar when printing */}
+      <div className="print:hidden">
+        <Sidebar />
+      </div>
       <main
         className={cn(
           "flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden transition-all duration-300 ease-in-out",
           isCollapsed ? "ml-16" : "ml-64",
-          rightMargin
+          rightMargin,
+          // Remove margins when printing
+          "print:ml-0 print:mr-0"
         )}
       >
         {children}
       </main>
       {/* Chair Status Sidebar - Floating button at top-right, expands to panel */}
-      <ChairStatusSidebar />
+      {/* Hide when printing */}
+      <div className="print:hidden">
+        <ChairStatusSidebar />
+      </div>
     </div>
   );
 }

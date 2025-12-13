@@ -22,6 +22,12 @@ type CycleWithCounts = SterilizationCycle & {
     biologicalIndicators: number;
     chemicalIndicators: number;
   };
+  autoclave?: {
+    id: string;
+    name: string;
+  } | null;
+  isNew?: boolean;
+  externalCycleNumber?: number | null;
 };
 
 interface CycleTableViewProps {
@@ -67,7 +73,7 @@ export function CycleTableView({ cycles, compact = false }: CycleTableViewProps)
         <TableHeader>
           <TableRow className="bg-muted/30 hover:bg-muted/30">
             <TableHead className="font-semibold">Cycle #</TableHead>
-            <TableHead className="font-semibold">Type</TableHead>
+            <TableHead className="font-semibold">Source</TableHead>
             <TableHead className="font-semibold">Date/Time</TableHead>
             {!compact && (
               <>
@@ -86,15 +92,29 @@ export function CycleTableView({ cycles, compact = false }: CycleTableViewProps)
           {cycles.map((cycle) => (
             <TableRow key={cycle.id} className="group">
               <TableCell className="font-medium">
-                <Link
-                  href={`/resources/sterilization/${cycle.id}`}
-                  className="hover:text-primary-600 hover:underline"
-                >
-                  {cycle.cycleNumber}
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/resources/sterilization/${cycle.id}`}
+                    className="hover:text-primary-600 hover:underline"
+                  >
+                    {cycle.cycleNumber}
+                  </Link>
+                  {cycle.isNew && (
+                    <Badge variant="accent" size="sm">New</Badge>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
-                <span className="text-sm">{cycleTypeLabels[cycle.cycleType]}</span>
+                {cycle.autoclave ? (
+                  <div className="text-sm">
+                    <p>{cycle.autoclave.name}</p>
+                    {cycle.externalCycleNumber && (
+                      <p className="text-xs text-muted-foreground">#{cycle.externalCycleNumber}</p>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-sm">{cycleTypeLabels[cycle.cycleType]}</span>
+                )}
               </TableCell>
               <TableCell>
                 <div className="text-sm">

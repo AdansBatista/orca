@@ -205,7 +205,7 @@ export function EquipmentForm({ initialData, equipmentId, mode }: EquipmentFormP
       const url = mode === 'edit'
         ? `/api/resources/equipment/${equipmentId}`
         : '/api/resources/equipment';
-      const method = mode === 'edit' ? 'PATCH' : 'POST';
+      const method = mode === 'edit' ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,

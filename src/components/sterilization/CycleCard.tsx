@@ -14,6 +14,12 @@ type CycleWithCounts = SterilizationCycle & {
     biologicalIndicators: number;
     chemicalIndicators: number;
   };
+  autoclave?: {
+    id: string;
+    name: string;
+  } | null;
+  isNew?: boolean;
+  externalCycleNumber?: number | null;
 };
 
 interface CycleCardProps {
@@ -86,9 +92,20 @@ export function CycleCard({ cycle }: CycleCardProps) {
 
             {/* Badges row */}
             <div className="flex flex-wrap gap-2">
-              <Badge variant={cycleTypeColors[cycle.cycleType]}>
-                {cycleTypeLabels[cycle.cycleType]}
-              </Badge>
+              {cycle.isNew && (
+                <Badge variant="accent" size="sm">New</Badge>
+              )}
+              {/* Show autoclave name and machine cycle number for imported cycles */}
+              {cycle.autoclave ? (
+                <Badge variant="soft-primary">
+                  {cycle.autoclave.name}
+                  {cycle.externalCycleNumber && ` #${cycle.externalCycleNumber}`}
+                </Badge>
+              ) : (
+                <Badge variant={cycleTypeColors[cycle.cycleType]}>
+                  {cycleTypeLabels[cycle.cycleType]}
+                </Badge>
+              )}
               {cycle._count.loads > 0 && (
                 <Badge variant="outline">{cycle._count.loads} item{cycle._count.loads !== 1 ? 's' : ''}</Badge>
               )}

@@ -12,6 +12,8 @@ import {
 /**
  * GET /api/resources/sterilization/cycles/[id]
  * Get a single sterilization cycle by ID
+ *
+ * This also marks the cycle as viewed (clears isNew flag) for imported cycles.
  */
 export const GET = withAuth<{ id: string }>(
   async (req, session, context) => {
@@ -26,6 +28,12 @@ export const GET = withAuth<{ id: string }>(
         loads: true,
         biologicalIndicators: true,
         chemicalIndicators: true,
+        autoclave: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -40,6 +48,20 @@ export const GET = withAuth<{ id: string }>(
         },
         { status: 404 }
       );
+    }
+
+    // Mark as viewed if it's a new imported cycle (clear isNew flag)
+    if (cycle.isNew && cycle.importedAt) {
+      await db.sterilizationCycle.update({
+        where: { id },
+        data: {
+          isNew: false,
+          viewedAt: new Date(),
+        },
+      });
+      // Update the returned cycle data
+      cycle.isNew = false;
+      cycle.viewedAt = new Date();
     }
 
     return NextResponse.json({ success: true, data: cycle });
