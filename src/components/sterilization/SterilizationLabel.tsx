@@ -34,6 +34,7 @@ interface SterilizationLabelProps {
     status: string;
   };
   equipmentName?: string;
+  packageType?: string;
   expirationDays?: number;
   showPrintControls?: boolean;
   labelSize?: LabelSize;
@@ -52,9 +53,10 @@ const cycleTypeLabels: Record<string, string> = {
 export function SterilizationLabel({
   cycle,
   equipmentName,
+  packageType = 'Cassette',
   expirationDays = 30,
   showPrintControls = true,
-  labelSize: initialLabelSize = '2x2',
+  labelSize: initialLabelSize = '4x2',
   onPrint,
 }: SterilizationLabelProps) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
@@ -84,6 +86,7 @@ export function SterilizationLabel({
           exposureTime: cycle.exposureTime ?? undefined,
           status: cycle.status,
           equipmentName,
+          packageType,
         };
 
         const dataUrl = await generateQRCodeDataURL(qrData, {
@@ -100,7 +103,7 @@ export function SterilizationLabel({
     };
 
     generateQR();
-  }, [cycle.id, cycle.cycleNumber, cycle.cycleType, cycle.temperature, cycle.pressure, cycle.exposureTime, cycle.status, equipmentName, cycleDateStr]);
+  }, [cycle.id, cycle.cycleNumber, cycle.cycleType, cycle.temperature, cycle.pressure, cycle.exposureTime, cycle.status, equipmentName, packageType, cycleDateStr]);
 
   const handlePrint = () => {
     if (!labelRef.current) return;
@@ -268,7 +271,7 @@ export function SterilizationLabel({
         {/* Print Controls */}
         {showPrintControls && (
           <div className="flex flex-wrap items-end gap-4">
-            <FormField label="Label Size" className="w-32">
+            <FormField label="Label Size" className="w-48">
               <Select
                 value={labelSize}
                 onValueChange={(v) => setLabelSize(v as LabelSize)}
@@ -277,10 +280,12 @@ export function SterilizationLabel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="2x1">2&quot; x 1&quot;</SelectItem>
-                  <SelectItem value="2x2">2&quot; x 2&quot;</SelectItem>
-                  <SelectItem value="2x4">2&quot; x 4&quot;</SelectItem>
-                  <SelectItem value="4x6">4&quot; x 6&quot;</SelectItem>
+                  <SelectItem value="4x2">Staples Shipping 4&quot; x 2&quot;</SelectItem>
+                  <SelectItem value="2.625x1">Staples Address 2⅝&quot; x 1&quot;</SelectItem>
+                  <SelectItem value="2x1">Thermal 2&quot; x 1&quot;</SelectItem>
+                  <SelectItem value="2x2">Thermal 2&quot; x 2&quot;</SelectItem>
+                  <SelectItem value="2x4">Thermal 2&quot; x 4&quot;</SelectItem>
+                  <SelectItem value="4x6">Thermal 4&quot; x 6&quot;</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
