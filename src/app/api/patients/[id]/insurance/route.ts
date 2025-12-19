@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -10,16 +11,16 @@ import {
 } from '@/lib/validations/insurance';
 
 interface RouteContext {
-  params: Promise<{ patientId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 /**
- * GET /api/patients/[patientId]/insurance
+ * GET /api/patients/[id]/insurance
  * List patient's insurance coverages
  */
 export const GET = withAuth(
-  async (req, session, context: RouteContext) => {
-    const { patientId } = await context.params;
+  async (req: NextRequest, session: Session, context: RouteContext) => {
+    const { id: patientId } = await context.params;
     const { searchParams } = new URL(req.url);
 
     // Verify patient exists
@@ -150,12 +151,12 @@ export const GET = withAuth(
 );
 
 /**
- * POST /api/patients/[patientId]/insurance
+ * POST /api/patients/[id]/insurance
  * Add insurance coverage to a patient
  */
 export const POST = withAuth(
-  async (req, session, context: RouteContext) => {
-    const { patientId } = await context.params;
+  async (req: NextRequest, session: Session, context: RouteContext) => {
+    const { id: patientId } = await context.params;
     const body = await req.json();
 
     // Verify patient exists

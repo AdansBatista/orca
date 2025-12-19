@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -10,16 +11,16 @@ import {
 } from '@/lib/payments/stripe';
 
 interface RouteParams {
-  params: Promise<{ patientId: string; methodId: string }>;
+  params: Promise<{ id: string; methodId: string }>;
 }
 
 /**
- * GET /api/patients/[patientId]/payment-methods/[methodId]
+ * GET /api/patients/[id]/payment-methods/[methodId]
  * Get a specific payment method
  */
 export const GET = withAuth(
-  async (req, session, { params }: RouteParams) => {
-    const { patientId, methodId } = await params;
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
+    const { id: patientId, methodId } = await params;
 
     // Verify patient exists
     const patient = await db.patient.findFirst({
@@ -72,12 +73,12 @@ export const GET = withAuth(
 );
 
 /**
- * PATCH /api/patients/[patientId]/payment-methods/[methodId]
+ * PATCH /api/patients/[id]/payment-methods/[methodId]
  * Update a payment method (nickname, set as default)
  */
 export const PATCH = withAuth(
-  async (req, session, { params }: RouteParams) => {
-    const { patientId, methodId } = await params;
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
+    const { id: patientId, methodId } = await params;
     const body = await req.json();
 
     // Verify patient exists
@@ -134,11 +135,11 @@ export const PATCH = withAuth(
     // Set as default
     if (body.isDefault === true) {
       // Update Stripe if applicable
-      if (patient.stripeCustomerId && paymentMethod.gatewayPaymentMethodId) {
+      if (paymentMethod.gatewayCustomerId && paymentMethod.gatewayMethodId) {
         try {
           await setDefaultPaymentMethod(
-            patient.stripeCustomerId,
-            paymentMethod.gatewayPaymentMethodId
+            paymentMethod.gatewayCustomerId,
+            paymentMethod.gatewayMethodId
           );
         } catch (error) {
           const stripeError = error as { message?: string };
@@ -194,12 +195,12 @@ export const PATCH = withAuth(
 );
 
 /**
- * DELETE /api/patients/[patientId]/payment-methods/[methodId]
+ * DELETE /api/patients/[id]/payment-methods/[methodId]
  * Remove a payment method
  */
 export const DELETE = withAuth(
-  async (req, session, { params }: RouteParams) => {
-    const { patientId, methodId } = await params;
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
+    const { id: patientId, methodId } = await params;
 
     // Verify patient exists
     const patient = await db.patient.findFirst({
@@ -265,9 +266,9 @@ export const DELETE = withAuth(
     }
 
     // Detach from Stripe
-    if (paymentMethod.gatewayPaymentMethodId) {
+    if (paymentMethod.gatewayMethodId) {
       try {
-        await detachPaymentMethod(paymentMethod.gatewayPaymentMethodId);
+        await detachPaymentMethod(paymentMethod.gatewayMethodId);
       } catch (error) {
         // Log but don't fail if Stripe detach fails
         console.error('Failed to detach from Stripe:', error);
@@ -280,8 +281,6 @@ export const DELETE = withAuth(
       data: {
         status: 'REMOVED',
         deletedAt: new Date(),
-        deletedBy: session.user.id,
-        updatedBy: session.user.id,
       },
     });
 

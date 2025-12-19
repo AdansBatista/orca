@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withSoftDelete, softDelete } from '@/lib/db/soft-delete';
@@ -7,16 +8,16 @@ import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updatePatientInsuranceSchema } from '@/lib/validations/insurance';
 
 interface RouteContext {
-  params: Promise<{ patientId: string; insuranceId: string }>;
+  params: Promise<{ id: string; insuranceId: string }>;
 }
 
 /**
- * GET /api/patients/[patientId]/insurance/[insuranceId]
+ * GET /api/patients/[id]/insurance/[insuranceId]
  * Get a single patient insurance coverage
  */
 export const GET = withAuth(
-  async (req, session, context: RouteContext) => {
-    const { patientId, insuranceId } = await context.params;
+  async (req: NextRequest, session: Session, context: RouteContext) => {
+    const { id: patientId, insuranceId } = await context.params;
 
     // Verify patient exists
     const patient = await db.patient.findFirst({
@@ -101,12 +102,12 @@ export const GET = withAuth(
 );
 
 /**
- * PATCH /api/patients/[patientId]/insurance/[insuranceId]
+ * PATCH /api/patients/[id]/insurance/[insuranceId]
  * Update a patient insurance coverage
  */
 export const PATCH = withAuth(
-  async (req, session, context: RouteContext) => {
-    const { patientId, insuranceId } = await context.params;
+  async (req: NextRequest, session: Session, context: RouteContext) => {
+    const { id: patientId, insuranceId } = await context.params;
     const body = await req.json();
 
     // Validate input
@@ -250,12 +251,12 @@ export const PATCH = withAuth(
 );
 
 /**
- * DELETE /api/patients/[patientId]/insurance/[insuranceId]
+ * DELETE /api/patients/[id]/insurance/[insuranceId]
  * Soft delete a patient insurance coverage
  */
 export const DELETE = withAuth(
-  async (req, session, context: RouteContext) => {
-    const { patientId, insuranceId } = await context.params;
+  async (req: NextRequest, session: Session, context: RouteContext) => {
+    const { id: patientId, insuranceId } = await context.params;
 
     // Check if insurance exists
     const existing = await db.patientInsurance.findFirst({

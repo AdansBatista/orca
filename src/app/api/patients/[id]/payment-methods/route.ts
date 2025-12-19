@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -17,16 +18,16 @@ import {
 } from '@/lib/payments/stripe';
 
 interface RouteParams {
-  params: Promise<{ patientId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 /**
- * GET /api/patients/[patientId]/payment-methods
+ * GET /api/patients/[id]/payment-methods
  * List saved payment methods for a patient
  */
 export const GET = withAuth(
-  async (req, session, { params }: RouteParams) => {
-    const { patientId } = await params;
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
+    const { id: patientId } = await params;
     const { searchParams } = new URL(req.url);
 
     // Verify patient exists and belongs to clinic
@@ -52,7 +53,6 @@ export const GET = withAuth(
 
     // Parse query params
     const rawParams = {
-      status: searchParams.get('status') ?? undefined,
       type: searchParams.get('type') ?? undefined,
       page: searchParams.get('page') ?? undefined,
       pageSize: searchParams.get('pageSize') ?? undefined,
@@ -73,7 +73,7 @@ export const GET = withAuth(
       );
     }
 
-    const { status, type, page, pageSize } = queryResult.data;
+    const { type, page, pageSize } = queryResult.data;
 
     // Build where clause
     const where: Record<string, unknown> = withSoftDelete({
@@ -81,7 +81,6 @@ export const GET = withAuth(
       clinicId: session.user.clinicId,
     });
 
-    if (status) where.status = status;
     if (type) where.type = type;
 
     // Get total count
@@ -110,12 +109,12 @@ export const GET = withAuth(
 );
 
 /**
- * POST /api/patients/[patientId]/payment-methods
+ * POST /api/patients/[id]/payment-methods
  * Add a new payment method for a patient
  */
 export const POST = withAuth(
-  async (req, session, { params }: RouteParams) => {
-    const { patientId } = await params;
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
+    const { id: patientId } = await params;
     const body = await req.json();
 
     // Verify patient exists
@@ -157,8 +156,20 @@ export const POST = withAuth(
 
     const data = result.data;
 
-    // Ensure patient has a Stripe customer ID
-    let stripeCustomerId = patient.stripeCustomerId;
+    // Find existing Stripe customer ID from patient's existing payment methods
+    const existingMethod = await db.paymentMethod.findFirst({
+      where: {
+        patientId,
+        clinicId: session.user.clinicId,
+        gateway: 'STRIPE',
+        gatewayCustomerId: { not: null },
+      },
+      select: { gatewayCustomerId: true },
+    });
+
+    let stripeCustomerId = existingMethod?.gatewayCustomerId;
+
+    // Create Stripe customer if not found
     if (!stripeCustomerId) {
       try {
         const stripeCustomer = await createStripeCustomer({
@@ -172,12 +183,6 @@ export const POST = withAuth(
         });
 
         stripeCustomerId = stripeCustomer.id;
-
-        // Update patient with Stripe customer ID
-        await db.patient.update({
-          where: { id: patientId },
-          data: { stripeCustomerId },
-        });
       } catch (error) {
         const stripeError = error as { message?: string };
         return NextResponse.json(
@@ -197,7 +202,7 @@ export const POST = withAuth(
     try {
       const stripePaymentMethod = await attachPaymentMethod({
         customerId: stripeCustomerId,
-        paymentMethodId: data.stripePaymentMethodId,
+        paymentMethodId: data.gatewayMethodId!,
         setAsDefault: data.isDefault,
       });
 
@@ -222,7 +227,8 @@ export const POST = withAuth(
           clinicId: session.user.clinicId,
           patientId,
           gateway: 'STRIPE',
-          gatewayPaymentMethodId: stripePaymentMethod.id,
+          gatewayCustomerId: stripeCustomerId,
+          gatewayMethodId: stripePaymentMethod.id,
           type: data.type,
           cardBrand: cardDetails?.brand,
           cardLast4: cardDetails?.last4,
@@ -231,8 +237,6 @@ export const POST = withAuth(
           nickname: data.nickname,
           isDefault: data.isDefault || false,
           status: 'ACTIVE',
-          createdBy: session.user.id,
-          updatedBy: session.user.id,
         },
       });
 
