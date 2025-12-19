@@ -40,6 +40,7 @@ export interface SterilizationQRData {
   exposureTime?: number;
   status?: string;
   equipmentName?: string;
+  packageType?: string;
 }
 
 /**
@@ -80,10 +81,47 @@ const DEFAULT_QR_OPTIONS: QRCodeOptions = {
 };
 
 /**
+ * Formats a date as DD-MMM-YYYY (e.g., "20-Dec-2025")
+ */
+function formatDateForScanner(date: Date): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+/**
+ * Formats time as HH_MM (e.g., "13_15")
+ */
+function formatTimeForScanner(date: Date): string {
+  const d = new Date(date);
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${hours}_${minutes}`;
+}
+
+/**
  * Generates the QR code content string for a sterilization cycle
- * Returns a compact JSON string with all details
+ * Returns a scanner-readable text format: "Date STE DD-MMM-YYYY EquipmentName CycleNum HH_MM PackageType"
+ * Example: "Date STE 20-Dec-2025 Stclave-2 2312 13_15 Pouch"
  */
 export function generateQRContent(data: SterilizationQRData, expirationDays: number = 30): string {
+  const sterilizationDate = formatDateForScanner(data.cycleDate);
+  const time = formatTimeForScanner(data.cycleDate);
+  const equipmentName = data.equipmentName || 'Unknown';
+  const cycleNumber = data.cycleNumber;
+  const packageType = data.packageType || 'Cassette';
+
+  // Format: "Date STE DD-MMM-YYYY EquipmentName CycleNum HH_MM PackageType"
+  return `Date STE ${sterilizationDate} ${equipmentName} ${cycleNumber} ${time} ${packageType}`;
+}
+
+/**
+ * Legacy function to generate compact JSON format (for backwards compatibility)
+ */
+export function generateQRContentJSON(data: SterilizationQRData, expirationDays: number = 30): string {
   const sterilizationDate = formatDateISO(data.cycleDate);
   const expDate = data.expirationDate || calculateExpirationDate(data.cycleDate, expirationDays);
   const expirationDateStr = formatDateISO(expDate);
@@ -108,8 +146,31 @@ export function generateQRContent(data: SterilizationQRData, expirationDays: num
 }
 
 /**
+ * Parses scanner date format (DD-MMM-YYYY) to ISO format (YYYY-MM-DD)
+ */
+function parseScannerDate(dateStr: string): string | null {
+  const months: Record<string, string> = {
+    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+    'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+    'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+  };
+  const match = dateStr.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})$/);
+  if (match) {
+    const [, day, monthName, year] = match;
+    const month = months[monthName];
+    if (month) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  return null;
+}
+
+/**
  * Parses a QR code content string back to its components
- * Supports both old format (ORCA-STERIL-...) and new JSON format
+ * Supports:
+ * - Scanner format: "Date STE DD-MMM-YYYY EquipmentName CycleNum HH_MM PackageType"
+ * - JSON format: {"v":1,"cn":"...","sd":"...","ed":"..."}
+ * - Legacy format: ORCA-STERIL-{cycleNumber}-{shortId}-{date}
  */
 export function parseQRContent(content: string): {
   version: number;
@@ -123,8 +184,33 @@ export function parseQRContent(content: string): {
   exposureTime?: number;
   status?: string;
   equipmentName?: string;
+  packageType?: string;
+  time?: string;
 } | null {
-  // Try parsing as JSON first (new format)
+  // Try scanner format first: "Date STE DD-MMM-YYYY EquipmentName CycleNum HH_MM PackageType"
+  const scannerMatch = content.match(/^Date STE (\d{2}-[A-Za-z]{3}-\d{4}) ([^\s]+) ([^\s]+) (\d{2}_\d{2}) (.+)$/);
+  if (scannerMatch) {
+    const [, dateStr, equipmentName, cycleNumber, time, packageType] = scannerMatch;
+    const sterilizationDate = parseScannerDate(dateStr);
+    if (sterilizationDate) {
+      // Calculate expiration (30 days default)
+      const sterDate = new Date(sterilizationDate);
+      const expDate = calculateExpirationDate(sterDate, 30);
+
+      return {
+        version: 2, // scanner format
+        cycleIdSuffix: '',
+        cycleNumber,
+        sterilizationDate,
+        expirationDate: formatDateISO(expDate),
+        equipmentName,
+        packageType,
+        time,
+      };
+    }
+  }
+
+  // Try parsing as JSON (compact format)
   try {
     const data = JSON.parse(content) as CompactQRData;
     if (data.v && data.cn && data.sd && data.ed) {
@@ -143,13 +229,13 @@ export function parseQRContent(content: string): {
       };
     }
   } catch {
-    // Not JSON, try old format
+    // Not JSON, try legacy format
   }
 
-  // Try old format: ORCA-STERIL-{cycleNumber}-{shortId}-{date}
-  const match = content.match(/^ORCA-STERIL-(.+)-([a-f0-9]{8})-(\d{8})$/);
-  if (match) {
-    const dateStr = match[3];
+  // Try legacy format: ORCA-STERIL-{cycleNumber}-{shortId}-{date}
+  const legacyMatch = content.match(/^ORCA-STERIL-(.+)-([a-f0-9]{8})-(\d{8})$/);
+  if (legacyMatch) {
+    const dateStr = legacyMatch[3];
     const year = dateStr.slice(0, 4);
     const month = dateStr.slice(4, 6);
     const day = dateStr.slice(6, 8);
@@ -161,8 +247,8 @@ export function parseQRContent(content: string): {
 
     return {
       version: 0, // legacy format
-      cycleNumber: match[1],
-      cycleIdSuffix: match[2],
+      cycleNumber: legacyMatch[1],
+      cycleIdSuffix: legacyMatch[2],
       sterilizationDate,
       expirationDate: formatDateISO(expDate),
     };
@@ -222,13 +308,16 @@ export async function generateQRCodeSVG(
 }
 
 /**
- * Label sizes for thermal printers
+ * Label sizes for thermal and standard printers
+ * Includes Staples shipping labels for office printers
  */
 export const LABEL_SIZES = {
-  '2x1': { width: 2, height: 1, widthPx: 192, heightPx: 96 }, // 2" x 1" at 96 DPI
-  '2x2': { width: 2, height: 2, widthPx: 192, heightPx: 192 },
-  '2x4': { width: 2, height: 4, widthPx: 192, heightPx: 384 },
-  '4x6': { width: 4, height: 6, widthPx: 384, heightPx: 576 },
+  '4x2': { width: 4, height: 2, widthPx: 384, heightPx: 192, name: 'Staples Shipping (4" x 2")' }, // Staples 3037851 / ST18060-CC - 10 labels/sheet
+  '2.625x1': { width: 2.625, height: 1, widthPx: 252, heightPx: 96, name: 'Staples Address (2⅝" x 1")' }, // Staples ST18054-CC - 30 labels/sheet
+  '2x1': { width: 2, height: 1, widthPx: 192, heightPx: 96, name: 'Thermal 2" x 1"' },
+  '2x2': { width: 2, height: 2, widthPx: 192, heightPx: 192, name: 'Thermal 2" x 2"' },
+  '2x4': { width: 2, height: 4, widthPx: 192, heightPx: 384, name: 'Thermal 2" x 4"' },
+  '4x6': { width: 4, height: 6, widthPx: 384, heightPx: 576, name: 'Thermal 4" x 6"' },
 } as const;
 
 export type LabelSize = keyof typeof LABEL_SIZES;
