@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -11,7 +12,7 @@ import { recordPackageUsageSchema, packageUsageQuerySchema } from '@/lib/validat
  * List usage history for a package
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const { searchParams } = new URL(req.url);
 
@@ -95,7 +96,7 @@ export const GET = withAuth<{ id: string }>(
  * Record usage of a package with a patient
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 

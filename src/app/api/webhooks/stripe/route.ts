@@ -114,12 +114,6 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     where: { id: payment.id },
     data: {
       status: 'COMPLETED',
-      processedAt: new Date(),
-      gatewayResponse: JSON.stringify({
-        status: 'succeeded',
-        chargeId: paymentIntent.latest_charge,
-        processedAt: new Date().toISOString(),
-      }),
     },
   });
 
@@ -149,11 +143,6 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
     where: { id: payment.id },
     data: {
       status: 'FAILED',
-      gatewayResponse: JSON.stringify({
-        status: 'failed',
-        error: paymentIntent.last_payment_error?.message,
-        failedAt: new Date().toISOString(),
-      }),
     },
   });
 
@@ -178,10 +167,6 @@ async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent) 
     where: { id: payment.id },
     data: {
       status: 'CANCELLED',
-      gatewayResponse: JSON.stringify({
-        status: 'canceled',
-        canceledAt: new Date().toISOString(),
-      }),
     },
   });
 
@@ -217,10 +202,6 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     data: {
       status: refundData.status === 'succeeded' ? 'COMPLETED' : 'FAILED',
       processedAt: new Date(),
-      gatewayResponse: JSON.stringify({
-        status: refundData.status,
-        processedAt: new Date().toISOString(),
-      }),
     },
   });
 
@@ -252,37 +233,12 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
   const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id;
   if (!chargeId) return;
 
-  // Find payment by gateway payment ID (need to look up via charge)
-  // For now, log the dispute - full implementation would track disputes
+  // Log the dispute - full implementation would track disputes in a separate table
   console.log(`Dispute created for charge ${chargeId}: ${dispute.reason}`);
 
-  // Find payment and update status
-  const payment = await db.payment.findFirst({
-    where: {
-      gatewayResponse: { contains: chargeId },
-    },
-  });
-
-  if (payment) {
-    await db.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: 'DISPUTED',
-        gatewayResponse: JSON.stringify({
-          ...(payment.gatewayResponse ? JSON.parse(payment.gatewayResponse) : {}),
-          dispute: {
-            id: dispute.id,
-            reason: dispute.reason,
-            status: dispute.status,
-            amount: dispute.amount,
-            createdAt: new Date().toISOString(),
-          },
-        }),
-      },
-    });
-
-    console.log(`Payment ${payment.paymentNumber} marked as disputed`);
-  }
+  // Find payment by gateway payment ID (charge ID)
+  // Note: Payment model doesn't have gatewayResponse field, so we can't search by charge
+  // This would require tracking disputes in a separate model
 }
 
 /**
@@ -294,41 +250,8 @@ async function handleDisputeClosed(dispute: Stripe.Dispute) {
 
   console.log(`Dispute closed for charge ${chargeId}: ${dispute.status}`);
 
-  // Find payment and update status based on dispute outcome
-  const payment = await db.payment.findFirst({
-    where: {
-      gatewayResponse: { contains: chargeId },
-    },
-  });
-
-  if (payment) {
-    let newStatus = payment.status;
-    if (dispute.status === 'won') {
-      newStatus = 'COMPLETED';
-    } else if (dispute.status === 'lost') {
-      newStatus = 'REFUNDED';
-    }
-
-    await db.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: newStatus,
-        gatewayResponse: JSON.stringify({
-          ...(payment.gatewayResponse ? JSON.parse(payment.gatewayResponse) : {}),
-          dispute: {
-            id: dispute.id,
-            status: dispute.status,
-            closedAt: new Date().toISOString(),
-          },
-        }),
-      },
-    });
-
-    // If lost, update account balance
-    if (dispute.status === 'lost') {
-      await updateAccountBalance(payment.accountId, payment.clinicId, 'system');
-    }
-  }
+  // Note: Payment model doesn't have gatewayResponse field, so we can't search by charge
+  // This would require tracking disputes in a separate model
 }
 
 /**
@@ -339,20 +262,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   const paymentLinkCode = session.metadata?.paymentLinkCode;
 
   if (paymentLinkCode) {
-    const paymentLink = await db.paymentLink.findUnique({
-      where: { code: paymentLinkCode },
+    const paymentLink = await db.paymentLink.findFirst({
+      where: { linkCode: paymentLinkCode },
     });
 
     if (paymentLink) {
       await db.paymentLink.update({
         where: { id: paymentLink.id },
         data: {
-          status: 'COMPLETED',
-          completedAt: new Date(),
+          status: 'PAID',
+          paidAt: new Date(),
         },
       });
 
-      console.log(`Payment link ${paymentLinkCode} marked as completed`);
+      console.log(`Payment link ${paymentLinkCode} marked as paid`);
     }
   }
 }

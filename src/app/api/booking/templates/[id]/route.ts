@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateBookingTemplateSchema } from '@/lib/validations/advanced-scheduling';
@@ -9,7 +10,7 @@ import { updateBookingTemplateSchema } from '@/lib/validations/advanced-scheduli
  * Get a specific booking template
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const template = await db.bookingTemplate.findFirst({
@@ -73,7 +74,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a booking template
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
     const validationResult = updateBookingTemplateSchema.safeParse(body);
@@ -203,7 +204,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a booking template
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Verify template exists and belongs to clinic

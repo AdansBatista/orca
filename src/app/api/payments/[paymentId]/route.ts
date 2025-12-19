@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -20,7 +21,7 @@ interface RouteParams {
  * Get a specific payment by ID
  */
 export const GET = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { paymentId } = await params;
 
     const payment = await db.payment.findFirst({
@@ -67,7 +68,7 @@ export const GET = withAuth(
             createdAt: true,
           },
         },
-        paymentMethod: {
+        storedMethod: {
           select: {
             id: true,
             cardBrand: true,
@@ -77,14 +78,7 @@ export const GET = withAuth(
             isDefault: true,
           },
         },
-        processedBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        receipt: {
+        receipts: {
           select: {
             id: true,
             receiptNumber: true,
@@ -121,7 +115,7 @@ export const GET = withAuth(
  * Perform actions on a payment (capture, cancel, sync)
  */
 export const POST = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { paymentId } = await params;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
@@ -190,12 +184,6 @@ export const POST = withAuth(
             where: { id: paymentId },
             data: {
               status: 'COMPLETED',
-              processedAt: new Date(),
-              gatewayResponse: JSON.stringify({
-                status: capturedIntent.status,
-                capturedAt: new Date().toISOString(),
-              }),
-              updatedBy: session.user.id,
             },
           });
 
@@ -259,7 +247,6 @@ export const POST = withAuth(
             where: { id: paymentId },
             data: {
               status: 'CANCELLED',
-              updatedBy: session.user.id,
             },
           });
 
@@ -322,12 +309,6 @@ export const POST = withAuth(
             where: { id: paymentId },
             data: {
               status: newStatus,
-              gatewayResponse: JSON.stringify({
-                status: paymentIntent.status,
-                syncedAt: new Date().toISOString(),
-              }),
-              processedAt: newStatus === 'COMPLETED' ? new Date() : payment.processedAt,
-              updatedBy: session.user.id,
             },
           });
 

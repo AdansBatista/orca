@@ -7,7 +7,8 @@
  * Supports scheduling and variable substitution.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { db } from '@/lib/db';
@@ -34,7 +35,7 @@ const bulkMessageSchema = z.object({
  * Send bulk messages to multiple patients
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json().catch(() => ({}));
 
     // Validate input

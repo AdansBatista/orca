@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -9,7 +10,7 @@ import { logAudit, getRequestMeta } from '@/lib/audit';
  * Get a single plan modification
  */
 export const GET = withAuth<{ id: string; modificationId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id, modificationId } = await context.params;
 
     // Verify treatment plan exists

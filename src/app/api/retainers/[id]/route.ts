@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -9,7 +10,7 @@ import { updateRetainerRecordSchema } from '@/lib/validations/treatment';
  * Get a single retainer record
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const retainer = await db.retainerRecord.findFirst({
@@ -66,7 +67,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a retainer record
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -160,7 +161,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a retainer record
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Verify retainer exists

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { riskScoreQuerySchema } from '@/lib/validations/waitlist';
@@ -9,7 +10,7 @@ import { riskScoreQuerySchema } from '@/lib/validations/waitlist';
  * List at-risk patients with filtering and pagination
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters
@@ -111,7 +112,7 @@ export const GET = withAuth(
  * Calculate/recalculate risk scores for patients
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
     const { patientId } = body; // Optional: calculate for specific patient
 

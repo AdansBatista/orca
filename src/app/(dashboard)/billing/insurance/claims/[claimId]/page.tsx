@@ -325,30 +325,26 @@ export default function InsuranceClaimDetailPage({
 
       {/* Stats */}
       <StatsRow>
-        <StatCard
-          accentColor="primary"
-          label="Billed Amount"
-          value={formatCurrency(claim.billedAmount)}
-          description={`${claim.items.length} line items`}
-        />
-        <StatCard
-          accentColor="accent"
-          label="Allowed Amount"
-          value={claim.allowedAmount ? formatCurrency(claim.allowedAmount) : '-'}
-          description="Insurance allowed"
-        />
-        <StatCard
-          accentColor="success"
-          label="Paid Amount"
-          value={formatCurrency(claim.paidAmount)}
-          description="Received"
-        />
-        <StatCard
-          accentColor="warning"
-          label="Patient Responsibility"
-          value={formatCurrency(claim.patientResponsibility)}
-          description="Due from patient"
-        />
+        <StatCard accentColor="primary">
+          <p className="text-xs text-muted-foreground">Billed Amount</p>
+          <p className="text-2xl font-bold">{formatCurrency(claim.billedAmount)}</p>
+          <p className="text-xs text-muted-foreground">{claim.items.length} line items</p>
+        </StatCard>
+        <StatCard accentColor="accent">
+          <p className="text-xs text-muted-foreground">Allowed Amount</p>
+          <p className="text-2xl font-bold">{claim.allowedAmount ? formatCurrency(claim.allowedAmount) : '-'}</p>
+          <p className="text-xs text-muted-foreground">Insurance allowed</p>
+        </StatCard>
+        <StatCard accentColor="success">
+          <p className="text-xs text-muted-foreground">Paid Amount</p>
+          <p className="text-2xl font-bold">{formatCurrency(claim.paidAmount)}</p>
+          <p className="text-xs text-muted-foreground">Received</p>
+        </StatCard>
+        <StatCard accentColor="warning">
+          <p className="text-xs text-muted-foreground">Patient Responsibility</p>
+          <p className="text-2xl font-bold">{formatCurrency(claim.patientResponsibility)}</p>
+          <p className="text-xs text-muted-foreground">Due from patient</p>
+        </StatCard>
       </StatsRow>
 
       {/* Details Grid */}
@@ -512,11 +508,13 @@ export default function InsuranceClaimDetailPage({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {claim.statusHistory.map((history, index) => (
+              {claim.statusHistory.map((history, index) => {
+                const HistoryIcon = CLAIM_STATUSES[history.status]?.icon;
+                return (
                 <div key={history.id} className="flex items-start gap-4">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                    {CLAIM_STATUSES[history.status]?.icon && (
-                      <StatusIcon className="h-4 w-4" />
+                    {HistoryIcon && (
+                      <HistoryIcon className="h-4 w-4" />
                     )}
                   </div>
                   <div className="flex-1">
@@ -530,7 +528,8 @@ export default function InsuranceClaimDetailPage({
                     )}
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </CardContent>
         </Card>

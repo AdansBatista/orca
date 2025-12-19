@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -14,7 +15,7 @@ import {
  * List equipment with pagination, search, and filters
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters
@@ -151,7 +152,7 @@ export const GET = withAuth(
  * Create a new equipment record
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     // Validate input

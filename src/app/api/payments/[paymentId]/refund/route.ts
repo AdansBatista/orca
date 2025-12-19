@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -7,6 +8,7 @@ import { logAudit, getRequestMeta } from '@/lib/audit';
 import { createRefundSchema } from '@/lib/validations/billing';
 import { generateRefundNumber, updateAccountBalance } from '@/lib/billing/utils';
 import { createRefund } from '@/lib/payments/stripe';
+import type { RefundReason } from '@prisma/client';
 
 interface RouteParams {
   params: Promise<{ paymentId: string }>;
@@ -17,7 +19,7 @@ interface RouteParams {
  * Create a refund for a payment
  */
 export const POST = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { paymentId } = await params;
     const body = await req.json();
 
@@ -110,18 +112,14 @@ export const POST = withAuth(
     // Generate refund number
     const refundNumber = await generateRefundNumber(session.user.clinicId);
 
-    // Determine if this is a full or partial refund
-    const refundType = refundAmount === payment.amount ? 'FULL' : 'PARTIAL';
-
     // Determine initial status - if no approval required, process immediately
     // For now, we'll require approval for refunds over a threshold
     const APPROVAL_THRESHOLD = 100; // $100
     const requiresApproval = refundAmount >= APPROVAL_THRESHOLD;
-    const initialStatus = requiresApproval ? 'PENDING' : 'APPROVED';
+    const initialStatus: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'PROCESSING' = requiresApproval ? 'PENDING' : 'APPROVED';
 
     let gatewayRefundId: string | null = null;
-    let gatewayResponse: unknown = null;
-    let finalStatus = initialStatus;
+    let finalStatus: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'PROCESSING' = initialStatus;
 
     // If approved immediately and payment has a gateway reference, process refund
     if (!requiresApproval && payment.gatewayPaymentId && payment.gateway === 'STRIPE') {
@@ -138,10 +136,6 @@ export const POST = withAuth(
         });
 
         gatewayRefundId = stripeRefund.id;
-        gatewayResponse = {
-          status: stripeRefund.status,
-          processedAt: new Date().toISOString(),
-        };
         finalStatus = stripeRefund.status === 'succeeded' ? 'COMPLETED' : 'PROCESSING';
       } catch (error) {
         const stripeError = error as { message?: string };
@@ -165,30 +159,20 @@ export const POST = withAuth(
         paymentId,
         refundNumber,
         amount: refundAmount,
-        refundType,
-        reason: data.reason,
-        notes: data.notes,
+        reason: data.reason as RefundReason,
+        reasonDetails: data.reasonDetails,
         status: finalStatus,
         gatewayRefundId,
-        gatewayResponse: gatewayResponse ? JSON.stringify(gatewayResponse) : null,
-        requestedBy: session.user.id,
-        requestedAt: new Date(),
+        requiresApproval,
         processedBy: finalStatus === 'COMPLETED' ? session.user.id : null,
         processedAt: finalStatus === 'COMPLETED' ? new Date() : null,
         createdBy: session.user.id,
-        updatedBy: session.user.id,
       },
       include: {
         payment: {
           select: {
             paymentNumber: true,
             amount: true,
-          },
-        },
-        requestedByUser: {
-          select: {
-            firstName: true,
-            lastName: true,
           },
         },
       },
@@ -203,7 +187,6 @@ export const POST = withAuth(
         where: { id: paymentId },
         data: {
           status: newPaymentStatus,
-          updatedBy: session.user.id,
         },
       });
 
@@ -228,8 +211,6 @@ export const POST = withAuth(
             data: {
               balance: newBalance,
               status: newStatus,
-              paidAt: newBalance > 0 ? null : invoice.paidAt,
-              updatedBy: session.user.id,
             },
           });
         }

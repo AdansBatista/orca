@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -36,7 +37,7 @@ const notificationQuerySchema = z.object({
  * List lab-related patient notifications based on status changes
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
     const clinicFilter = getClinicFilter(session);
 
@@ -150,7 +151,7 @@ export const GET = withAuth(
  * Send a notification to patient about their lab order
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
     const clinicFilter = getClinicFilter(session);
 

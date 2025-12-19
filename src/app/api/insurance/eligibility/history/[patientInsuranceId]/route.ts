@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -14,7 +15,7 @@ interface RouteContext {
  * Get eligibility check history for a patient insurance
  */
 export const GET = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { patientInsuranceId } = await context.params;
     const { searchParams } = new URL(req.url);
 

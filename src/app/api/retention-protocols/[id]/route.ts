@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -9,7 +10,7 @@ import { updateRetentionProtocolSchema } from '@/lib/validations/treatment';
  * Get a single retention protocol with checks history
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const retentionProtocol = await db.retentionProtocol.findFirst({
@@ -80,7 +81,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a retention protocol
  */
 export const PATCH = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -182,7 +183,7 @@ export const PATCH = withAuth<{ id: string }>(
  * Deactivate a retention protocol (soft close)
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Find existing record

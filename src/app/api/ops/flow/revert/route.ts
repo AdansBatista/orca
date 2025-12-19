@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { db } from '@/lib/db';
@@ -33,7 +34,7 @@ const revertSchema = z.object({
  * Revert a patient to a previous flow stage (backward transition)
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json().catch(() => ({}));
 
     // Validate input

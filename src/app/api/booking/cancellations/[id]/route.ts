@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateCancellationSchema, logRecoveryAttemptSchema } from '@/lib/validations/waitlist';
@@ -9,7 +10,7 @@ import { updateCancellationSchema, logRecoveryAttemptSchema } from '@/lib/valida
  * Get a specific cancellation record
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const cancellation = await db.appointmentCancellation.findFirst({
@@ -56,7 +57,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a cancellation record (reason, recovery status, fees)
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -131,7 +132,7 @@ export const PUT = withAuth<{ id: string }>(
  * Log a recovery attempt for a cancelled/no-show appointment
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 

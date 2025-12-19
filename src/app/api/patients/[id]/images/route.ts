@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -10,7 +11,7 @@ import { imageListQuerySchema } from '@/lib/validations/imaging';
  * List all images for a patient with filtering
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: patientId } = await context.params;
     const { searchParams } = new URL(req.url);
 

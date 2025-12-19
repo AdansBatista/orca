@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
-import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import {
@@ -15,17 +15,16 @@ import { generatePaymentLinkCode } from '@/lib/billing/utils';
  * List payment links with pagination and filters
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters
     const rawParams = {
-      search: searchParams.get('search') ?? undefined,
       patientId: searchParams.get('patientId') ?? undefined,
       accountId: searchParams.get('accountId') ?? undefined,
       status: searchParams.get('status') ?? undefined,
-      dateFrom: searchParams.get('dateFrom') ?? undefined,
-      dateTo: searchParams.get('dateTo') ?? undefined,
+      fromDate: searchParams.get('fromDate') ?? undefined,
+      toDate: searchParams.get('toDate') ?? undefined,
       page: searchParams.get('page') ?? undefined,
       pageSize: searchParams.get('pageSize') ?? undefined,
       sortBy: searchParams.get('sortBy') ?? undefined,
@@ -49,12 +48,11 @@ export const GET = withAuth(
     }
 
     const {
-      search,
       patientId,
       accountId,
       status,
-      dateFrom,
-      dateTo,
+      fromDate,
+      toDate,
       page,
       pageSize,
       sortBy,
@@ -62,27 +60,17 @@ export const GET = withAuth(
     } = queryResult.data;
 
     // Build where clause
-    const where: Record<string, unknown> = withSoftDelete(getClinicFilter(session));
+    const where: Record<string, unknown> = getClinicFilter(session);
 
     if (patientId) where.patientId = patientId;
     if (accountId) where.accountId = accountId;
     if (status) where.status = status;
 
     // Date range filters
-    if (dateFrom || dateTo) {
+    if (fromDate || toDate) {
       where.createdAt = {};
-      if (dateFrom) (where.createdAt as Record<string, unknown>).gte = dateFrom;
-      if (dateTo) (where.createdAt as Record<string, unknown>).lte = dateTo;
-    }
-
-    // Search
-    if (search) {
-      where.OR = [
-        { linkCode: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { patient: { firstName: { contains: search, mode: 'insensitive' } } },
-        { patient: { lastName: { contains: search, mode: 'insensitive' } } },
-      ];
+      if (fromDate) (where.createdAt as Record<string, unknown>).gte = fromDate;
+      if (toDate) (where.createdAt as Record<string, unknown>).lte = toDate;
     }
 
     // Get total count
@@ -110,28 +98,14 @@ export const GET = withAuth(
             accountNumber: true,
           },
         },
-        invoice: {
-          select: {
-            id: true,
-            invoiceNumber: true,
-            balance: true,
-          },
-        },
-        createdByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
     // Count by status
     const statusCounts = await db.paymentLink.groupBy({
       by: ['status'],
-      where: withSoftDelete(getClinicFilter(session)),
-      _count: true,
+      where: getClinicFilter(session),
+      _count: { _all: true },
     });
 
     return NextResponse.json({
@@ -144,7 +118,7 @@ export const GET = withAuth(
         totalPages: Math.ceil(total / pageSize),
         stats: {
           statusCounts: statusCounts.reduce((acc, item) => {
-            acc[item.status] = item._count;
+            acc[item.status] = item._count._all;
             return acc;
           }, {} as Record<string, number>),
         },
@@ -159,7 +133,7 @@ export const GET = withAuth(
  * Create a new payment link
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     // Validate input
@@ -182,10 +156,11 @@ export const POST = withAuth(
 
     // Verify account exists
     const account = await db.patientAccount.findFirst({
-      where: withSoftDelete({
+      where: {
         id: data.accountId,
         clinicId: session.user.clinicId,
-      }),
+        deletedAt: null,
+      },
       include: {
         patient: {
           select: {
@@ -215,11 +190,12 @@ export const POST = withAuth(
     // Verify invoice if specified
     if (data.invoiceId) {
       const invoice = await db.invoice.findFirst({
-        where: withSoftDelete({
+        where: {
           id: data.invoiceId,
           accountId: data.accountId,
           clinicId: session.user.clinicId,
-        }),
+          deletedAt: null,
+        },
       });
 
       if (!invoice) {

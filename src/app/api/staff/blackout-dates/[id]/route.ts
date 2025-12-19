@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updateBlackoutDateSchema } from '@/lib/validations/scheduling';
  * Get a specific blackout date
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const blackoutDate = await db.blackoutDate.findFirst({
@@ -46,7 +47,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a blackout date
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -175,7 +176,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete (deactivate) a blackout date
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Find existing blackout date

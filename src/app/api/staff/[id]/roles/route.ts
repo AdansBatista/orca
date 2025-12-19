@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -11,7 +12,7 @@ import { createRoleAssignmentSchema } from '@/lib/validations/roles';
  * Get all role assignments for a staff member (user)
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Verify the user exists and belongs to the clinic
@@ -90,7 +91,7 @@ export const GET = withAuth<{ id: string }>(
  * Assign a role to a staff member
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 

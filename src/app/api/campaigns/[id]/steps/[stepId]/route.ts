@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -34,7 +35,7 @@ const updateStepSchema = z.object({
  * Get a single step.
  */
 export const GET = withAuth<{ id: string; stepId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id, stepId } = await params;
 
     // Verify campaign exists
@@ -107,7 +108,7 @@ export const GET = withAuth<{ id: string; stepId: string }>(
  * Only works for campaigns in DRAFT status.
  */
 export const PUT = withAuth<{ id: string; stepId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id, stepId } = await params;
     const body = await req.json().catch(() => ({}));
 
@@ -272,7 +273,7 @@ export const PUT = withAuth<{ id: string; stepId: string }>(
  * Only works for campaigns in DRAFT status.
  */
 export const DELETE = withAuth<{ id: string; stepId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id, stepId } = await params;
 
     // Verify campaign exists and is in DRAFT status

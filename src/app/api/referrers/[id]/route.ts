@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updateReferringProviderSchema } from '@/lib/validations/referrers';
  * Get a single referring provider with referral history
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const provider = await db.referringProvider.findFirst({
@@ -74,7 +75,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a referring provider
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -146,7 +147,7 @@ export const PUT = withAuth<{ id: string }>(
  * Soft delete a referring provider
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Check provider exists

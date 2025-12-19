@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { startOfWeek, endOfWeek, format, parseISO } from 'date-fns';
 import { OvertimeStatus } from '@prisma/client';
@@ -32,7 +33,7 @@ interface WeeklyOvertimeCalculation {
  * Calculate overtime for a date range
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     // Validate input

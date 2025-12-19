@@ -243,30 +243,26 @@ export default function InsuranceCompanyDetailPage({
 
       {/* Stats */}
       <StatsRow>
-        <StatCard
-          accentColor="primary"
-          label="Total Patients"
-          value={company._count?.patientInsurances || 0}
-          description="With this insurance"
-        />
-        <StatCard
-          accentColor="accent"
-          label="Total Claims"
-          value={company.claimStats?.total || 0}
-          description="All time"
-        />
-        <StatCard
-          accentColor="success"
-          label="Total Billed"
-          value={formatCurrency(company.claimStats?.totalBilled || 0)}
-          description="Insurance charges"
-        />
-        <StatCard
-          accentColor="warning"
-          label="Total Paid"
-          value={formatCurrency(company.claimStats?.totalPaid || 0)}
-          description="Received"
-        />
+        <StatCard accentColor="primary">
+          <p className="text-xs text-muted-foreground">Total Patients</p>
+          <p className="text-2xl font-bold">{company._count?.patientInsurances || 0}</p>
+          <p className="text-xs text-muted-foreground">With this insurance</p>
+        </StatCard>
+        <StatCard accentColor="accent">
+          <p className="text-xs text-muted-foreground">Total Claims</p>
+          <p className="text-2xl font-bold">{company.claimStats?.total || 0}</p>
+          <p className="text-xs text-muted-foreground">All time</p>
+        </StatCard>
+        <StatCard accentColor="success">
+          <p className="text-xs text-muted-foreground">Total Billed</p>
+          <p className="text-2xl font-bold">{formatCurrency(company.claimStats?.totalBilled || 0)}</p>
+          <p className="text-xs text-muted-foreground">Insurance charges</p>
+        </StatCard>
+        <StatCard accentColor="warning">
+          <p className="text-xs text-muted-foreground">Total Paid</p>
+          <p className="text-2xl font-bold">{formatCurrency(company.claimStats?.totalPaid || 0)}</p>
+          <p className="text-xs text-muted-foreground">Received</p>
+        </StatCard>
       </StatsRow>
 
       {/* Details Grid */}

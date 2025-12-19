@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updatePurchaseOrderSchema } from '@/lib/validations/inventory';
  * Get a single purchase order by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const purchaseOrder = await db.purchaseOrder.findFirst({
@@ -79,7 +80,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a purchase order (only allowed in DRAFT status)
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -185,7 +186,7 @@ export const PUT = withAuth<{ id: string }>(
  * Cancel a purchase order
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Check if order exists

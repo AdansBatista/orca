@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { withAuth } from '@/lib/auth/with-auth';
 import { db } from '@/lib/db';
 import { saveFloorPlanLayoutSchema } from '@/lib/validations/floor-plan';
@@ -9,7 +10,7 @@ import { logAudit } from '@/lib/audit';
  * Get current floor plan layout for the clinic
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     try {
       const { clinicId } = session.user;
 
@@ -73,7 +74,7 @@ export const GET = withAuth(
  * Save/update floor plan layout
  */
 export const PUT = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     try {
       const { clinicId, id: userId } = session.user;
       const body = await req.json();

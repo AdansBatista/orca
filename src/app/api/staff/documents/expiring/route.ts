@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ const querySchema = z.object({
  * Get all documents expiring within a specified number of days
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const queryResult = querySchema.safeParse({

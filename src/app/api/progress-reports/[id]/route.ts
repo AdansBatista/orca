@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
@@ -48,7 +49,7 @@ const updateReportSchema = z.object({
  * Get a single progress report
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const report = await db.progressReport.findFirst({
@@ -112,7 +113,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a progress report
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -230,7 +231,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a progress report
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Verify report exists

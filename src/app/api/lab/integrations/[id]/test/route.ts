@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 
@@ -7,7 +8,7 @@ import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
  * Test an integration connection
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const clinicFilter = getClinicFilter(session);
 

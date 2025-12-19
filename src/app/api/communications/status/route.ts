@@ -6,8 +6,9 @@
  * Returns the status of all messaging providers and delivery statistics.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { getMessagingService } from '@/lib/services/messaging';
@@ -17,7 +18,7 @@ import { getMessagingService } from '@/lib/services/messaging';
  * Get messaging provider status and statistics
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const messagingService = getMessagingService();
 
     // Get provider status

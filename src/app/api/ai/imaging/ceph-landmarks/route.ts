@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { withAuth } from '@/lib/auth/with-auth';
@@ -18,7 +19,7 @@ const cephLandmarksRequestSchema = z.object({
  * Detect cephalometric landmarks in a lateral ceph X-ray.
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     try {
       const body = await req.json();
 

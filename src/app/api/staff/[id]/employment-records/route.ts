@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -15,7 +16,7 @@ import {
  * List all employment records for a staff member
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: staffProfileId } = await context.params;
 
     // Verify staff profile exists and belongs to clinic
@@ -66,7 +67,7 @@ export const GET = withAuth<{ id: string }>(
  * Add a new employment record to a staff member
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: staffProfileId } = await context.params;
     const body = await req.json();
 

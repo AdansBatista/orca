@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 
@@ -8,7 +9,7 @@ import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
  * Get a single message with full details
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const message = await db.message.findFirst({

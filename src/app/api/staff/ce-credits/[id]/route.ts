@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updateCECreditSchema } from '@/lib/validations/performance';
  * Get a single CE credit
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const clinicFilter = getClinicFilter(session);
 
@@ -54,7 +55,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a CE credit
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
     const clinicFilter = getClinicFilter(session);
@@ -135,7 +136,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a CE credit
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const clinicFilter = getClinicFilter(session);
 

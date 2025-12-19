@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -9,7 +10,7 @@ import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
  * Get current status of all resources (chairs/rooms)
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const clinicId = session.user.clinicId;
 
     // Get all chairs with their current occupancy using standardized soft delete

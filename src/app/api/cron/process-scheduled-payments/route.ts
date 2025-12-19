@@ -32,8 +32,7 @@ export async function POST(req: Request) {
     // Get all active clinics
     const clinics = await db.clinic.findMany({
       where: {
-        status: 'ACTIVE',
-        deletedAt: null,
+        isActive: true,
       },
       select: {
         id: true,
@@ -128,8 +127,7 @@ export async function GET(req: Request) {
     // Get all active clinics
     const clinics = await db.clinic.findMany({
       where: {
-        status: 'ACTIVE',
-        deletedAt: null,
+        isActive: true,
       },
       select: {
         id: true,

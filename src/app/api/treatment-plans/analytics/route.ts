@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -15,7 +16,7 @@ const analyticsQuerySchema = z.object({
  * Get treatment analytics and statistics for the clinic
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const rawParams = {

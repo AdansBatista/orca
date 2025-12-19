@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { randomBytes } from 'crypto';
 
 import { db } from '@/lib/db';
@@ -11,7 +12,7 @@ import { createIntakeTokenSchema } from '@/lib/validations/forms';
  * List intake tokens for a lead or patient
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
     const leadId = searchParams.get('leadId');
     const patientId = searchParams.get('patientId');
@@ -74,7 +75,7 @@ export const GET = withAuth(
  * Create a new intake token
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     // Validate input

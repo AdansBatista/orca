@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateAfterHoursSettingsSchema } from '@/lib/validations/emergency-reminders';
@@ -9,7 +10,7 @@ import { updateAfterHoursSettingsSchema } from '@/lib/validations/emergency-remi
  * Get after-hours settings for the clinic
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     let settings = await db.afterHoursSettings.findFirst({
       where: getClinicFilter(session),
     });
@@ -53,7 +54,7 @@ export const GET = withAuth(
  * Update after-hours settings for the clinic
  */
 export const PUT = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     const validationResult = updateAfterHoursSettingsSchema.safeParse(body);

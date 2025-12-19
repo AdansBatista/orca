@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import type { InventoryCategory } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -10,7 +11,7 @@ import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
  * Get inventory items that are low on stock
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const includeOutOfStock = searchParams.get('includeOutOfStock') !== 'false';

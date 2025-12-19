@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { z } from 'zod';
@@ -28,7 +29,7 @@ const updateIntegrationSchema = integrationConfigSchema.partial();
  * List all configured integrations for the clinic
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const clinicFilter = getClinicFilter(session);
 
     // Get integration configurations from clinic settings or dedicated table
@@ -128,7 +129,7 @@ export const GET = withAuth(
  * Configure a new integration
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
     const clinicFilter = getClinicFilter(session);
 

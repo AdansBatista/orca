@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -78,7 +78,7 @@ type ClinicFilter = ReturnType<typeof getClinicFilter>;
  * Execute batch operations on lab orders
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
     const clinicFilter = getClinicFilter(session);
     const { ipAddress, userAgent } = getRequestMeta(req);

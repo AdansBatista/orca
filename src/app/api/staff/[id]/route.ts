@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updateStaffProfileSchema } from '@/lib/validations/staff';
  * Get a single staff profile with all related data
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const staffProfile = await db.staffProfile.findFirst({
@@ -73,7 +74,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a staff profile
  */
 export const PATCH = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -231,7 +232,7 @@ export const PATCH = withAuth<{ id: string }>(
  * Soft delete a staff profile
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Find existing staff profile

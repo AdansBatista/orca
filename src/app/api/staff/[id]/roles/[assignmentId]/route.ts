@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { withSoftDelete } from '@/lib/db/soft-delete';
  * Remove a role assignment from a staff member
  */
 export const DELETE = withAuth<{ id: string; assignmentId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id, assignmentId } = await context.params;
 
     // Verify the user exists and belongs to the clinic

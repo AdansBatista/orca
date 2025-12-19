@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -14,7 +15,7 @@ import {
  * Link an image to a treatment phase
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     try {
       const body = await req.json();
 
@@ -242,7 +243,7 @@ export const POST = withAuth(
  * Unlink an image from a treatment phase
  */
 export const DELETE = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     try {
       const { searchParams } = new URL(req.url);
       const imageId = searchParams.get('imageId');

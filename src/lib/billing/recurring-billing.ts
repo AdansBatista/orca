@@ -2,7 +2,6 @@ import { db } from '@/lib/db';
 import {
   createPaymentIntent,
   toCents,
-  fromCents,
   isPaymentSuccessful,
 } from '@/lib/payments/stripe';
 import { generatePaymentNumber, updateAccountBalance } from '@/lib/billing/utils';
@@ -55,11 +54,10 @@ export async function processDuePayments(
   const duePayments = await db.scheduledPayment.findMany({
     where: {
       clinicId,
-      status: 'SCHEDULED',
-      dueDate: {
+      status: 'PENDING',
+      scheduledDate: {
         lte: new Date(),
       },
-      deletedAt: null,
     },
     include: {
       paymentPlan: {
@@ -72,16 +70,22 @@ export async function processDuePayments(
                   firstName: true,
                   lastName: true,
                   email: true,
-                  stripeCustomerId: true,
                 },
               },
+            },
+          },
+          paymentMethod: {
+            select: {
+              id: true,
+              gatewayCustomerId: true,
+              gatewayMethodId: true,
             },
           },
         },
       },
     },
     orderBy: {
-      dueDate: 'asc',
+      scheduledDate: 'asc',
     },
   });
 
@@ -102,13 +106,17 @@ export async function processScheduledPayment(
     clinicId: string;
     paymentPlanId: string;
     amount: number;
-    dueDate: Date;
-    retryCount: number;
+    scheduledDate: Date;
+    attemptCount: number;
     paymentPlan: {
       id: string;
       accountId: string;
-      autoCharge: boolean;
-      defaultPaymentMethodId?: string | null;
+      autoPayEnabled: boolean;
+      paymentMethod?: {
+        id: string;
+        gatewayCustomerId?: string | null;
+        gatewayMethodId?: string | null;
+      } | null;
       account: {
         id: string;
         patientId: string;
@@ -117,7 +125,6 @@ export async function processScheduledPayment(
           firstName: string;
           lastName: string;
           email?: string | null;
-          stripeCustomerId?: string | null;
         };
       };
     };
@@ -125,19 +132,19 @@ export async function processScheduledPayment(
   config: RecurringBillingConfig
 ): Promise<ProcessingResult> {
   const { paymentPlan, clinicId } = scheduledPayment;
-  const { account } = paymentPlan;
+  const { account, paymentMethod } = paymentPlan;
 
   // Check if auto-charge is enabled
-  if (!paymentPlan.autoCharge) {
+  if (!paymentPlan.autoPayEnabled) {
     return {
       scheduledPaymentId: scheduledPayment.id,
       success: false,
-      error: 'Auto-charge is not enabled for this payment plan',
+      error: 'Auto-pay is not enabled for this payment plan',
     };
   }
 
-  // Check if patient has a Stripe customer ID
-  if (!account.patient.stripeCustomerId) {
+  // Check if patient has a payment method with Stripe customer ID
+  if (!paymentMethod?.gatewayCustomerId) {
     await markPaymentFailed(scheduledPayment.id, 'No Stripe customer ID on file');
     return {
       scheduledPaymentId: scheduledPayment.id,
@@ -146,14 +153,14 @@ export async function processScheduledPayment(
     };
   }
 
-  // Get the default payment method
-  const paymentMethodId = paymentPlan.defaultPaymentMethodId;
+  // Get the payment method ID
+  const paymentMethodId = paymentMethod.gatewayMethodId;
   if (!paymentMethodId) {
-    await markPaymentFailed(scheduledPayment.id, 'No default payment method on file');
+    await markPaymentFailed(scheduledPayment.id, 'No payment method on file');
     return {
       scheduledPaymentId: scheduledPayment.id,
       success: false,
-      error: 'No default payment method on file',
+      error: 'No payment method on file',
     };
   }
 
@@ -167,7 +174,7 @@ export async function processScheduledPayment(
     // Create payment intent and charge
     const paymentIntent = await createPaymentIntent({
       amount: toCents(scheduledPayment.amount),
-      customerId: account.patient.stripeCustomerId,
+      customerId: paymentMethod.gatewayCustomerId,
       paymentMethodId,
       description: `Scheduled payment for payment plan`,
       receiptEmail: account.patient.email || undefined,
@@ -191,11 +198,15 @@ export async function processScheduledPayment(
           paymentNumber,
           amount: scheduledPayment.amount,
           paymentDate: new Date(),
-          paymentType: 'CARD',
-          paymentMethod: 'AUTO_CHARGE',
+          paymentType: 'PATIENT',
+          paymentMethodType: 'CREDIT_CARD',
           status: 'COMPLETED',
-          stripePaymentIntentId: paymentIntent.id,
-          notes: `Automatic payment for payment plan`,
+          gatewayPaymentId: paymentIntent.id,
+          gateway: 'STRIPE',
+          sourceType: 'PAYMENT_PLAN',
+          sourceId: paymentPlan.id,
+          paymentMethodId: paymentMethod.id,
+          description: `Automatic payment for payment plan`,
           metadata: {
             scheduledPaymentId: scheduledPayment.id,
             paymentPlanId: paymentPlan.id,
@@ -207,14 +218,14 @@ export async function processScheduledPayment(
       await db.scheduledPayment.update({
         where: { id: scheduledPayment.id },
         data: {
-          status: 'PAID',
-          paidAt: new Date(),
-          paymentId: payment.id,
+          status: 'COMPLETED',
+          processedAt: new Date(),
+          resultPaymentId: payment.id,
         },
       });
 
       // Update account balance
-      await updateAccountBalance(account.id);
+      await updateAccountBalance(account.id, clinicId, 'system');
 
       // Check if all scheduled payments are complete
       await checkPaymentPlanCompletion(paymentPlan.id);
@@ -232,19 +243,19 @@ export async function processScheduledPayment(
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     // Check if we should retry
-    if (scheduledPayment.retryCount < config.maxRetryAttempts) {
-      const retryDelayDays = config.retryDelayDays[scheduledPayment.retryCount] || 7;
+    if (scheduledPayment.attemptCount < config.maxRetryAttempts) {
+      const retryDelayDays = config.retryDelayDays[scheduledPayment.attemptCount] || 7;
       const nextRetryDate = new Date();
       nextRetryDate.setDate(nextRetryDate.getDate() + retryDelayDays);
 
       await db.scheduledPayment.update({
         where: { id: scheduledPayment.id },
         data: {
-          status: 'SCHEDULED',
-          retryCount: scheduledPayment.retryCount + 1,
-          lastRetryAt: new Date(),
-          lastError: errorMessage,
-          dueDate: nextRetryDate,
+          status: 'PENDING',
+          attemptCount: scheduledPayment.attemptCount + 1,
+          lastAttemptAt: new Date(),
+          failureReason: errorMessage,
+          scheduledDate: nextRetryDate,
         },
       });
 
@@ -276,7 +287,7 @@ async function markPaymentFailed(scheduledPaymentId: string, error: string): Pro
     where: { id: scheduledPaymentId },
     data: {
       status: 'FAILED',
-      lastError: error,
+      failureReason: error,
     },
   });
 }
@@ -288,8 +299,7 @@ async function checkPaymentPlanCompletion(paymentPlanId: string): Promise<void> 
   const unpaidCount = await db.scheduledPayment.count({
     where: {
       paymentPlanId,
-      status: { in: ['SCHEDULED', 'PROCESSING'] },
-      deletedAt: null,
+      status: { in: ['PENDING', 'PROCESSING'] },
     },
   });
 
@@ -298,7 +308,6 @@ async function checkPaymentPlanCompletion(paymentPlanId: string): Promise<void> 
       where: { id: paymentPlanId },
       data: {
         status: 'COMPLETED',
-        completedAt: new Date(),
       },
     });
   }
@@ -327,31 +336,27 @@ export async function getPaymentsNeedingAttention(clinicId: string): Promise<{
       where: {
         clinicId,
         status: 'FAILED',
-        deletedAt: null,
       },
     }),
     db.scheduledPayment.count({
       where: {
         clinicId,
-        status: 'SCHEDULED',
-        dueDate: { lt: today },
-        deletedAt: null,
+        status: 'PENDING',
+        scheduledDate: { lt: today },
       },
     }),
     db.scheduledPayment.count({
       where: {
         clinicId,
-        status: 'SCHEDULED',
-        dueDate: { gte: today, lt: tomorrow },
-        deletedAt: null,
+        status: 'PENDING',
+        scheduledDate: { gte: today, lt: tomorrow },
       },
     }),
     db.scheduledPayment.count({
       where: {
         clinicId,
-        status: 'SCHEDULED',
-        dueDate: { gte: today, lt: nextWeek },
-        deletedAt: null,
+        status: 'PENDING',
+        scheduledDate: { gte: today, lt: nextWeek },
       },
     }),
   ]);
@@ -379,9 +384,15 @@ export async function retryScheduledPayment(
                   firstName: true,
                   lastName: true,
                   email: true,
-                  stripeCustomerId: true,
                 },
               },
+            },
+          },
+          paymentMethod: {
+            select: {
+              id: true,
+              gatewayCustomerId: true,
+              gatewayMethodId: true,
             },
           },
         },
@@ -397,11 +408,11 @@ export async function retryScheduledPayment(
     };
   }
 
-  if (scheduledPayment.status === 'PAID') {
+  if (scheduledPayment.status === 'COMPLETED') {
     return {
       scheduledPaymentId,
       success: false,
-      error: 'Payment has already been paid',
+      error: 'Payment has already been completed',
     };
   }
 
@@ -409,8 +420,8 @@ export async function retryScheduledPayment(
   await db.scheduledPayment.update({
     where: { id: scheduledPaymentId },
     data: {
-      status: 'SCHEDULED',
-      dueDate: new Date(), // Set to now to process immediately
+      status: 'PENDING',
+      scheduledDate: new Date(), // Set to now to process immediately
     },
   });
 
@@ -423,13 +434,12 @@ export async function retryScheduledPayment(
  */
 export async function skipScheduledPayment(
   scheduledPaymentId: string,
-  reason: string
+  _reason: string
 ): Promise<void> {
   await db.scheduledPayment.update({
     where: { id: scheduledPaymentId },
     data: {
       status: 'SKIPPED',
-      notes: reason,
     },
   });
 }
@@ -454,18 +464,25 @@ export async function generateScheduledPayments(
     throw new Error('Payment plan not found');
   }
 
-  const payments = [];
+  const payments: Array<{
+    clinicId: string;
+    paymentPlanId: string;
+    amount: number;
+    scheduledDate: Date;
+    status: 'PENDING';
+    attemptCount: number;
+  }> = [];
+
   let currentDate = new Date(startDate);
 
   for (let i = 0; i < numberOfPayments; i++) {
     payments.push({
       clinicId: paymentPlan.clinicId,
       paymentPlanId,
-      accountId: paymentPlan.accountId,
       amount,
-      dueDate: new Date(currentDate),
-      status: 'SCHEDULED' as const,
-      retryCount: 0,
+      scheduledDate: new Date(currentDate),
+      status: 'PENDING' as const,
+      attemptCount: 0,
     });
 
     // Advance to next payment date based on frequency

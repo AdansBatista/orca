@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
-import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 
@@ -14,14 +14,14 @@ interface RouteParams {
  * Get a specific payment link
  */
 export const GET = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { linkId } = await params;
 
     const paymentLink = await db.paymentLink.findFirst({
-      where: withSoftDelete({
+      where: {
         id: linkId,
         ...getClinicFilter(session),
-      }),
+      },
       include: {
         patient: {
           select: {
@@ -37,31 +37,6 @@ export const GET = withAuth(
             id: true,
             accountNumber: true,
             currentBalance: true,
-          },
-        },
-        invoice: {
-          select: {
-            id: true,
-            invoiceNumber: true,
-            subtotal: true,
-            balance: true,
-            status: true,
-          },
-        },
-        payment: {
-          select: {
-            id: true,
-            paymentNumber: true,
-            amount: true,
-            status: true,
-            paymentDate: true,
-          },
-        },
-        createdByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
           },
         },
       },
@@ -101,16 +76,16 @@ export const GET = withAuth(
  * Perform actions on a payment link (send, cancel, resend)
  */
 export const POST = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { linkId } = await params;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
     const paymentLink = await db.paymentLink.findFirst({
-      where: withSoftDelete({
+      where: {
         id: linkId,
         ...getClinicFilter(session),
-      }),
+      },
       include: {
         patient: {
           select: {
@@ -142,13 +117,13 @@ export const POST = withAuth(
     switch (action) {
       case 'send': {
         // Send payment link via email/SMS
-        if (paymentLink.status !== 'PENDING') {
+        if (paymentLink.status !== 'ACTIVE') {
           return NextResponse.json(
             {
               success: false,
               error: {
                 code: 'INVALID_STATUS',
-                message: 'Payment link has already been sent or completed',
+                message: 'Payment link is not active',
               },
             },
             { status: 400 }
@@ -159,15 +134,13 @@ export const POST = withAuth(
         const method = body.method || 'EMAIL'; // EMAIL or SMS
 
         // TODO: Integrate with messaging service to actually send
-        // For now, we'll just update the status
+        // Update sentAt to track when it was sent
 
         const updatedLink = await db.paymentLink.update({
           where: { id: linkId },
           data: {
-            status: 'SENT',
             sentAt: new Date(),
             sentVia: method,
-            updatedBy: session.user.id,
           },
         });
 
@@ -189,13 +162,13 @@ export const POST = withAuth(
 
       case 'resend': {
         // Resend payment link
-        if (!['SENT', 'PENDING'].includes(paymentLink.status)) {
+        if (paymentLink.status !== 'ACTIVE') {
           return NextResponse.json(
             {
               success: false,
               error: {
                 code: 'INVALID_STATUS',
-                message: 'Cannot resend completed or cancelled links',
+                message: 'Cannot resend non-active links',
               },
             },
             { status: 400 }
@@ -217,11 +190,9 @@ export const POST = withAuth(
         const updatedLink = await db.paymentLink.update({
           where: { id: linkId },
           data: {
-            status: 'SENT',
             sentAt: new Date(),
             sentVia: method,
             expiresAt: newExpiresAt,
-            updatedBy: session.user.id,
           },
         });
 
@@ -243,13 +214,13 @@ export const POST = withAuth(
 
       case 'cancel': {
         // Cancel payment link
-        if (['COMPLETED', 'CANCELLED'].includes(paymentLink.status)) {
+        if (['PAID', 'CANCELLED'].includes(paymentLink.status)) {
           return NextResponse.json(
             {
               success: false,
               error: {
                 code: 'INVALID_STATUS',
-                message: 'Cannot cancel completed or already cancelled links',
+                message: 'Cannot cancel paid or already cancelled links',
               },
             },
             { status: 400 }
@@ -260,7 +231,6 @@ export const POST = withAuth(
           where: { id: linkId },
           data: {
             status: 'CANCELLED',
-            updatedBy: session.user.id,
           },
         });
 
@@ -300,14 +270,14 @@ export const POST = withAuth(
  * Delete a payment link (soft delete)
  */
 export const DELETE = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { linkId } = await params;
 
     const paymentLink = await db.paymentLink.findFirst({
-      where: withSoftDelete({
+      where: {
         id: linkId,
         ...getClinicFilter(session),
-      }),
+      },
     });
 
     if (!paymentLink) {
@@ -323,28 +293,25 @@ export const DELETE = withAuth(
       );
     }
 
-    // Cannot delete completed links
-    if (paymentLink.status === 'COMPLETED') {
+    // Cannot delete paid links
+    if (paymentLink.status === 'PAID') {
       return NextResponse.json(
         {
           success: false,
           error: {
-            code: 'CANNOT_DELETE_COMPLETED',
-            message: 'Cannot delete completed payment links',
+            code: 'CANNOT_DELETE_PAID',
+            message: 'Cannot delete paid payment links',
           },
         },
         { status: 400 }
       );
     }
 
-    // Soft delete
+    // Cancel the link (no soft delete on this model)
     await db.paymentLink.update({
       where: { id: linkId },
       data: {
         status: 'CANCELLED',
-        deletedAt: new Date(),
-        deletedBy: session.user.id,
-        updatedBy: session.user.id,
       },
     });
 

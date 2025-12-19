@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -13,7 +14,7 @@ import {
  * List deliveries for a specific aligner record
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: alignerRecordId } = await context.params;
     const { searchParams } = new URL(req.url);
 
@@ -106,7 +107,7 @@ export const GET = withAuth<{ id: string }>(
  * Create a new aligner delivery
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: alignerRecordId } = await context.params;
     const body = await req.json();
 

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth } from '@/lib/auth/with-auth';
 import { roleChangeHistoryQuerySchema } from '@/lib/validations/roles';
@@ -9,7 +10,7 @@ import { roleChangeHistoryQuerySchema } from '@/lib/validations/roles';
  * Get change history for a specific role
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const { searchParams } = new URL(req.url);
 

@@ -18,10 +18,10 @@ interface RouteParams {
 export async function GET(req: Request, { params }: RouteParams) {
   const { code } = await params;
 
+  // PaymentLink has no soft delete
   const paymentLink = await db.paymentLink.findFirst({
     where: {
       linkCode: code,
-      deletedAt: null,
     },
     include: {
       clinic: {
@@ -30,8 +30,6 @@ export async function GET(req: Request, { params }: RouteParams) {
           name: true,
           email: true,
           phone: true,
-          logo: true,
-          settings: true,
         },
       },
       patient: {
@@ -78,8 +76,8 @@ export async function GET(req: Request, { params }: RouteParams) {
     );
   }
 
-  // Check if link is completed
-  if (paymentLink.status === 'COMPLETED') {
+  // Check if link is paid
+  if (paymentLink.status === 'PAID') {
     return NextResponse.json(
       {
         success: false,
@@ -106,13 +104,12 @@ export async function GET(req: Request, { params }: RouteParams) {
     );
   }
 
-  // Mark link as viewed if first view
+  // Mark link as viewed if first view (status stays ACTIVE)
   if (!paymentLink.viewedAt) {
     await db.paymentLink.update({
       where: { id: paymentLink.id },
       data: {
         viewedAt: new Date(),
-        status: 'VIEWED',
       },
     });
   }
@@ -129,7 +126,6 @@ export async function GET(req: Request, { params }: RouteParams) {
       expiresAt: paymentLink.expiresAt,
       clinic: {
         name: paymentLink.clinic.name,
-        logo: paymentLink.clinic.logo,
       },
       patient: {
         firstName: paymentLink.patient.firstName,
@@ -148,10 +144,10 @@ export async function GET(req: Request, { params }: RouteParams) {
 export async function POST(req: Request, { params }: RouteParams) {
   const { code } = await params;
 
+  // PaymentLink has no soft delete
   const paymentLink = await db.paymentLink.findFirst({
     where: {
       linkCode: code,
-      deletedAt: null,
     },
     include: {
       clinic: true,
@@ -161,7 +157,6 @@ export async function POST(req: Request, { params }: RouteParams) {
           firstName: true,
           lastName: true,
           email: true,
-          stripeCustomerId: true,
         },
       },
       account: true,
@@ -195,7 +190,7 @@ export async function POST(req: Request, { params }: RouteParams) {
     );
   }
 
-  if (paymentLink.status === 'COMPLETED') {
+  if (paymentLink.status === 'PAID') {
     return NextResponse.json(
       {
         success: false,
@@ -303,7 +298,6 @@ export async function POST(req: Request, { params }: RouteParams) {
       const paymentIntent = await createPaymentIntent({
         amount: toCents(paymentAmount),
         description: paymentLink.description || `Payment for ${paymentLink.clinic.name}`,
-        customerId: paymentLink.patient.stripeCustomerId || undefined,
         receiptEmail: paymentLink.patient.email || undefined,
         metadata: {
           paymentLinkId: paymentLink.id,

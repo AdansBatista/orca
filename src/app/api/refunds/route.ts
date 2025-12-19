@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
-import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { refundQuerySchema } from '@/lib/validations/billing';
 
@@ -10,17 +10,16 @@ import { refundQuerySchema } from '@/lib/validations/billing';
  * List refunds with pagination and filters
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters
     const rawParams = {
-      search: searchParams.get('search') ?? undefined,
       paymentId: searchParams.get('paymentId') ?? undefined,
       status: searchParams.get('status') ?? undefined,
-      refundType: searchParams.get('refundType') ?? undefined,
-      dateFrom: searchParams.get('dateFrom') ?? undefined,
-      dateTo: searchParams.get('dateTo') ?? undefined,
+      reason: searchParams.get('reason') ?? undefined,
+      fromDate: searchParams.get('fromDate') ?? undefined,
+      toDate: searchParams.get('toDate') ?? undefined,
       page: searchParams.get('page') ?? undefined,
       pageSize: searchParams.get('pageSize') ?? undefined,
       sortBy: searchParams.get('sortBy') ?? undefined,
@@ -44,38 +43,29 @@ export const GET = withAuth(
     }
 
     const {
-      search,
       paymentId,
       status,
-      refundType,
-      dateFrom,
-      dateTo,
+      reason,
+      fromDate,
+      toDate,
       page,
       pageSize,
       sortBy,
       sortOrder,
     } = queryResult.data;
 
-    // Build where clause
-    const where: Record<string, unknown> = withSoftDelete(getClinicFilter(session));
+    // Build where clause (Refund has no soft delete)
+    const where: Record<string, unknown> = getClinicFilter(session);
 
     if (paymentId) where.paymentId = paymentId;
     if (status) where.status = status;
-    if (refundType) where.refundType = refundType;
+    if (reason) where.reason = reason;
 
-    // Date range filters
-    if (dateFrom || dateTo) {
-      where.requestedAt = {};
-      if (dateFrom) (where.requestedAt as Record<string, unknown>).gte = dateFrom;
-      if (dateTo) (where.requestedAt as Record<string, unknown>).lte = dateTo;
-    }
-
-    // Search
-    if (search) {
-      where.OR = [
-        { refundNumber: { contains: search, mode: 'insensitive' } },
-        { payment: { paymentNumber: { contains: search, mode: 'insensitive' } } },
-      ];
+    // Date range filters on createdAt
+    if (fromDate || toDate) {
+      where.createdAt = {};
+      if (fromDate) (where.createdAt as Record<string, unknown>).gte = fromDate;
+      if (toDate) (where.createdAt as Record<string, unknown>).lte = toDate;
     }
 
     // Get total count
@@ -102,41 +92,20 @@ export const GET = withAuth(
             },
           },
         },
-        requestedByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        approvedByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        processedByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
     // Calculate stats
     const pendingCount = await db.refund.count({
       where: {
-        ...withSoftDelete(getClinicFilter(session)),
+        ...getClinicFilter(session),
         status: 'PENDING',
       },
     });
 
     const todayRefunds = await db.refund.aggregate({
       where: {
-        ...withSoftDelete(getClinicFilter(session)),
+        ...getClinicFilter(session),
         processedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
         status: 'COMPLETED',
       },

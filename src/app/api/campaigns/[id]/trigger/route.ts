@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -18,7 +19,7 @@ const triggerSchema = z.object({
  * Only works for campaigns in ACTIVE status.
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
 

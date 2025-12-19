@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -11,7 +12,7 @@ import { createSurveySchema, surveyQuerySchema } from '@/lib/validations/surveys
  * List surveys
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const result = surveyQuerySchema.safeParse({
@@ -102,7 +103,7 @@ export const GET = withAuth(
  * Create a new survey
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json().catch(() => ({}));
 
     const result = createSurveySchema.safeParse(body);

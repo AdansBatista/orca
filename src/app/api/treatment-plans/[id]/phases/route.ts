@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -13,7 +14,7 @@ import {
  * List phases for a treatment plan
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: treatmentPlanId } = await context.params;
 
     // Verify treatment plan exists and belongs to clinic
@@ -65,7 +66,7 @@ export const GET = withAuth<{ id: string }>(
  * Add a new phase to a treatment plan
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: treatmentPlanId } = await context.params;
     const body = await req.json();
 
@@ -187,7 +188,7 @@ export const POST = withAuth<{ id: string }>(
  * Bulk update phases (for reordering)
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: treatmentPlanId } = await context.params;
     const body = await req.json();
 

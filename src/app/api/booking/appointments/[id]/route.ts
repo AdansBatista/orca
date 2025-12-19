@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete, SOFT_DELETE_FILTER } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updateAppointmentSchema } from '@/lib/validations/booking';
  * Get a single appointment by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const appointment = await db.appointment.findFirst({
@@ -93,7 +94,7 @@ export const GET = withAuth<{ id: string }>(
  * Update an appointment
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -310,7 +311,7 @@ export const PUT = withAuth<{ id: string }>(
  * Soft delete an appointment
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Find the existing appointment

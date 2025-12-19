@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -14,14 +15,14 @@ interface RouteParams {
  * Get a specific scheduled payment
  */
 export const GET = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { paymentId } = await params;
 
+    // ScheduledPayment has no soft delete
     const scheduledPayment = await db.scheduledPayment.findFirst({
       where: {
         id: paymentId,
         ...getClinicFilter(session),
-        deletedAt: null,
       },
       include: {
         paymentPlan: {
@@ -42,15 +43,6 @@ export const GET = withAuth(
                 },
               },
             },
-          },
-        },
-        payment: {
-          select: {
-            id: true,
-            paymentNumber: true,
-            amount: true,
-            status: true,
-            paymentDate: true,
           },
         },
       },
@@ -82,16 +74,16 @@ export const GET = withAuth(
  * Perform actions on a scheduled payment (retry, skip)
  */
 export const POST = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { paymentId } = await params;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
+    // ScheduledPayment has no soft delete
     const scheduledPayment = await db.scheduledPayment.findFirst({
       where: {
         id: paymentId,
         ...getClinicFilter(session),
-        deletedAt: null,
       },
     });
 
@@ -113,13 +105,13 @@ export const POST = withAuth(
     switch (action) {
       case 'retry': {
         // Retry a failed scheduled payment
-        if (!['FAILED', 'SCHEDULED'].includes(scheduledPayment.status)) {
+        if (!['FAILED', 'PENDING'].includes(scheduledPayment.status)) {
           return NextResponse.json(
             {
               success: false,
               error: {
                 code: 'INVALID_STATUS',
-                message: 'Can only retry failed or scheduled payments',
+                message: 'Can only retry failed or pending payments',
               },
             },
             { status: 400 }
@@ -150,13 +142,13 @@ export const POST = withAuth(
 
       case 'skip': {
         // Skip a scheduled payment
-        if (scheduledPayment.status === 'PAID') {
+        if (scheduledPayment.status === 'COMPLETED') {
           return NextResponse.json(
             {
               success: false,
               error: {
                 code: 'INVALID_STATUS',
-                message: 'Cannot skip a paid payment',
+                message: 'Cannot skip a completed payment',
               },
             },
             { status: 400 }
@@ -186,13 +178,13 @@ export const POST = withAuth(
 
       case 'reschedule': {
         // Reschedule a payment to a new date
-        if (scheduledPayment.status === 'PAID') {
+        if (scheduledPayment.status === 'COMPLETED') {
           return NextResponse.json(
             {
               success: false,
               error: {
                 code: 'INVALID_STATUS',
-                message: 'Cannot reschedule a paid payment',
+                message: 'Cannot reschedule a completed payment',
               },
             },
             { status: 400 }
@@ -200,7 +192,7 @@ export const POST = withAuth(
         }
 
         const body = await req.json();
-        const newDate = body.dueDate;
+        const newDate = body.scheduledDate;
 
         if (!newDate) {
           return NextResponse.json(
@@ -208,7 +200,7 @@ export const POST = withAuth(
               success: false,
               error: {
                 code: 'MISSING_DATE',
-                message: 'New due date is required',
+                message: 'New scheduled date is required',
               },
             },
             { status: 400 }
@@ -218,9 +210,8 @@ export const POST = withAuth(
         const updatedPayment = await db.scheduledPayment.update({
           where: { id: paymentId },
           data: {
-            dueDate: new Date(newDate),
-            status: 'SCHEDULED',
-            updatedBy: session.user.id,
+            scheduledDate: new Date(newDate),
+            status: 'PENDING',
           },
         });
 

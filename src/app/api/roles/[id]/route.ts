@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updateRoleSchema } from '@/lib/validations/roles';
  * Get a single role by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const role = await db.role.findUnique({
@@ -106,7 +107,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a role
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -319,7 +320,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a role
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Check if role exists

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { CheckCircle, Loader2, XCircle, Download, Mail } from 'lucide-react';
 
@@ -16,7 +16,7 @@ interface PaymentConfirmation {
   error?: string;
 }
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const code = params.code as string;
@@ -154,5 +154,13 @@ export default function PaymentSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<div className="flex h-48 items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
+      <PaymentSuccessPageContent />
+    </Suspense>
   );
 }

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -9,7 +10,7 @@ import { updateCaseAcceptanceSchema, signCaseAcceptanceSchema } from '@/lib/vali
  * Get a single case acceptance
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const acceptance = await db.caseAcceptance.findFirst({
@@ -80,7 +81,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a case acceptance
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -242,7 +243,7 @@ export const PUT = withAuth<{ id: string }>(
  * Soft delete a case acceptance
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Verify acceptance exists
@@ -311,7 +312,7 @@ export const DELETE = withAuth<{ id: string }>(
  * Sign a case acceptance (collect signatures)
  */
 export const PATCH = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 

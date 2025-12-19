@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
@@ -50,7 +51,7 @@ const createReportSchema = z.object({
  * List progress reports with filtering
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
     const patientId = searchParams.get('patientId');
     const reportType = searchParams.get('reportType');
@@ -114,7 +115,7 @@ export const GET = withAuth(
  * Create a new progress report
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     const result = createReportSchema.safeParse(body);

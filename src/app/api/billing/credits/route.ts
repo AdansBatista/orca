@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
@@ -18,7 +18,7 @@ import { updateAccountBalance } from '@/lib/billing/utils';
  * List credit balances with pagination and filters
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters
@@ -153,7 +153,7 @@ export const GET = withAuth(
  * Create a new credit balance
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     // Check for action type

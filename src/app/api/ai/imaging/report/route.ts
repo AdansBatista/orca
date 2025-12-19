@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { withAuth } from '@/lib/auth/with-auth';
@@ -24,7 +25,7 @@ const reportRequestSchema = z.object({
  * Generate an AI-assisted clinical report from dental images.
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     try {
       const body = await req.json();
 

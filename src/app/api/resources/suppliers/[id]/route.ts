@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updateSupplierSchema } from '@/lib/validations/equipment';
  * Get a single supplier by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const supplier = await db.supplier.findFirst({
@@ -56,7 +57,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a supplier
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -160,7 +161,7 @@ export const PUT = withAuth<{ id: string }>(
  * Soft delete a supplier
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Find the existing supplier

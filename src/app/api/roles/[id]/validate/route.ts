@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth } from '@/lib/auth/with-auth';
 import { PERMISSION_DEFINITIONS } from '@/lib/permissions';
@@ -16,7 +17,7 @@ interface ValidationIssue {
  * Validate a role's permissions for potential issues
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Find the role

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 
@@ -8,7 +9,7 @@ import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
  * Get a specific reminder
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const reminder = await db.appointmentReminder.findFirst({
@@ -62,7 +63,7 @@ export const GET = withAuth<{ id: string }>(
  * Cancel a scheduled reminder
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const existing = await db.appointmentReminder.findFirst({

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -13,7 +14,7 @@ import {
  * Get a single biological indicator by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const indicator = await db.biologicalIndicator.findFirst({
@@ -56,7 +57,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a biological indicator record
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -152,7 +153,7 @@ export const PUT = withAuth<{ id: string }>(
  * Record the result of a biological indicator test
  */
 export const PATCH = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -252,7 +253,7 @@ export const PATCH = withAuth<{ id: string }>(
  * Delete a biological indicator record
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const existingIndicator = await db.biologicalIndicator.findFirst({

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -10,7 +11,7 @@ import { denialQuerySchema } from '@/lib/validations/insurance';
  * List denied claims with filters for denial management workqueue
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters
@@ -134,7 +135,7 @@ export const GET = withAuth(
       by: ['denialCode'],
       where: withSoftDelete({
         ...getClinicFilter(session),
-        status: 'DENIED',
+        status: 'DENIED' as const,
         denialCode: { not: null },
       }),
       _count: true,
@@ -150,7 +151,7 @@ export const GET = withAuth(
     const urgentCount = await db.insuranceClaim.count({
       where: withSoftDelete({
         ...getClinicFilter(session),
-        status: 'DENIED',
+        status: 'DENIED' as const,
         appealDeadline: {
           gte: new Date(),
           lte: fourteenDaysFromNow,

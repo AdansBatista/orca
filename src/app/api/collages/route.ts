@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
@@ -33,7 +34,7 @@ const createCollageSchema = z.object({
  * List collages with filtering
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
     const patientId = searchParams.get('patientId');
     const templateId = searchParams.get('templateId');
@@ -105,7 +106,7 @@ export const GET = withAuth(
  * Create a new collage
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     const result = createCollageSchema.safeParse(body);

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -11,7 +12,7 @@ import { updateCampaignSchema, addStepSchema } from '@/lib/validations/campaigns
  * Get a single campaign with all details
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const campaign = await db.campaign.findFirst({
@@ -77,7 +78,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a campaign (only if in DRAFT or PAUSED status)
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
 
@@ -182,7 +183,7 @@ export const PUT = withAuth<{ id: string }>(
  * Soft delete a campaign
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Find the campaign
@@ -253,7 +254,7 @@ export const DELETE = withAuth<{ id: string }>(
  * Add a step to the campaign
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -80,7 +80,7 @@ const EOB_STATUSES = [
   { value: 'POSTED', label: 'Posted', color: 'default' },
 ];
 
-export default function EOBsPage() {
+function EOBsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [eobs, setEobs] = useState<EOB[]>([]);
@@ -415,5 +415,13 @@ export default function EOBsPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function EOBsPage() {
+  return (
+    <Suspense fallback={<div className="flex h-48 items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
+      <EOBsPageContent />
+    </Suspense>
   );
 }

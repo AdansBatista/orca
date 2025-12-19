@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -21,7 +22,7 @@ import {
  * List payments with pagination, search, and filters
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters
@@ -33,8 +34,10 @@ export const GET = withAuth(
       status: searchParams.get('status') ?? undefined,
       paymentType: searchParams.get('paymentType') ?? undefined,
       paymentMethodType: searchParams.get('paymentMethodType') ?? undefined,
-      dateFrom: searchParams.get('dateFrom') ?? undefined,
-      dateTo: searchParams.get('dateTo') ?? undefined,
+      sourceType: searchParams.get('sourceType') ?? undefined,
+      gateway: searchParams.get('gateway') ?? undefined,
+      fromDate: searchParams.get('fromDate') ?? undefined,
+      toDate: searchParams.get('toDate') ?? undefined,
       minAmount: searchParams.get('minAmount') ?? undefined,
       maxAmount: searchParams.get('maxAmount') ?? undefined,
       page: searchParams.get('page') ?? undefined,
@@ -67,8 +70,8 @@ export const GET = withAuth(
       status,
       paymentType,
       paymentMethodType,
-      dateFrom,
-      dateTo,
+      fromDate,
+      toDate,
       minAmount,
       maxAmount,
       page,
@@ -92,10 +95,10 @@ export const GET = withAuth(
     }
 
     // Date range filters
-    if (dateFrom || dateTo) {
+    if (fromDate || toDate) {
       where.paymentDate = {};
-      if (dateFrom) (where.paymentDate as Record<string, unknown>).gte = dateFrom;
-      if (dateTo) (where.paymentDate as Record<string, unknown>).lte = dateTo;
+      if (fromDate) (where.paymentDate as Record<string, unknown>).gte = fromDate;
+      if (toDate) (where.paymentDate as Record<string, unknown>).lte = toDate;
     }
 
     // Amount range filters
@@ -151,13 +154,6 @@ export const GET = withAuth(
             },
           },
         },
-        processedBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
@@ -210,7 +206,7 @@ export const GET = withAuth(
  * Create and process a new payment
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     // Validate input
@@ -233,10 +229,11 @@ export const POST = withAuth(
 
     // Verify account exists
     const account = await db.patientAccount.findFirst({
-      where: withSoftDelete({
+      where: {
         id: data.accountId,
         clinicId: session.user.clinicId,
-      }),
+        deletedAt: null,
+      },
       include: {
         patient: {
           select: {
@@ -244,7 +241,6 @@ export const POST = withAuth(
             firstName: true,
             lastName: true,
             email: true,
-            stripeCustomerId: true,
           },
         },
       },
@@ -277,12 +273,12 @@ export const POST = withAuth(
       );
     }
 
-    // Verify invoices if specified for allocation
-    if (data.allocations && data.allocations.length > 0) {
-      const invoiceIds = data.allocations.map((a) => a.invoiceId);
-      const invoices = await db.invoice.findMany({
+    // Verify invoice if specified for allocation
+    let targetInvoice = null;
+    if (data.invoiceId) {
+      targetInvoice = await db.invoice.findFirst({
         where: {
-          id: { in: invoiceIds },
+          id: data.invoiceId,
           accountId: data.accountId,
           clinicId: session.user.clinicId,
           status: { in: ['PENDING', 'SENT', 'PARTIAL', 'OVERDUE'] },
@@ -290,13 +286,13 @@ export const POST = withAuth(
         },
       });
 
-      if (invoices.length !== invoiceIds.length) {
+      if (!targetInvoice) {
         return NextResponse.json(
           {
             success: false,
             error: {
-              code: 'INVALID_INVOICES',
-              message: 'One or more invoices not found or not eligible for payment',
+              code: 'INVALID_INVOICE',
+              message: 'Invoice not found or not eligible for payment',
             },
           },
           { status: 400 }
@@ -322,15 +318,12 @@ export const POST = withAuth(
           const paymentIntent = await createPaymentIntent({
             amount: toCents(data.amount),
             currency: 'cad',
-            customerId: account.patient.stripeCustomerId ?? undefined,
-            paymentMethodId: data.paymentMethodId ?? undefined,
             description: `Payment for account ${account.accountNumber}`,
             metadata: {
               clinicId: session.user.clinicId,
               accountId: data.accountId,
               paymentNumber,
             },
-            captureMethod: data.captureMethod === 'MANUAL' ? 'manual' : 'automatic',
             receiptEmail: account.patient.email ?? undefined,
           });
 
@@ -381,20 +374,11 @@ export const POST = withAuth(
         sourceType: data.sourceType,
         gateway: data.gateway ?? 'STRIPE',
         gatewayPaymentId,
-        gatewayResponse: gatewayResponse ? JSON.stringify(gatewayResponse) : null,
         status: paymentStatus,
         // Card details (last 4 only, from gateway)
         cardLast4: data.cardLast4,
         cardBrand: data.cardBrand,
-        cardExpiry: data.cardExpiry,
-        // Check details
-        checkNumber: data.checkNumber,
-        checkBank: data.checkBank,
-        notes: data.notes,
-        processedBy: session.user.id,
-        processedAt: paymentStatus === 'COMPLETED' ? new Date() : null,
-        createdBy: session.user.id,
-        updatedBy: session.user.id,
+        description: data.description,
       },
       include: {
         patient: {
@@ -414,38 +398,28 @@ export const POST = withAuth(
       },
     });
 
-    // If payment is completed, create allocations and update balances
-    if (paymentStatus === 'COMPLETED' && data.allocations && data.allocations.length > 0) {
-      for (const allocation of data.allocations) {
-        await db.paymentAllocation.create({
-          data: {
-            paymentId: payment.id,
-            invoiceId: allocation.invoiceId,
-            amount: allocation.amount,
-            allocatedBy: session.user.id,
-          },
-        });
+    // If payment is completed and invoice specified, create allocation and update balance
+    if (paymentStatus === 'COMPLETED' && targetInvoice) {
+      await db.paymentAllocation.create({
+        data: {
+          paymentId: payment.id,
+          invoiceId: targetInvoice.id,
+          amount: data.amount,
+          allocatedBy: session.user.id,
+        },
+      });
 
-        // Update invoice balance
-        const invoice = await db.invoice.findUnique({
-          where: { id: allocation.invoiceId },
-        });
+      // Update invoice balance
+      const newBalance = Math.max(0, targetInvoice.balance - data.amount);
+      const newStatus = newBalance === 0 ? 'PAID' : 'PARTIAL';
 
-        if (invoice) {
-          const newBalance = Math.max(0, invoice.balance - allocation.amount);
-          const newStatus = newBalance === 0 ? 'PAID' : 'PARTIAL';
-
-          await db.invoice.update({
-            where: { id: allocation.invoiceId },
-            data: {
-              balance: newBalance,
-              status: newStatus,
-              paidAt: newBalance === 0 ? new Date() : null,
-              updatedBy: session.user.id,
-            },
-          });
-        }
-      }
+      await db.invoice.update({
+        where: { id: targetInvoice.id },
+        data: {
+          balance: newBalance,
+          status: newStatus,
+        },
+      });
 
       // Update account balance
       await updateAccountBalance(data.accountId, session.user.clinicId, session.user.id);

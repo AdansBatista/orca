@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { createReminderTemplateSchema, reminderTemplateQuerySchema } from '@/lib/validations/emergency-reminders';
@@ -9,7 +10,7 @@ import { createReminderTemplateSchema, reminderTemplateQuerySchema } from '@/lib
  * List reminder templates with filtering
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
     const queryParams = Object.fromEntries(searchParams.entries());
 
@@ -73,7 +74,7 @@ export const GET = withAuth(
  * Create a new reminder template
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     const validationResult = createReminderTemplateSchema.safeParse(body);

@@ -367,13 +367,13 @@ export default function SettlementDetailPage() {
                 <DollarSign className="h-8 w-8 text-primary-500" />
               </div>
             </StatCard>
-            <StatCard accentColor="destructive">
+            <StatCard accentColor="error">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">Processing Fees</p>
                   <p className="text-2xl font-bold">-{formatCurrency(settlement.fees)}</p>
                 </div>
-                <CreditCard className="h-8 w-8 text-destructive-500" />
+                <CreditCard className="h-8 w-8 text-error-500" />
               </div>
             </StatCard>
             <StatCard accentColor="success">
@@ -390,7 +390,7 @@ export default function SettlementDetailPage() {
                 settlement.status === 'RECONCILED'
                   ? 'success'
                   : settlement.status === 'DISCREPANCY'
-                    ? 'destructive'
+                    ? 'error'
                     : 'warning'
               }
             >

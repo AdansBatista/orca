@@ -6,7 +6,8 @@
  * Returns aggregated statistics on content delivery and engagement.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { withAuth } from '@/lib/auth/with-auth';
@@ -23,7 +24,7 @@ const statsQuerySchema = z.object({
  * Get content delivery statistics
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const result = statsQuerySchema.safeParse({

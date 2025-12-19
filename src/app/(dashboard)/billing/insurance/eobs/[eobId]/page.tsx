@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -103,12 +103,7 @@ const EOB_STATUSES: Record<string, { label: string; color: string; icon: typeof 
   POSTED: { label: 'Posted', color: 'default', icon: DollarSign },
 };
 
-export default function EOBDetailPage({
-  params,
-}: {
-  params: Promise<{ eobId: string }>;
-}) {
-  const { eobId } = use(params);
+function EOBDetailPageContent({ eobId }: { eobId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [eob, setEob] = useState<EOB | null>(null);
@@ -275,30 +270,26 @@ export default function EOBDetailPage({
 
       {/* Stats */}
       <StatsRow>
-        <StatCard
-          accentColor="primary"
-          label="Claim Billed"
-          value={formatCurrency(eob.claim.billedAmount)}
-          description="Original charges"
-        />
-        <StatCard
-          accentColor="success"
-          label="Insurance Paid"
-          value={formatCurrency(eob.totalPaid)}
-          description="Payment amount"
-        />
-        <StatCard
-          accentColor="warning"
-          label="Adjustments"
-          value={formatCurrency(eob.totalAdjusted)}
-          description="Write-offs"
-        />
-        <StatCard
-          accentColor="accent"
-          label="Patient Responsibility"
-          value={formatCurrency(eob.patientResponsibility)}
-          description="Due from patient"
-        />
+        <StatCard accentColor="primary">
+          <p className="text-xs text-muted-foreground">Claim Billed</p>
+          <p className="text-2xl font-bold">{formatCurrency(eob.claim.billedAmount)}</p>
+          <p className="text-xs text-muted-foreground">Original charges</p>
+        </StatCard>
+        <StatCard accentColor="success">
+          <p className="text-xs text-muted-foreground">Insurance Paid</p>
+          <p className="text-2xl font-bold">{formatCurrency(eob.totalPaid)}</p>
+          <p className="text-xs text-muted-foreground">Payment amount</p>
+        </StatCard>
+        <StatCard accentColor="warning">
+          <p className="text-xs text-muted-foreground">Adjustments</p>
+          <p className="text-2xl font-bold">{formatCurrency(eob.totalAdjusted)}</p>
+          <p className="text-xs text-muted-foreground">Write-offs</p>
+        </StatCard>
+        <StatCard accentColor="accent">
+          <p className="text-xs text-muted-foreground">Patient Responsibility</p>
+          <p className="text-2xl font-bold">{formatCurrency(eob.patientResponsibility)}</p>
+          <p className="text-xs text-muted-foreground">Due from patient</p>
+        </StatCard>
       </StatsRow>
 
       {/* Details Grid */}
@@ -586,5 +577,18 @@ export default function EOBDetailPage({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function EOBDetailPage({
+  params,
+}: {
+  params: Promise<{ eobId: string }>;
+}) {
+  const { eobId } = use(params);
+  return (
+    <Suspense fallback={<div className="flex h-48 items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
+      <EOBDetailPageContent eobId={eobId} />
+    </Suspense>
   );
 }

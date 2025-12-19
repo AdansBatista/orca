@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { format } from 'date-fns';
 
 import { db } from '@/lib/db';
@@ -10,7 +11,7 @@ import { logAudit, getRequestMeta } from '@/lib/audit';
  * Generate a PDF-ready report (returns HTML that can be printed/saved as PDF)
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const reportType = searchParams.get('type') || 'compliance';

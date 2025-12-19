@@ -111,3 +111,19 @@ export function withSoftDeleteAnd(
     AND: [...conditions, SOFT_DELETE_FILTER],
   };
 }
+
+/**
+ * Generate the data object for performing a soft delete.
+ * Use this in Prisma update operations to set deletedAt timestamp.
+ *
+ * @returns Object with deletedAt set to current date
+ *
+ * @example
+ * await db.patient.update({
+ *   where: { id: patientId },
+ *   data: softDelete(),
+ * });
+ */
+export function softDelete(): { deletedAt: Date } {
+  return { deletedAt: new Date() };
+}

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -20,7 +21,7 @@ function generateSlug(title: string): string {
  * List educational content articles
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const result = articleQuerySchema.safeParse({
@@ -138,7 +139,7 @@ export const GET = withAuth(
  * Create a new educational article
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json().catch(() => ({}));
 
     const result = createArticleSchema.safeParse(body);

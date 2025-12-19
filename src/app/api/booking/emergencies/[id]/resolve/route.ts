@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { resolveEmergencySchema } from '@/lib/validations/emergency-reminders';
@@ -9,7 +10,7 @@ import { resolveEmergencySchema } from '@/lib/validations/emergency-reminders';
  * Resolve an emergency appointment request
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 

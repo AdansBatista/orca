@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 
@@ -8,7 +9,7 @@ import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
  * Get the current on-call provider
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const now = new Date();
 
     const current = await db.onCallSchedule.findFirst({

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { randomUUID } from 'crypto';
 
 import { db } from '@/lib/db';
@@ -13,7 +14,7 @@ import { uploadQuerySchema, imageListQuerySchema } from '@/lib/validations/imagi
  * List images with filtering and pagination
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters
@@ -149,7 +150,7 @@ export const GET = withAuth(
  * Accepts multipart/form-data with files
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     try {
       const formData = await req.formData();
       const files = formData.getAll('files') as File[];

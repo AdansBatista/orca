@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updateRoomEquipmentSchema } from '@/lib/validations/room';
  * Update an equipment assignment
  */
 export const PUT = withAuth<{ id: string; assignmentId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: roomId, assignmentId } = await context.params;
     const body = await req.json();
 
@@ -86,7 +87,7 @@ export const PUT = withAuth<{ id: string; assignmentId: string }>(
  * Unassign equipment from a room
  */
 export const DELETE = withAuth<{ id: string; assignmentId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: roomId, assignmentId } = await context.params;
 
     // Check if assignment exists

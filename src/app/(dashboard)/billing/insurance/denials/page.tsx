@@ -159,30 +159,26 @@ export default function DenialsPage() {
 
       {/* Stats */}
       <StatsRow>
-        <StatCard
-          accentColor="destructive"
-          label="Total Denied"
-          value={total}
-          description="Claims pending appeal"
-        />
-        <StatCard
-          accentColor="warning"
-          label="Urgent"
-          value={stats?.urgentCount || 0}
-          description="Deadline within 14 days"
-        />
-        <StatCard
-          accentColor="primary"
-          label="Total Amount"
-          value={formatCurrency(totalDeniedAmount)}
-          description="At risk"
-        />
-        <StatCard
-          accentColor="accent"
-          label="Top Denial Code"
-          value={stats?.denialCodeCounts?.[0]?.code || 'N/A'}
-          description={`${stats?.denialCodeCounts?.[0]?.count || 0} occurrences`}
-        />
+        <StatCard accentColor="error">
+          <p className="text-xs text-muted-foreground">Total Denied</p>
+          <p className="text-2xl font-bold">{total}</p>
+          <p className="text-xs text-muted-foreground">Claims pending appeal</p>
+        </StatCard>
+        <StatCard accentColor="warning">
+          <p className="text-xs text-muted-foreground">Urgent</p>
+          <p className="text-2xl font-bold">{stats?.urgentCount || 0}</p>
+          <p className="text-xs text-muted-foreground">Deadline within 14 days</p>
+        </StatCard>
+        <StatCard accentColor="primary">
+          <p className="text-xs text-muted-foreground">Total Amount</p>
+          <p className="text-2xl font-bold">{formatCurrency(totalDeniedAmount)}</p>
+          <p className="text-xs text-muted-foreground">At risk</p>
+        </StatCard>
+        <StatCard accentColor="accent">
+          <p className="text-xs text-muted-foreground">Top Denial Code</p>
+          <p className="text-2xl font-bold">{stats?.denialCodeCounts?.[0]?.code || 'N/A'}</p>
+          <p className="text-xs text-muted-foreground">{stats?.denialCodeCounts?.[0]?.count || 0} occurrences</p>
+        </StatCard>
       </StatsRow>
 
       {/* Denial Code Distribution */}

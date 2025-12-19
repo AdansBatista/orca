@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -21,7 +22,7 @@ import { withSoftDelete } from '@/lib/db/soft-delete';
  * - includeSalary: 'true' to include salary info (requires staff:compensation permission)
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: staffProfileId } = await context.params;
     const { searchParams } = new URL(req.url);
     const includeSalary = searchParams.get('includeSalary') === 'true';

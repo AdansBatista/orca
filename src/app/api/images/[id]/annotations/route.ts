@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
@@ -39,7 +40,7 @@ const bulkCreateAnnotationsSchema = z.object({
  * Get all annotations for an image
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: imageId } = await context.params;
 
     // Verify image exists and user has access
@@ -91,7 +92,7 @@ export const GET = withAuth<{ id: string }>(
  * Supports single annotation or bulk creation
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: imageId } = await context.params;
     const body = await req.json();
 
@@ -257,7 +258,7 @@ export const POST = withAuth<{ id: string }>(
  * Delete all annotations for an image
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: imageId } = await context.params;
 
     // Verify image exists and user has access

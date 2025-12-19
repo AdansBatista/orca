@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -9,7 +10,7 @@ import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
  * Get version history for a document
  */
 export const GET = withAuth<{ id: string; documentId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: staffProfileId, documentId } = await context.params;
 
     // Verify staff profile exists and belongs to clinic

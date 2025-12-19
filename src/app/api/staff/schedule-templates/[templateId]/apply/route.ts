@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -11,7 +12,7 @@ import { withSoftDelete } from '@/lib/db/soft-delete';
  * Apply a schedule template to create shifts
  */
 export const POST = withAuth<{ templateId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { templateId } = await context.params;
     const body = await req.json();
 

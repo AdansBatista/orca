@@ -6,7 +6,8 @@
  * Returns content recommendations based on patient context.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { db } from '@/lib/db';
@@ -24,7 +25,7 @@ const recommendationsQuerySchema = z.object({
  * Get personalized content recommendations for a patient
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const result = recommendationsQuerySchema.safeParse({

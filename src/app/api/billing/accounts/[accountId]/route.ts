@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updatePatientAccountSchema } from '@/lib/validations/billing';
  * Get a single patient account by ID
  */
 export const GET = withAuth<{ accountId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { accountId } = await context.params;
 
     const account = await db.patientAccount.findFirst({
@@ -143,7 +144,7 @@ export const GET = withAuth<{ accountId: string }>(
  * Update a patient account
  */
 export const PATCH = withAuth<{ accountId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { accountId } = await context.params;
     const body = await req.json();
 
@@ -289,7 +290,7 @@ export const PATCH = withAuth<{ accountId: string }>(
  * Soft delete a patient account
  */
 export const DELETE = withAuth<{ accountId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { accountId } = await context.params;
 
     // Check account exists

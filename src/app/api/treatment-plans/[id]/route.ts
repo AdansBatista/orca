@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -10,7 +11,7 @@ import { updateTreatmentPlanSchema } from '@/lib/validations/treatment';
  * Get a single treatment plan by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const treatmentPlan = await db.treatmentPlan.findFirst({
@@ -155,7 +156,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a treatment plan
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -284,7 +285,7 @@ export const PUT = withAuth<{ id: string }>(
  * Soft delete a treatment plan
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Check treatment plan exists

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -16,7 +17,7 @@ import {
  * This also marks the cycle as viewed (clears isNew flag) for imported cycles.
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const cycle = await db.sterilizationCycle.findFirst({
@@ -74,7 +75,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a sterilization cycle
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -182,7 +183,7 @@ export const PUT = withAuth<{ id: string }>(
  * Void a sterilization cycle (soft delete by marking as VOID)
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const existingCycle = await db.sterilizationCycle.findFirst({

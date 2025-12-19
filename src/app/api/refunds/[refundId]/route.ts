@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
-import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
 import { updateAccountBalance } from '@/lib/billing/utils';
@@ -16,14 +16,15 @@ interface RouteParams {
  * Get a specific refund by ID
  */
 export const GET = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { refundId } = await params;
 
+    // Refund model has no soft delete
     const refund = await db.refund.findFirst({
-      where: withSoftDelete({
+      where: {
         id: refundId,
         ...getClinicFilter(session),
-      }),
+      },
       include: {
         payment: {
           include: {
@@ -41,27 +42,6 @@ export const GET = withAuth(
                 accountNumber: true,
               },
             },
-          },
-        },
-        requestedByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        approvedByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        processedByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
           },
         },
       },
@@ -93,16 +73,17 @@ export const GET = withAuth(
  * Perform actions on a refund (approve, reject, process)
  */
 export const POST = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { refundId } = await params;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
+    // Refund model has no soft delete
     const refund = await db.refund.findFirst({
-      where: withSoftDelete({
+      where: {
         id: refundId,
         ...getClinicFilter(session),
-      }),
+      },
       include: {
         payment: true,
       },
@@ -146,8 +127,6 @@ export const POST = withAuth(
             status: 'APPROVED',
             approvedBy: session.user.id,
             approvedAt: new Date(),
-            approvalNotes: body.notes,
-            updatedBy: session.user.id,
           },
         });
 
@@ -198,10 +177,9 @@ export const POST = withAuth(
           where: { id: refundId },
           data: {
             status: 'REJECTED',
-            approvedBy: session.user.id,
-            approvedAt: new Date(),
-            approvalNotes: body.reason,
-            updatedBy: session.user.id,
+            rejectedBy: session.user.id,
+            rejectedAt: new Date(),
+            rejectionReason: body.reason,
           },
         });
 
@@ -253,13 +231,8 @@ export const POST = withAuth(
               data: {
                 status: stripeRefund.status === 'succeeded' ? 'COMPLETED' : 'PROCESSING',
                 gatewayRefundId: stripeRefund.id,
-                gatewayResponse: JSON.stringify({
-                  status: stripeRefund.status,
-                  processedAt: new Date().toISOString(),
-                }),
                 processedBy: session.user.id,
                 processedAt: new Date(),
-                updatedBy: session.user.id,
               },
             });
 
@@ -272,7 +245,6 @@ export const POST = withAuth(
               where: { id: payment.id },
               data: {
                 status: newPaymentStatus,
-                updatedBy: session.user.id,
               },
             });
 
@@ -321,7 +293,6 @@ export const POST = withAuth(
               status: 'COMPLETED',
               processedBy: session.user.id,
               processedAt: new Date(),
-              updatedBy: session.user.id,
             },
           });
 
@@ -334,7 +305,6 @@ export const POST = withAuth(
             where: { id: payment.id },
             data: {
               status: newPaymentStatus,
-              updatedBy: session.user.id,
             },
           });
 

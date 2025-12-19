@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import {
@@ -13,7 +14,7 @@ import {
  * Get a specific emergency appointment request
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const emergency = await db.emergencyAppointment.findFirst({
@@ -60,7 +61,7 @@ export const GET = withAuth<{ id: string }>(
  * Update an emergency appointment request
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -142,7 +143,7 @@ export const PUT = withAuth<{ id: string }>(
  * Complete triage for an emergency
  */
 export const PATCH = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -359,7 +360,7 @@ export const PATCH = withAuth<{ id: string }>(
  * Delete an emergency appointment request
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const existing = await db.emergencyAppointment.findFirst({

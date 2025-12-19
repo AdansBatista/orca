@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -19,7 +20,7 @@ interface RouteContext {
  * Get a single EOB by ID with full details
  */
 export const GET = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { eobId } = await context.params;
 
     const eob = await db.eOB.findFirst({
@@ -76,7 +77,7 @@ export const GET = withAuth(
  * Update an EOB
  */
 export const PATCH = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { eobId } = await context.params;
     const body = await req.json();
 
@@ -173,7 +174,7 @@ export const PATCH = withAuth(
  * Special actions: process, post
  */
 export const POST = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { eobId } = await context.params;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');

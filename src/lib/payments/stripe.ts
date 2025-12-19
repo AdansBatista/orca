@@ -5,12 +5,35 @@ import Stripe from 'stripe';
 // =============================================================================
 
 /**
- * Stripe client instance
+ * Stripe client instance (lazy-loaded)
  * Uses the secret key from environment variables
+ *
+ * We use lazy initialization to avoid errors during build time
+ * when environment variables are not available.
  */
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20.acacia',
-  typescript: true,
+let _stripe: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    if (!apiKey) {
+      throw new Error(
+        'STRIPE_SECRET_KEY is not configured. Please set it in your environment variables.'
+      );
+    }
+    _stripe = new Stripe(apiKey, {
+      apiVersion: '2025-11-17.clover',
+      typescript: true,
+    });
+  }
+  return _stripe;
+}
+
+// Export for backwards compatibility - but prefer using getStripe() internally
+export const stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    return getStripe()[prop as keyof Stripe];
+  },
 });
 
 // -----------------------------------------------------------------------------

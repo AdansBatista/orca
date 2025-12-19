@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -10,7 +11,7 @@ import { createLabOrderAttachmentSchema } from '@/lib/validations/lab';
  * List attachments for a lab order
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: orderId } = await context.params;
 
     // Verify order exists and belongs to clinic
@@ -61,7 +62,7 @@ export const GET = withAuth<{ id: string }>(
  * Add an attachment to a lab order
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: orderId } = await context.params;
     const body = await req.json();
 
@@ -145,7 +146,7 @@ export const POST = withAuth<{ id: string }>(
  * Delete an attachment from a lab order
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: orderId } = await context.params;
     const { searchParams } = new URL(req.url);
     const attachmentId = searchParams.get('attachmentId');

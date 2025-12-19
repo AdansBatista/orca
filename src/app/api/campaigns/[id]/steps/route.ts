@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -44,7 +45,7 @@ const reorderStepsSchema = z.object({
  * Get all steps for a campaign.
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Verify campaign exists and belongs to clinic
@@ -103,7 +104,7 @@ export const GET = withAuth<{ id: string }>(
  * Only works for campaigns in DRAFT status.
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
 
@@ -291,7 +292,7 @@ export const POST = withAuth<{ id: string }>(
  * Only works for campaigns in DRAFT status.
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
 

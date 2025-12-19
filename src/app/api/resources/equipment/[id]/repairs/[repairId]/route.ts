@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
@@ -12,7 +13,7 @@ import { RepairStatus } from '@prisma/client';
  * Get a specific repair record
  */
 export const GET = withAuth<{ id: string; repairId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: equipmentId, repairId } = await params;
 
     const repairRecord = await db.repairRecord.findFirst({
@@ -64,7 +65,7 @@ export const GET = withAuth<{ id: string; repairId: string }>(
  * Update a repair record
  */
 export const PUT = withAuth<{ id: string; repairId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: equipmentId, repairId } = await params;
     const body = await req.json();
 
@@ -233,7 +234,7 @@ export const PUT = withAuth<{ id: string; repairId: string }>(
  * Delete a repair record (only if in REPORTED status)
  */
 export const DELETE = withAuth<{ id: string; repairId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: equipmentId, repairId } = await params;
 
     // Find the existing repair record

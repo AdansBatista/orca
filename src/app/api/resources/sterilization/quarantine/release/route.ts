@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -10,7 +11,7 @@ const releaseSchema = z.object({
 });
 
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const clinicFilter = getClinicFilter(session);
 
     try {

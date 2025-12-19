@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateScheduleBlockSchema } from '@/lib/validations/advanced-scheduling';
@@ -9,7 +10,7 @@ import { updateScheduleBlockSchema } from '@/lib/validations/advanced-scheduling
  * Get a specific schedule block
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const block = await db.scheduleBlock.findFirst({
@@ -92,7 +93,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a schedule block
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
     const validationResult = updateScheduleBlockSchema.safeParse(body);
@@ -196,7 +197,7 @@ export const PUT = withAuth<{ id: string }>(
  * Cancel/delete a schedule block
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Verify block exists and belongs to clinic

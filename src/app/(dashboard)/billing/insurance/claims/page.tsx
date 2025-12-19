@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -86,7 +86,7 @@ const CLAIM_STATUSES = [
   { value: 'VOID', label: 'Void', color: 'secondary' },
 ];
 
-export default function InsuranceClaimsPage() {
+function InsuranceClaimsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
@@ -417,5 +417,13 @@ export default function InsuranceClaimsPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function InsuranceClaimsPage() {
+  return (
+    <Suspense fallback={<div className="flex h-48 items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
+      <InsuranceClaimsPageContent />
+    </Suspense>
   );
 }

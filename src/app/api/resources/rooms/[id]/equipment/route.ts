@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { assignEquipmentToRoomSchema } from '@/lib/validations/room';
  * List all equipment assigned to a room
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: roomId } = await context.params;
 
     // Verify room exists and belongs to clinic
@@ -78,7 +79,7 @@ export const GET = withAuth<{ id: string }>(
  * Assign equipment to a room
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: roomId } = await context.params;
     const body = await req.json();
 

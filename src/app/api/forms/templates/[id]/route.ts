@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import type { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -11,7 +12,7 @@ import { updateFormTemplateSchema } from '@/lib/validations/forms';
  * Get a single form template by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Get template - either clinic-specific or global
@@ -48,7 +49,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a form template
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -150,7 +151,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a form template
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Check if template exists and is clinic-owned

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { WaitlistStatus } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -10,7 +11,7 @@ import { updateWaitlistEntrySchema, resolveWaitlistEntrySchema } from '@/lib/val
  * Get a specific waitlist entry
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const entry = await db.waitlistEntry.findFirst({
@@ -73,7 +74,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a waitlist entry
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -163,7 +164,7 @@ export const PUT = withAuth<{ id: string }>(
  * Remove a patient from the waitlist
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Check if entry exists
@@ -211,7 +212,7 @@ export const DELETE = withAuth<{ id: string }>(
  * Resolve a waitlist entry (book, expire, etc.)
  */
 export const PATCH = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateOnCallSchema, swapRequestSchema } from '@/lib/validations/emergency-reminders';
@@ -9,7 +10,7 @@ import { updateOnCallSchema, swapRequestSchema } from '@/lib/validations/emergen
  * Get a specific on-call schedule
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const schedule = await db.onCallSchedule.findFirst({
@@ -51,7 +52,7 @@ export const GET = withAuth<{ id: string }>(
  * Update an on-call schedule
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -123,7 +124,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete/cancel an on-call schedule
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const existing = await db.onCallSchedule.findFirst({
@@ -171,7 +172,7 @@ export const DELETE = withAuth<{ id: string }>(
  * Request a shift swap
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 

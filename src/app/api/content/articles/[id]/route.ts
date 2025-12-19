@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updateArticleSchema, deliverContentSchema } from '@/lib/validations/con
  * Get a single article
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const clinicId = session.user.clinicId;
 
@@ -57,7 +58,7 @@ export const GET = withAuth<{ id: string }>(
  * Update an article
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
     const clinicId = session.user.clinicId;
@@ -156,7 +157,7 @@ export const PUT = withAuth<{ id: string }>(
  * Soft delete an article
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const clinicId = session.user.clinicId;
 
@@ -212,7 +213,7 @@ export const DELETE = withAuth<{ id: string }>(
  * Deliver content to a patient
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
     const clinicId = session.user.clinicId;

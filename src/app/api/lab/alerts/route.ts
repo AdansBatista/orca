@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { withSoftDelete } from '@/lib/db/soft-delete';
@@ -9,7 +10,7 @@ import { LabOrderStatus, ShipmentStatus, RemakeStatus, LabContractStatus } from 
  * Get active alerts for lab orders
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const clinicFilter = getClinicFilter(session);
     const today = new Date();
     today.setHours(0, 0, 0, 0);

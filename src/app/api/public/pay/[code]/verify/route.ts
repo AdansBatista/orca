@@ -30,11 +30,10 @@ export async function POST(req: Request, { params }: RouteParams) {
     );
   }
 
-  // Find the payment link
+  // Find the payment link (no soft delete on PaymentLink)
   const paymentLink = await db.paymentLink.findFirst({
     where: {
       linkCode: code,
-      deletedAt: null,
     },
     include: {
       patient: {
@@ -61,8 +60,8 @@ export async function POST(req: Request, { params }: RouteParams) {
     );
   }
 
-  // Already completed?
-  if (paymentLink.status === 'COMPLETED') {
+  // Already paid?
+  if (paymentLink.status === 'PAID') {
     return NextResponse.json({
       success: true,
       data: {
@@ -119,18 +118,16 @@ export async function POST(req: Request, { params }: RouteParams) {
         paymentNumber,
         amount: amountPaid,
         paymentDate: new Date(),
-        paymentType: 'CARD',
-        paymentMethod: 'ONLINE',
+        paymentType: 'PATIENT',
+        paymentMethodType: 'CREDIT_CARD',
         status: 'COMPLETED',
-        stripePaymentIntentId: typeof session.payment_intent === 'string'
+        gateway: 'STRIPE',
+        gatewayPaymentId: typeof session.payment_intent === 'string'
           ? session.payment_intent
           : session.payment_intent?.id,
-        stripeSessionId: sessionId,
-        notes: `Online payment via payment link ${paymentLink.linkCode}`,
-        metadata: {
-          paymentLinkCode: paymentLink.linkCode,
-          checkoutSessionId: sessionId,
-        },
+        sourceType: 'PAYMENT_LINK',
+        sourceId: paymentLink.id,
+        description: `Online payment via payment link ${paymentLink.linkCode}`,
       },
     });
 
@@ -151,7 +148,6 @@ export async function POST(req: Request, { params }: RouteParams) {
 
           await db.paymentAllocation.create({
             data: {
-              clinicId: paymentLink.clinicId,
               paymentId: payment.id,
               invoiceId: invoice.id,
               amount: allocationAmount,
@@ -164,7 +160,7 @@ export async function POST(req: Request, { params }: RouteParams) {
             where: { id: invoice.id },
             data: {
               balance: newBalance,
-              status: newBalance <= 0 ? 'PAID' : 'PARTIALLY_PAID',
+              status: newBalance <= 0 ? 'PAID' : 'PARTIAL',
             },
           });
 
@@ -173,14 +169,14 @@ export async function POST(req: Request, { params }: RouteParams) {
       }
     }
 
-    // Update account balance
-    await updateAccountBalance(paymentLink.accountId);
+    // Update account balance (requires clinicId and userId - use 'system' for public API)
+    await updateAccountBalance(paymentLink.accountId, paymentLink.clinicId, 'system');
 
     // Update payment link status
     await db.paymentLink.update({
       where: { id: paymentLink.id },
       data: {
-        status: 'COMPLETED',
+        status: 'PAID',
         paidAt: new Date(),
         paymentId: payment.id,
       },

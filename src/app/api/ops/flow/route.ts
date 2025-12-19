@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { flowQuerySchema } from '@/lib/validations/ops';
@@ -9,7 +10,7 @@ import { flowQuerySchema } from '@/lib/validations/ops';
  * Get patient flow states for today (or specified date)
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse and validate query params

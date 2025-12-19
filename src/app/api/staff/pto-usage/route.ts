@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { withAuth } from '@/lib/auth/with-auth';
 import { getPTOUsageSummaryForClinic } from '@/lib/services/pto-tracking';
 import { z } from 'zod';
@@ -13,7 +14,7 @@ const querySchema = z.object({
  * Get PTO usage summary for all staff members in the clinic
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const queryResult = querySchema.safeParse({

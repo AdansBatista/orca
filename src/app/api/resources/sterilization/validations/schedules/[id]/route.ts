@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -11,7 +12,7 @@ import { updateValidationScheduleSchema } from '@/lib/validations/sterilization'
  * Get a single validation schedule by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const schedule = await db.validationSchedule.findFirst({
@@ -84,7 +85,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a validation schedule
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -203,7 +204,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a validation schedule
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Check if schedule exists

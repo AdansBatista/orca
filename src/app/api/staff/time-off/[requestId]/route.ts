@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updateTimeOffRequestSchema } from '@/lib/validations/scheduling';
  * Get a specific time-off request
  */
 export const GET = withAuth<{ requestId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { requestId } = await context.params;
 
     const timeOffRequest = await db.timeOffRequest.findFirst({
@@ -58,7 +59,7 @@ export const GET = withAuth<{ requestId: string }>(
  * Update a time-off request
  */
 export const PUT = withAuth<{ requestId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { requestId } = await context.params;
     const body = await req.json();
 
@@ -147,7 +148,7 @@ export const PUT = withAuth<{ requestId: string }>(
  * Cancel/withdraw a time-off request
  */
 export const DELETE = withAuth<{ requestId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { requestId } = await context.params;
 
     // Find existing request

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { eachDayOfInterval, getDay, format } from 'date-fns';
 
 import { db } from '@/lib/db';
@@ -10,7 +11,7 @@ import { applyTemplateSchema } from '@/lib/validations/advanced-scheduling';
  * List template applications with filtering
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const providerId = searchParams.get('providerId') ?? undefined;
@@ -74,7 +75,7 @@ export const GET = withAuth(
  * Apply a template to a date range
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
     const validationResult = applyTemplateSchema.safeParse(body);
 
@@ -264,7 +265,7 @@ export const POST = withAuth(
  * Query params: providerId, templateId, startDate, endDate
  */
 export const DELETE = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const providerId = searchParams.get('providerId') ?? undefined;

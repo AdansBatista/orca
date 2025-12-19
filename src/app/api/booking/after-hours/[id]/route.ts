@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateAfterHoursMessageSchema, resolveAfterHoursMessageSchema } from '@/lib/validations/emergency-reminders';
@@ -9,7 +10,7 @@ import { updateAfterHoursMessageSchema, resolveAfterHoursMessageSchema } from '@
  * Get a specific after-hours message
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const message = await db.afterHoursMessage.findFirst({
@@ -56,7 +57,7 @@ export const GET = withAuth<{ id: string }>(
  * Update an after-hours message
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -136,7 +137,7 @@ export const PUT = withAuth<{ id: string }>(
  * Resolve an after-hours message
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 

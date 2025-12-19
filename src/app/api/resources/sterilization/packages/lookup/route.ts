@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { lookupPackageByQRSchema } from '@/lib/validations/sterilization';
@@ -10,7 +11,7 @@ import { isStillSterile, getDaysUntilExpiration } from '@/lib/sterilization/qr-c
  * Look up a package by QR code content
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     // Validate input

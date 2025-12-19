@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -55,7 +55,7 @@ interface Invoice {
   status: string;
 }
 
-export default function ProcessPaymentPage() {
+function ProcessPaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -587,5 +587,13 @@ export default function ProcessPaymentPage() {
         </form>
       </PageContent>
     </>
+  );
+}
+
+export default function ProcessPaymentPage() {
+  return (
+    <Suspense fallback={<div className="flex h-48 items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
+      <ProcessPaymentContent />
+    </Suspense>
   );
 }

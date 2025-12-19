@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { applyTemplateSchema } from '@/lib/validations/advanced-scheduling';
@@ -9,7 +10,7 @@ import { applyTemplateSchema } from '@/lib/validations/advanced-scheduling';
  * Apply a booking template to a date or date range
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: templateId } = await params;
     const body = await req.json();
 

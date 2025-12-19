@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updateMaintenanceRecordSchema } from '@/lib/validations/equipment';
  * Get a specific maintenance record
  */
 export const GET = withAuth<{ id: string; maintenanceId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: equipmentId, maintenanceId } = await params;
 
     const maintenanceRecord = await db.maintenanceRecord.findFirst({
@@ -56,7 +57,7 @@ export const GET = withAuth<{ id: string; maintenanceId: string }>(
  * Update a maintenance record
  */
 export const PUT = withAuth<{ id: string; maintenanceId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: equipmentId, maintenanceId } = await params;
     const body = await req.json();
 
@@ -210,7 +211,7 @@ export const PUT = withAuth<{ id: string; maintenanceId: string }>(
  * Delete a maintenance record (only if not completed)
  */
 export const DELETE = withAuth<{ id: string; maintenanceId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: equipmentId, maintenanceId } = await params;
 
     // Find the existing maintenance record

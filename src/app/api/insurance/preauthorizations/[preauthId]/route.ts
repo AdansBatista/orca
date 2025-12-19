@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -14,7 +15,7 @@ interface RouteContext {
  * Get a single preauthorization by ID
  */
 export const GET = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { preauthId } = await context.params;
 
     const preauth = await db.preauthorization.findFirst({
@@ -65,7 +66,7 @@ export const GET = withAuth(
  * Update a preauthorization (status, response info, etc.)
  */
 export const PATCH = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { preauthId } = await context.params;
     const body = await req.json();
 
@@ -171,7 +172,7 @@ export const PATCH = withAuth(
  * Special actions: submit, check-status
  */
 export const POST = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { preauthId } = await context.params;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');

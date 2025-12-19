@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import type { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -11,7 +12,7 @@ import { updateFormSubmissionSchema } from '@/lib/validations/forms';
  * Get a single form submission by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const submission = await db.formSubmission.findFirst({
@@ -68,7 +69,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a form submission
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -171,7 +172,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a form submission
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Check if submission exists

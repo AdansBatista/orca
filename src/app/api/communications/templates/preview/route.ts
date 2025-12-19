@@ -7,7 +7,8 @@
  * Can preview either an existing template by ID or raw template content.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { db } from '@/lib/db';
@@ -62,7 +63,7 @@ function extractVariables(text: string): string[] {
  * Preview a template with variables
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json().catch(() => ({}));
 
     // Validate input

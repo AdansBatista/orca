@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { reviewRiskScoreSchema, logInterventionSchema } from '@/lib/validations/waitlist';
@@ -9,7 +10,7 @@ import { reviewRiskScoreSchema, logInterventionSchema } from '@/lib/validations/
  * Get risk score details for a specific patient
  */
 export const GET = withAuth<{ patientId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { patientId } = await params;
 
     const riskScore = await db.patientRiskScore.findFirst({
@@ -98,7 +99,7 @@ export const GET = withAuth<{ patientId: string }>(
  * Mark a risk score as reviewed
  */
 export const PUT = withAuth<{ patientId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { patientId } = await params;
     const body = await req.json();
 
@@ -173,7 +174,7 @@ export const PUT = withAuth<{ patientId: string }>(
  * Log an intervention for an at-risk patient
  */
 export const POST = withAuth<{ patientId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { patientId } = await params;
     const body = await req.json();
 

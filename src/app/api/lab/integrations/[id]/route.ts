@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ const updateIntegrationSchema = z.object({
  * Get integration details
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const clinicFilter = getClinicFilter(session);
 
@@ -58,7 +59,7 @@ export const GET = withAuth<{ id: string }>(
  * Update integration configuration
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
     const clinicFilter = getClinicFilter(session);
@@ -134,7 +135,7 @@ export const PUT = withAuth<{ id: string }>(
  * Remove an integration configuration
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const clinicFilter = getClinicFilter(session);
 

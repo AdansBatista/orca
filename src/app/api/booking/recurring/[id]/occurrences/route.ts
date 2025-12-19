@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateOccurrenceSchema } from '@/lib/validations/advanced-scheduling';
@@ -9,7 +10,7 @@ import { updateOccurrenceSchema } from '@/lib/validations/advanced-scheduling';
  * Get all occurrences for a recurring appointment series
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const { searchParams } = new URL(req.url);
 
@@ -120,7 +121,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a specific occurrence (by occurrence number in body)
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -237,7 +238,7 @@ export const PUT = withAuth<{ id: string }>(
  * Create appointment from a pending occurrence
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 

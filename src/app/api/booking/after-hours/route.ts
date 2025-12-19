@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { createAfterHoursMessageSchema, afterHoursQuerySchema } from '@/lib/validations/emergency-reminders';
@@ -9,7 +10,7 @@ import { createAfterHoursMessageSchema, afterHoursQuerySchema } from '@/lib/vali
  * List after-hours messages with filtering and pagination
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
     const queryParams = Object.fromEntries(searchParams.entries());
 
@@ -101,7 +102,7 @@ export const GET = withAuth(
  * Create a new after-hours message record
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     const validationResult = createAfterHoursMessageSchema.safeParse(body);

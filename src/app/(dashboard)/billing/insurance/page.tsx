@@ -148,30 +148,26 @@ export default function InsuranceDashboardPage() {
 
       {/* Stats Row */}
       <StatsRow>
-        <StatCard
-          accentColor="primary"
-          label="Total Claims"
-          value={stats?.claims.total || 0}
-          description="All time"
-        />
-        <StatCard
-          accentColor="accent"
-          label="Total Billed"
-          value={formatCurrency(stats?.claims.totalBilled || 0)}
-          description="Insurance charges"
-        />
-        <StatCard
-          accentColor="success"
-          label="Total Paid"
-          value={formatCurrency(stats?.claims.totalPaid || 0)}
-          description="Received from insurance"
-        />
-        <StatCard
-          accentColor="warning"
-          label="Pending EOBs"
-          value={stats?.eobs.pending || 0}
-          description={`${stats?.eobs.needsReview || 0} need review`}
-        />
+        <StatCard accentColor="primary">
+          <p className="text-xs text-muted-foreground">Total Claims</p>
+          <p className="text-2xl font-bold">{stats?.claims.total || 0}</p>
+          <p className="text-xs text-muted-foreground">All time</p>
+        </StatCard>
+        <StatCard accentColor="accent">
+          <p className="text-xs text-muted-foreground">Total Billed</p>
+          <p className="text-2xl font-bold">{formatCurrency(stats?.claims.totalBilled || 0)}</p>
+          <p className="text-xs text-muted-foreground">Insurance charges</p>
+        </StatCard>
+        <StatCard accentColor="success">
+          <p className="text-xs text-muted-foreground">Total Paid</p>
+          <p className="text-2xl font-bold">{formatCurrency(stats?.claims.totalPaid || 0)}</p>
+          <p className="text-xs text-muted-foreground">Received from insurance</p>
+        </StatCard>
+        <StatCard accentColor="warning">
+          <p className="text-xs text-muted-foreground">Pending EOBs</p>
+          <p className="text-2xl font-bold">{stats?.eobs.pending || 0}</p>
+          <p className="text-xs text-muted-foreground">{stats?.eobs.needsReview || 0} need review</p>
+        </StatCard>
       </StatsRow>
 
       {/* Quick Actions Grid */}

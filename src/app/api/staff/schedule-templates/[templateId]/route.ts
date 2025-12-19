@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updateScheduleTemplateSchema } from '@/lib/validations/scheduling';
  * Get a specific schedule template
  */
 export const GET = withAuth<{ templateId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { templateId } = await context.params;
 
     const template = await db.scheduleTemplate.findFirst({
@@ -46,7 +47,7 @@ export const GET = withAuth<{ templateId: string }>(
  * Update a schedule template
  */
 export const PUT = withAuth<{ templateId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { templateId } = await context.params;
     const body = await req.json();
 
@@ -137,7 +138,7 @@ export const PUT = withAuth<{ templateId: string }>(
  * Delete a schedule template
  */
 export const DELETE = withAuth<{ templateId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { templateId } = await context.params;
 
     // Find existing template

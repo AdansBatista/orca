@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { readyForDoctorSchema } from '@/lib/validations/ops';
  * This is the most common action - assistants use this to signal the doctor
  */
 export const POST = withAuth<{ chairId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { chairId } = await context.params;
     const clinicId = session.user.clinicId;
     const body = await req.json();

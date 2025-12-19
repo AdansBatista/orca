@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { eachDayOfInterval, getDay, format, parse, addMinutes } from 'date-fns';
 
 import { db } from '@/lib/db';
@@ -31,7 +32,7 @@ interface BookingZoneEvent {
  * Get booking zones for calendar display (as background events)
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const startDateStr = searchParams.get('startDate') ?? searchParams.get('start');

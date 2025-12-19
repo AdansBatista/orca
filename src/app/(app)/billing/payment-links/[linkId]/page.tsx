@@ -400,7 +400,7 @@ export default function PaymentLinkDetailPage() {
         <div className="space-y-6">
           {/* Status Banner */}
           {isExpired && link.status !== 'COMPLETED' && (
-            <Alert variant="warning">
+            <Alert className="border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200 [&>svg]:text-yellow-600">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 This payment link has expired. You can resend it to extend the expiration.
@@ -409,7 +409,7 @@ export default function PaymentLinkDetailPage() {
           )}
 
           {link.status === 'COMPLETED' && link.payment && (
-            <Alert variant="success">
+            <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200 [&>svg]:text-green-600">
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
                 Payment completed on {formatDate(link.paidAt || link.payment.paymentDate)}.{' '}
@@ -445,7 +445,7 @@ export default function PaymentLinkDetailPage() {
                     ? 'secondary'
                     : link.status === 'VIEWED'
                       ? 'warning'
-                      : 'info'
+                      : 'primary'
               }
             >
               <div className="flex items-center justify-between">
@@ -474,12 +474,12 @@ export default function PaymentLinkDetailPage() {
                 ) : link.status === 'VIEWED' ? (
                   <Eye className="h-8 w-8 text-warning-500" />
                 ) : (
-                  <Clock className="h-8 w-8 text-info-500" />
+                  <Clock className="h-8 w-8 text-primary-500" />
                 )}
               </div>
             </StatCard>
 
-            <StatCard accentColor={link.expiresAt ? (isExpired ? 'destructive' : 'warning') : 'secondary'}>
+            <StatCard accentColor={link.expiresAt ? (isExpired ? 'error' : 'warning') : 'secondary'}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">Expires</p>

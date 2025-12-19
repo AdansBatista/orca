@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updateAvailabilitySchema } from '@/lib/validations/scheduling';
  * Get a specific availability record
  */
 export const GET = withAuth<{ availabilityId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { availabilityId } = await context.params;
 
     const availability = await db.staffAvailability.findFirst({
@@ -56,7 +57,7 @@ export const GET = withAuth<{ availabilityId: string }>(
  * Update an availability record
  */
 export const PUT = withAuth<{ availabilityId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { availabilityId } = await context.params;
     const body = await req.json();
 
@@ -131,7 +132,7 @@ export const PUT = withAuth<{ availabilityId: string }>(
  * Delete an availability record
  */
 export const DELETE = withAuth<{ availabilityId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { availabilityId } = await context.params;
 
     // Find existing availability

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updateFamilyGroupSchema } from '@/lib/validations/billing';
  * Get a single family group by ID
  */
 export const GET = withAuth<{ groupId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { groupId } = await context.params;
 
     const group = await db.familyGroup.findFirst({
@@ -92,7 +93,7 @@ export const GET = withAuth<{ groupId: string }>(
  * Update a family group
  */
 export const PATCH = withAuth<{ groupId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { groupId } = await context.params;
     const body = await req.json();
 
@@ -230,7 +231,7 @@ export const PATCH = withAuth<{ groupId: string }>(
  * Soft delete a family group
  */
 export const DELETE = withAuth<{ groupId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { groupId } = await context.params;
 
     // Check group exists

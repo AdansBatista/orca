@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { updateShiftSchema } from '@/lib/validations/scheduling';
  * Get a specific shift
  */
 export const GET = withAuth<{ shiftId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { shiftId } = await context.params;
 
     const shift = await db.staffShift.findFirst({
@@ -60,7 +61,7 @@ export const GET = withAuth<{ shiftId: string }>(
  * Update a shift
  */
 export const PUT = withAuth<{ shiftId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { shiftId } = await context.params;
     const body = await req.json();
 
@@ -187,7 +188,7 @@ export const PUT = withAuth<{ shiftId: string }>(
  * Delete (cancel) a shift
  */
 export const DELETE = withAuth<{ shiftId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { shiftId } = await context.params;
 
     // Try to parse body for override options (body may be empty for DELETE)

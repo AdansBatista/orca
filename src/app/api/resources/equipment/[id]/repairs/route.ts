@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -14,7 +15,7 @@ import {
  * Get repair history for a specific equipment
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: equipmentId } = await params;
     const { searchParams } = new URL(req.url);
 
@@ -134,7 +135,7 @@ export const GET = withAuth<{ id: string }>(
  * Report an equipment issue
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id: equipmentId } = await params;
     const body = await req.json();
 

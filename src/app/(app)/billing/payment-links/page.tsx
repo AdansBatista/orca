@@ -253,13 +253,13 @@ export default function PaymentLinksPage() {
                 <Link2 className="h-8 w-8 text-primary-500" />
               </div>
             </StatCard>
-            <StatCard accentColor="info">
+            <StatCard accentColor="accent">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">Sent</p>
                   <p className="text-2xl font-bold">{stats?.statusCounts?.SENT || 0}</p>
                 </div>
-                <Send className="h-8 w-8 text-info-500" />
+                <Send className="h-8 w-8 text-accent-500" />
               </div>
             </StatCard>
             <StatCard accentColor="warning">

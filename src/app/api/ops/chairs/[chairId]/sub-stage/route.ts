@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth } from '@/lib/auth/with-auth';
@@ -10,7 +11,7 @@ import { updateSubStageSchema } from '@/lib/validations/ops';
  * Update the activity sub-stage for a chair
  */
 export const PUT = withAuth<{ chairId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { chairId } = await context.params;
     const clinicId = session.user.clinicId;
     const body = await req.json();
@@ -116,7 +117,7 @@ export const PUT = withAuth<{ chairId: string }>(
  * Get current sub-stage for a chair
  */
 export const GET = withAuth<{ chairId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { chairId } = await context.params;
     const clinicId = session.user.clinicId;
 

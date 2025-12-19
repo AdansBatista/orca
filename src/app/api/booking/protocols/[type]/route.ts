@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { EmergencyType } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -10,7 +11,7 @@ import { updateEmergencyProtocolSchema, EmergencyTypeEnum } from '@/lib/validati
  * Get a specific emergency protocol by type
  */
 export const GET = withAuth<{ type: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { type } = await params;
 
     // Validate emergency type
@@ -63,7 +64,7 @@ export const GET = withAuth<{ type: string }>(
  * Update or create an emergency protocol by type
  */
 export const PUT = withAuth<{ type: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { type } = await params;
     const body = await req.json();
 

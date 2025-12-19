@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -8,7 +9,7 @@ import { logAudit, getRequestMeta } from '@/lib/audit';
  * Get a specific message
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const message = await db.labMessage.findFirst({
@@ -49,7 +50,7 @@ export const GET = withAuth<{ id: string }>(
  * Mark message as read
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const existing = await db.labMessage.findFirst({
@@ -97,7 +98,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a message
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const existing = await db.labMessage.findFirst({

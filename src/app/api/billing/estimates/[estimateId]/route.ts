@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
@@ -16,7 +16,7 @@ import {
  * Get a single treatment estimate by ID
  */
 export const GET = withAuth<{ estimateId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { estimateId } = await context.params;
 
     const estimate = await db.treatmentEstimate.findFirst({
@@ -78,7 +78,7 @@ export const GET = withAuth<{ estimateId: string }>(
  * Update a treatment estimate
  */
 export const PATCH = withAuth<{ estimateId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { estimateId } = await context.params;
     const body = await req.json();
 
@@ -229,7 +229,7 @@ export const PATCH = withAuth<{ estimateId: string }>(
  * Soft delete a treatment estimate
  */
 export const DELETE = withAuth<{ estimateId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { estimateId } = await context.params;
 
     // Check estimate exists

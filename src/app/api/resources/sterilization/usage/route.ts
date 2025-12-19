@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { packageUsageQuerySchema } from '@/lib/validations/sterilization';
@@ -9,7 +10,7 @@ import { packageUsageQuerySchema } from '@/lib/validations/sterilization';
  * List all package usages with filters (for reports and patient history)
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     // Parse query parameters

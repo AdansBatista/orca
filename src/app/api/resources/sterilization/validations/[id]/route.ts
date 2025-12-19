@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import type { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -12,7 +13,7 @@ import { updateSterilizerValidationSchema } from '@/lib/validations/sterilizatio
  * Get a single validation record by ID
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const validation = await db.sterilizerValidation.findFirst({
@@ -57,7 +58,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a validation record
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -157,7 +158,7 @@ export const PUT = withAuth<{ id: string }>(
  * Delete a validation record
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Check if validation exists

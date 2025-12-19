@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { createEmergencyProtocolSchema } from '@/lib/validations/emergency-reminders';
@@ -9,7 +10,7 @@ import { createEmergencyProtocolSchema } from '@/lib/validations/emergency-remin
  * List emergency protocols for the clinic
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const protocols = await db.emergencyProtocol.findMany({
       where: {
         ...getClinicFilter(session),
@@ -31,7 +32,7 @@ export const GET = withAuth(
  * Create a new emergency protocol
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json();
 
     const validationResult = createEmergencyProtocolSchema.safeParse(body);

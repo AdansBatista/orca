@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateRecurringAppointmentSchema } from '@/lib/validations/advanced-scheduling';
@@ -9,7 +10,7 @@ import { updateRecurringAppointmentSchema } from '@/lib/validations/advanced-sch
  * Get a specific recurring appointment series
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     const recurring = await db.recurringAppointment.findFirst({
@@ -109,7 +110,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a recurring appointment series
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json();
 
@@ -255,7 +256,7 @@ export const PUT = withAuth<{ id: string }>(
  * Cancel a recurring appointment series
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const { searchParams } = new URL(req.url);
 

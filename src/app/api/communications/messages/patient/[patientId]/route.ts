@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -10,7 +11,7 @@ import { conversationQuerySchema, replyMessageSchema } from '@/lib/validations/c
  * Get conversation history with a patient
  */
 export const GET = withAuth<{ patientId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { patientId } = await params;
     const { searchParams } = new URL(req.url);
 
@@ -121,7 +122,7 @@ export const GET = withAuth<{ patientId: string }>(
  * Reply to a patient (quick send)
  */
 export const POST = withAuth<{ patientId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { patientId } = await params;
     const body = await req.json().catch(() => ({}));
 

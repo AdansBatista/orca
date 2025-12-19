@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { updateCephAnalysisSchema } from '@/lib/validations/imaging';
@@ -9,7 +10,7 @@ import { updateCephAnalysisSchema } from '@/lib/validations/imaging';
  * Get a specific cephalometric analysis
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const analysis = await db.cephAnalysis.findFirst({
@@ -70,7 +71,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a cephalometric analysis
  */
 export const PATCH = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -156,7 +157,7 @@ export const PATCH = withAuth<{ id: string }>(
  * Delete a cephalometric analysis
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Check if analysis exists and belongs to clinic

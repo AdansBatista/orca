@@ -7,7 +7,8 @@
  * Handles manual and batch content delivery operations.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { db } from '@/lib/db';
@@ -40,7 +41,7 @@ const batchDeliverySchema = z.object({
  * List content deliveries with filtering
  */
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const { searchParams } = new URL(req.url);
 
     const result = deliveryQuerySchema.safeParse({
@@ -152,7 +153,7 @@ export const GET = withAuth(
  * Deliver content to one or more patients
  */
 export const POST = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const body = await req.json().catch(() => ({}));
 
     const result = batchDeliverySchema.safeParse(body);

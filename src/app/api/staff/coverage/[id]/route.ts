@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import type { ProviderType } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -11,7 +12,7 @@ import { updateCoverageRequirementSchema } from '@/lib/validations/scheduling';
  * Get a single coverage requirement
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     const coverageRequirement = await db.coverageRequirement.findFirst({
@@ -44,7 +45,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a coverage requirement
  */
 export const PATCH = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
     const body = await req.json();
 
@@ -153,7 +154,7 @@ export const PATCH = withAuth<{ id: string }>(
  * Delete a coverage requirement
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id } = await context.params;
 
     // Check if exists

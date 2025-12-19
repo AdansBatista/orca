@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -9,7 +10,7 @@ import { updateTreatmentOptionSchema, selectTreatmentOptionSchema } from '@/lib/
  * Get a single treatment option
  */
 export const GET = withAuth<{ id: string; optionId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: treatmentPlanId, optionId } = await context.params;
 
     const option = await db.treatmentOption.findFirst({
@@ -53,7 +54,7 @@ export const GET = withAuth<{ id: string; optionId: string }>(
  * Update a treatment option
  */
 export const PUT = withAuth<{ id: string; optionId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: treatmentPlanId, optionId } = await context.params;
     const body = await req.json();
 
@@ -154,7 +155,7 @@ export const PUT = withAuth<{ id: string; optionId: string }>(
  * Soft delete a treatment option
  */
 export const DELETE = withAuth<{ id: string; optionId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: treatmentPlanId, optionId } = await context.params;
 
     // Verify option exists
@@ -229,7 +230,7 @@ export const DELETE = withAuth<{ id: string; optionId: string }>(
  * Mark this option as selected by patient
  */
 export const PATCH = withAuth<{ id: string; optionId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: treatmentPlanId, optionId } = await context.params;
     const body = await req.json();
 

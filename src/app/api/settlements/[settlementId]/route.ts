@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -13,7 +14,7 @@ interface RouteParams {
  * Get a specific settlement with related payments
  */
 export const GET = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { settlementId } = await params;
 
     const settlement = await db.paymentSettlement.findFirst({
@@ -36,38 +37,9 @@ export const GET = withAuth(
       );
     }
 
-    // Get related payments if there are payment IDs
-    let payments: unknown[] = [];
-    if (settlement.paymentIds && settlement.paymentIds.length > 0) {
-      payments = await db.payment.findMany({
-        where: {
-          id: { in: settlement.paymentIds },
-          ...getClinicFilter(session),
-        },
-        select: {
-          id: true,
-          paymentNumber: true,
-          amount: true,
-          paymentDate: true,
-          paymentType: true,
-          status: true,
-          patient: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
-      });
-    }
-
     return NextResponse.json({
       success: true,
-      data: {
-        ...settlement,
-        payments,
-      },
+      data: settlement,
     });
   },
   { permissions: ['payment:reconcile'] }
@@ -78,7 +50,7 @@ export const GET = withAuth(
  * Perform actions on a settlement (confirm, reconcile)
  */
 export const POST = withAuth(
-  async (req, session, { params }: RouteParams) => {
+  async (req: NextRequest, session: Session, { params }: RouteParams) => {
     const { settlementId } = await params;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
@@ -127,9 +99,7 @@ export const POST = withAuth(
           where: { id: settlementId },
           data: {
             status: 'DEPOSITED',
-            depositedAt: new Date(),
-            depositReference: body.depositReference,
-            updatedBy: session.user.id,
+            depositDate: new Date(),
           },
         });
 
@@ -137,7 +107,7 @@ export const POST = withAuth(
           action: 'UPDATE',
           entity: 'PaymentSettlement',
           entityId: settlement.id,
-          details: { action: 'confirm', settlementNumber: settlement.settlementNumber },
+          details: { action: 'confirm', settlementId: settlement.settlementId },
           ipAddress,
           userAgent,
         });
@@ -171,8 +141,6 @@ export const POST = withAuth(
             status: 'RECONCILED',
             reconciledAt: new Date(),
             reconciledBy: session.user.id,
-            notes: body.notes || settlement.notes,
-            updatedBy: session.user.id,
           },
         });
 
@@ -180,7 +148,7 @@ export const POST = withAuth(
           action: 'UPDATE',
           entity: 'PaymentSettlement',
           entityId: settlement.id,
-          details: { action: 'reconcile', settlementNumber: settlement.settlementNumber },
+          details: { action: 'reconcile', settlementId: settlement.settlementId },
           ipAddress,
           userAgent,
         });
@@ -199,8 +167,7 @@ export const POST = withAuth(
           where: { id: settlementId },
           data: {
             status: 'DISCREPANCY',
-            notes: body.notes,
-            updatedBy: session.user.id,
+            discrepancy: body.discrepancyAmount,
           },
         });
 
@@ -208,7 +175,7 @@ export const POST = withAuth(
           action: 'UPDATE',
           entity: 'PaymentSettlement',
           entityId: settlement.id,
-          details: { action: 'flag_discrepancy', settlementNumber: settlement.settlementNumber },
+          details: { action: 'flag_discrepancy', settlementId: settlement.settlementId },
           ipAddress,
           userAgent,
         });

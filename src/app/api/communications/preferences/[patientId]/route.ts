@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDeleteAnd } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -11,7 +12,7 @@ import { updatePreferencesSchema } from '@/lib/validations/communications';
  * Get notification preferences for a patient
  */
 export const GET = withAuth<{ patientId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { patientId } = await params;
 
     // Verify patient exists (using soft delete helper)
@@ -87,7 +88,7 @@ export const GET = withAuth<{ patientId: string }>(
  * Update notification preferences for a patient
  */
 export const PUT = withAuth<{ patientId: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { patientId } = await params;
     const body = await req.json().catch(() => ({}));
 

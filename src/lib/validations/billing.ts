@@ -639,6 +639,10 @@ export const createPaymentMethodSchema = z.object({
   billingState: z.string().max(50).optional().nullable(),
   billingZip: z.string().max(20).optional().nullable(),
   billingCountry: z.string().max(50).default('CA'),
+
+  // Settings
+  isDefault: z.boolean().default(false),
+  nickname: z.string().max(100).optional().nullable(),
 });
 
 export const paymentMethodQuerySchema = z.object({

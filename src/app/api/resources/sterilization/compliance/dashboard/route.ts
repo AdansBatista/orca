@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { startOfDay, endOfDay, subDays, differenceInDays, startOfWeek } from 'date-fns';
 
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { db } from '@/lib/db';
 
 export const GET = withAuth(
-  async (req, session) => {
+  async (req: NextRequest, session: Session) => {
     const clinicFilter = getClinicFilter(session);
     const now = new Date();
     const today = startOfDay(now);

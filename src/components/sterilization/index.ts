@@ -13,7 +13,11 @@ export { PackageCardCondensed } from './PackageCardCondensed';
 export { PackageTableView, PackageTableViewCompact } from './PackageTableView';
 export { PackageForm } from './PackageForm';
 export { PackageCheckout } from './PackageCheckout';
+
+// Label & Printing components
 export { SterilizationLabel } from './SterilizationLabel';
+export { CycleLabelPrint, CycleLabelGrid, type CycleLabelData } from './CycleLabelPrint';
+export { StaplesLabelSheet, getLabelFormatInfo, LABEL_FORMATS, type StaplesLabelFormat } from './StaplesLabelSheet';
 
 // Compliance components
 export { ComplianceDashboard } from './ComplianceDashboard';

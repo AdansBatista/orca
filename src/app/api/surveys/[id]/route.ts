@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
@@ -11,7 +12,7 @@ import { updateSurveySchema } from '@/lib/validations/surveys';
  * Get a single survey
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const clinicId = session.user.clinicId;
 
@@ -58,7 +59,7 @@ export const GET = withAuth<{ id: string }>(
  * Update a survey
  */
 export const PUT = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
     const clinicId = session.user.clinicId;
@@ -147,7 +148,7 @@ export const PUT = withAuth<{ id: string }>(
  * Soft delete a survey
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
     const clinicId = session.user.clinicId;
 

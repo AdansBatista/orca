@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 
 import { db } from '@/lib/db';
@@ -27,7 +28,7 @@ const updateAnnotationSchema = z.object({
  * Get a single annotation
  */
 export const GET = withAuth<{ id: string; annotationId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: imageId, annotationId } = await context.params;
 
     // Verify image exists and user has access
@@ -93,7 +94,7 @@ export const GET = withAuth<{ id: string; annotationId: string }>(
  * Update an annotation
  */
 export const PUT = withAuth<{ id: string; annotationId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: imageId, annotationId } = await context.params;
     const body = await req.json();
 
@@ -193,7 +194,7 @@ export const PUT = withAuth<{ id: string; annotationId: string }>(
  * Delete a single annotation
  */
 export const DELETE = withAuth<{ id: string; annotationId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { id: imageId, annotationId } = await context.params;
 
     // Verify image exists and user has access

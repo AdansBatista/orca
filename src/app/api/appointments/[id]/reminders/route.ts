@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
 import { logAudit, getRequestMeta } from '@/lib/audit';
@@ -11,7 +12,7 @@ import { getReminderService } from '@/lib/services/reminders';
  * Get all reminders for an appointment.
  */
 export const GET = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Verify appointment exists
@@ -68,7 +69,7 @@ export const GET = withAuth<{ id: string }>(
  * Optionally specify custom reminder timing.
  */
 export const POST = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Verify appointment exists
@@ -149,7 +150,7 @@ export const POST = withAuth<{ id: string }>(
  * Cancel all pending reminders for an appointment.
  */
 export const DELETE = withAuth<{ id: string }>(
-  async (req, session, { params }) => {
+  async (req: NextRequest, session: Session, { params }) => {
     const { id } = await params;
 
     // Verify appointment exists

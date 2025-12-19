@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 
 import { db } from '@/lib/db';
 import { withSoftDelete, softDelete } from '@/lib/db/soft-delete';
@@ -15,7 +16,7 @@ interface RouteContext {
  * Get a single insurance company by ID
  */
 export const GET = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { companyId } = await context.params;
 
     const company = await db.insuranceCompany.findFirst({
@@ -83,7 +84,7 @@ export const GET = withAuth(
  * Update an insurance company
  */
 export const PATCH = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { companyId } = await context.params;
     const body = await req.json();
 
@@ -190,7 +191,7 @@ export const PATCH = withAuth(
  * Soft delete an insurance company
  */
 export const DELETE = withAuth(
-  async (req, session, context: RouteContext) => {
+  async (req: NextRequest, session: Session, context: RouteContext) => {
     const { companyId } = await context.params;
 
     // Check if company exists

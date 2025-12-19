@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -43,7 +43,7 @@ const createLinkSchema = z.object({
   accountId: z.string().min(1, 'Account is required'),
   amount: z.number().min(0.01, 'Amount must be greater than 0'),
   description: z.string().optional(),
-  allowPartial: z.boolean().default(false),
+  allowPartial: z.boolean(),
   minimumAmount: z.number().optional(),
   expiresIn: z.string().optional(),
   invoiceId: z.string().optional(),
@@ -71,7 +71,7 @@ interface Invoice {
   dueDate?: string;
 }
 
-export default function NewPaymentLinkPage() {
+function NewPaymentLinkPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -654,5 +654,13 @@ export default function NewPaymentLinkPage() {
         </form>
       </PageContent>
     </>
+  );
+}
+
+export default function NewPaymentLinkPage() {
+  return (
+    <Suspense fallback={<div className="flex h-48 items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
+      <NewPaymentLinkPageContent />
+    </Suspense>
   );
 }

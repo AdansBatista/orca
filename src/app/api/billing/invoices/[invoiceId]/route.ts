@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+import type { Session } from 'next-auth';
 import { db } from '@/lib/db';
 import { withSoftDelete } from '@/lib/db/soft-delete';
 import { withAuth, getClinicFilter } from '@/lib/auth/with-auth';
@@ -12,7 +13,7 @@ import { updateAccountBalance } from '@/lib/billing/utils';
  * Get a single invoice by ID
  */
 export const GET = withAuth<{ invoiceId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { invoiceId } = await context.params;
 
     const invoice = await db.invoice.findFirst({
@@ -77,7 +78,7 @@ export const GET = withAuth<{ invoiceId: string }>(
  * Update an invoice
  */
 export const PATCH = withAuth<{ invoiceId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { invoiceId } = await context.params;
     const body = await req.json();
 
@@ -189,7 +190,7 @@ export const PATCH = withAuth<{ invoiceId: string }>(
  * Void/delete an invoice
  */
 export const DELETE = withAuth<{ invoiceId: string }>(
-  async (req, session, context) => {
+  async (req: NextRequest, session: Session, context) => {
     const { invoiceId } = await context.params;
 
     // Parse void reason from body if provided
