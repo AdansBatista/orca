@@ -18,6 +18,7 @@ export { PackageCheckout } from './PackageCheckout';
 export { SterilizationLabel } from './SterilizationLabel';
 export { CycleLabelPrint, CycleLabelGrid, type CycleLabelData } from './CycleLabelPrint';
 export { StaplesLabelSheet, getLabelFormatInfo, LABEL_FORMATS, type StaplesLabelFormat } from './StaplesLabelSheet';
+export { ZebraThermalLabel, ZebraThermalLabelBatch, ZEBRA_LABEL_FORMATS, type ZebraLabelFormat } from './ZebraThermalLabel';
 
 // Compliance components
 export { ComplianceDashboard } from './ComplianceDashboard';

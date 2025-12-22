@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Printer, ArrowLeft, FileText, Grid3X3, LayoutGrid } from 'lucide-react';
+import { Printer, ArrowLeft, FileText, Grid3X3, LayoutGrid, Minus, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -15,12 +15,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { PageHeader, PageContent } from '@/components/layout';
 import {
   CycleLabelPrint,
   CycleLabelData,
 } from '@/components/sterilization/CycleLabelPrint';
-import { StaplesLabelSheet, type StaplesLabelFormat } from '@/components/sterilization/StaplesLabelSheet';
+import { StaplesLabelSheet } from '@/components/sterilization/StaplesLabelSheet';
+import { ZebraThermalLabel, ZebraThermalLabelBatch } from '@/components/sterilization/ZebraThermalLabel';
 
 interface SterilizationCycle {
   id: string;
@@ -41,7 +43,7 @@ interface SterilizationCycle {
   } | null;
 }
 
-type PrintFormat = 'staples-4x2' | 'staples-2.625x1' | 'full';
+type PrintFormat = 'staples-4x2' | 'staples-2.625x1' | 'zebra-2x1' | 'full';
 
 function PrintLabelsPageContent({
   params,
@@ -57,6 +59,9 @@ function PrintLabelsPageContent({
   const [loading, setLoading] = useState(true);
   const [format, setFormat] = useState<PrintFormat>(
     (searchParams.get('format') as PrintFormat) || 'staples-4x2'
+  );
+  const [zebraQuantity, setZebraQuantity] = useState<number>(
+    parseInt(searchParams.get('qty') || '10', 10)
   );
 
   useEffect(() => {
@@ -200,15 +205,37 @@ function PrintLabelsPageContent({
               <CardHeader>
                 <CardTitle>Label Format</CardTitle>
                 <CardDescription>
-                  Choose the Staples label sheet format you&apos;re printing on
+                  Choose your printer and label format
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <RadioGroup
                   value={format}
                   onValueChange={(v) => setFormat(v as PrintFormat)}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
                 >
+                  {/* Zebra Thermal 2x1 */}
+                  <div>
+                    <RadioGroupItem
+                      value="zebra-2x1"
+                      id="format-zebra-2x1"
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor="format-zebra-2x1"
+                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer h-full"
+                    >
+                      <Printer className="h-8 w-8 mb-2" />
+                      <span className="font-medium text-center">Zebra Thermal</span>
+                      <span className="text-xs text-muted-foreground text-center">
+                        2&quot; x 1&quot; • Direct thermal
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-1">
+                        ZD411 / ZD420
+                      </span>
+                    </Label>
+                  </div>
+
                   {/* Staples 4x2 Shipping Labels */}
                   <div>
                     <RadioGroupItem
@@ -226,7 +253,7 @@ function PrintLabelsPageContent({
                         4&quot; x 2&quot; • 10 per sheet
                       </span>
                       <span className="text-xs text-muted-foreground mt-1">
-                        SKU: ST18060-CC
+                        ST18060-CC
                       </span>
                     </Label>
                   </div>
@@ -248,7 +275,7 @@ function PrintLabelsPageContent({
                         2⅝&quot; x 1&quot; • 30 per sheet
                       </span>
                       <span className="text-xs text-muted-foreground mt-1">
-                        SKU: ST18054-CC
+                        ST18054-CC
                       </span>
                     </Label>
                   </div>
@@ -278,18 +305,80 @@ function PrintLabelsPageContent({
               </CardContent>
             </Card>
 
+            {/* Zebra Quantity Selector - only show when Zebra is selected */}
+            {format === 'zebra-2x1' && (
+              <Card variant="bento">
+                <CardHeader>
+                  <CardTitle>Number of Labels</CardTitle>
+                  <CardDescription>
+                    How many labels do you want to print?
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setZebraQuantity(Math.max(1, zebraQuantity - 1))}
+                      disabled={zebraQuantity <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={zebraQuantity}
+                        onChange={(e) => setZebraQuantity(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                        className="w-20 text-center text-lg font-semibold"
+                      />
+                      <span className="text-muted-foreground">labels</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setZebraQuantity(Math.min(100, zebraQuantity + 1))}
+                      disabled={zebraQuantity >= 100}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {/* Quick select buttons */}
+                  <div className="flex justify-center gap-2 mt-4">
+                    {[5, 10, 15, 20, 25].map((n) => (
+                      <Button
+                        key={n}
+                        variant={zebraQuantity === n ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setZebraQuantity(n)}
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Preview */}
             <Card variant="bento">
               <CardHeader>
                 <CardTitle>Preview</CardTitle>
                 <CardDescription>
-                  This is how your labels will look when printed (scaled to fit)
+                  {format === 'zebra-2x1'
+                    ? `Preview of 1 label (${zebraQuantity} will be printed)`
+                    : 'This is how your labels will look when printed (scaled to fit)'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="overflow-auto bg-gray-100 rounded-lg p-4">
                 <div className="flex justify-center">
                   {format === 'full' ? (
                     <CycleLabelPrint cycle={labelData} format="full" />
+                  ) : format === 'zebra-2x1' ? (
+                    <div className="border border-gray-300 bg-white shadow-sm">
+                      <ZebraThermalLabel cycle={labelData} format="2x1" scale={2} />
+                    </div>
                   ) : format === 'staples-4x2' ? (
                     <div className="transform scale-[0.45] origin-top">
                       <StaplesLabelSheet
@@ -316,6 +405,13 @@ function PrintLabelsPageContent({
               <CardContent className="pt-6">
                 <h4 className="font-medium mb-2">Printing Instructions</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
+                  {format === 'zebra-2x1' && (
+                    <>
+                      <li>• Select your <strong>Zebra ZD411</strong> printer in the print dialog</li>
+                      <li>• The printer will output <strong>{zebraQuantity} labels</strong> continuously</li>
+                      <li>• Make sure 2&quot; x 1&quot; labels are loaded in the printer</li>
+                    </>
+                  )}
                   {format === 'staples-4x2' && (
                     <>
                       <li>• Load <strong>Staples Shipping Labels (ST18060-CC)</strong> into your printer</li>
@@ -331,9 +427,13 @@ function PrintLabelsPageContent({
                   {format === 'full' && (
                     <li>• Use regular letter-size paper for full-page labels</li>
                   )}
-                  <li>• Set printer to <strong>&quot;Actual size&quot;</strong> (not &quot;Fit to page&quot;)</li>
-                  <li>• Turn off headers/footers in print settings</li>
-                  <li>• Set margins to <strong>None</strong> or <strong>Minimum</strong></li>
+                  {format !== 'zebra-2x1' && (
+                    <>
+                      <li>• Set printer to <strong>&quot;Actual size&quot;</strong> (not &quot;Fit to page&quot;)</li>
+                      <li>• Turn off headers/footers in print settings</li>
+                      <li>• Set margins to <strong>None</strong> or <strong>Minimum</strong></li>
+                    </>
+                  )}
                   <li>• After printing, apply one label to each sterilized pouch from this cycle</li>
                 </ul>
               </CardContent>
@@ -348,7 +448,7 @@ function PrintLabelsPageContent({
           @media print {
             @page {
               margin: 0;
-              size: letter;
+              size: ${format === 'zebra-2x1' ? '2in 1in' : 'letter'};
             }
             body {
               margin: 0;
@@ -362,10 +462,18 @@ function PrintLabelsPageContent({
             .print\\:hidden {
               display: none !important;
             }
+            .zebra-label {
+              page-break-after: always;
+            }
+            .zebra-label:last-child {
+              page-break-after: auto;
+            }
           }
         `}</style>
         {format === 'full' ? (
           <CycleLabelPrint cycle={labelData} format="full" />
+        ) : format === 'zebra-2x1' ? (
+          <ZebraThermalLabelBatch cycle={labelData} format="2x1" count={zebraQuantity} />
         ) : format === 'staples-4x2' ? (
           <StaplesLabelSheet cycle={labelData} format="4x2" showSheetBorder={false} />
         ) : (
