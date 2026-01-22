@@ -1,0 +1,875 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" xmlns:a="http://ajax.org/2005/aml">
+<head>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+<title>SciCan</title>
+
+<script src="../js/jquery-3.4.1-min.js" type="application/javascript"></script>
+<script src="../js/moment.js" type="application/javascript"></script>
+<!--
+<script src="../js/loadjscssfile.js" type="text/javascript"></script>
+<script src="../js/g4_03l.js" type="text/javascript"></script>
+-->
+<script src="../js/jquery-1.4.2.min.js" type="text/javascript"></script>
+<script src="../js/jquery-ui-1.8.5.custom.min.js" type="text/javascript"></script>
+<script src="tr.js" type="text/javascript"></script>
+<script src="../js/excanvas.js" type="text/javascript"></script>
+<script src="../js/jquery.flot.js" type="text/javascript"></script>
+<script src="../js/links.imgl.js" type="text/javascript"></script>
+<script src="../js/json2.js" type="text/javascript"></script>
+<script src="../js/messageBox.js" type="text/javascript"></script>
+<script src="../js/links.js" type="text/javascript"></script>
+<script src="../js/header.js" type="text/javascript"></script>
+
+
+<link href="stylesheet.css" rel="stylesheet" type="text/css">
+<link href="../css/jquery-ui.css" rel="stylesheet" type="text/css">
+
+<link rel="icon" href="../images/favicon.gif" type="image/x-icon" />
+
+
+<script>
+
+    var data = [];
+
+    var cyclesData = {};
+    var cyclesInfo = {};
+
+    var chartGen = false;
+
+    function Utf8Encode(string) {
+        string = string.replace(/\r\n/g, "\n");
+        var utftext = "";
+
+        for (var n = 0; n < string.length; n++) {
+
+            var c = string.charCodeAt(n);
+
+            if (c < 128) {
+                utftext += String.fromCharCode(c);
+            } else if ((c > 127) && (c < 2048)) {
+                utftext += String.fromCharCode((c >> 6) | 192);
+                utftext += String.fromCharCode((c & 63) | 128);
+            } else {
+                utftext += String.fromCharCode((c >> 12) | 224);
+                utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+                utftext += String.fromCharCode((c & 63) | 128);
+            }
+
+        }
+
+        return utftext;
+    }
+
+    function checksum(string) {
+        string = Utf8Encode(string);
+        var y = 0;
+
+        for (var i = 0, iTop = string.length; i < iTop; i++) {
+            y = y + string.charCodeAt(i) & 0xFF;
+        }
+
+        return y % 100;
+    }
+
+    function yearChoose() {
+
+        populateMonths();
+        clear();
+        $('#printPreview').html('');
+        $('#csvLink').removeAttr('href');
+        $('#csvLink').hide();
+    }
+
+    function monthChoose() {
+        populateDays();
+        clear();
+        $('#printPreview').html('');
+        $('#csvLink').removeAttr('href');
+        $('#csvLink').hide();
+    }
+
+    function dayChoose() {
+
+        populateCycles();
+        clear();
+        $('#printPreview').html('');
+        $('#csvLink').removeAttr('href');
+        $('#csvLink').hide();
+    }
+
+    var filename;
+
+    function cycleChoose() {
+
+        filename = cyclesInfo[$("select#cycleChooser option:checked").val()]['file_name'];
+
+        cycleChange();
+
+        if (document.getElementById("yearChooser").selectedIndex <= 1 && document.getElementById("monthChooser").selectedIndex <= 1 && document.getElementById("dayChooser").selectedIndex <= 1 && document.getElementById("cycleChooser").selectedIndex <= 1) // if we're at start, disable prev
+            $('#prevBtn').attr("disabled", true);
+        else
+            $('#prevBtn').attr("disabled", false);
+
+        if (document.getElementById("yearChooser").selectedIndex >= document.getElementById("yearChooser").length - 1 && document.getElementById("monthChooser").selectedIndex >= document.getElementById("monthChooser").length - 1 && document.getElementById("dayChooser").selectedIndex >= document.getElementById("dayChooser").length - 1 && document.getElementById("cycleChooser").selectedIndex >= document.getElementById("cycleChooser").length - 1) // if we're at end, disable next
+            $('#nextBtn').attr("disabled", true);
+        else
+            $('#nextBtn').attr("disabled", false);
+    }
+
+    function getDates(startDate, stopDate, onlyWorkingDays) {
+        let doWd = typeof onlyWorkingDays === 'undefined' ? false : onlyWorkingDays;
+
+        let dateArray = [];
+        let dayNr;
+        let runDateObj = moment(startDate);
+        let stopDateObj = moment(stopDate);
+
+        while (runDateObj <= stopDateObj) {
+            dayNr = runDateObj.day();
+            if (!doWd || (dayNr > 0 && dayNr < 6)) {
+                dateArray.push(moment(runDateObj).format('YYYY-MM-DD'));
+            }
+
+            runDateObj = moment(runDateObj).add(1, 'days');
+        }
+        return dateArray;
+    }
+
+    function clearOptions(elSel) {
+        var items = elSel.getElementsByTagName("option");
+        while (items.length > 1) {
+            elSel.remove(elSel.length - 1);
+        }
+    }
+
+    function setCycleStatus(status) {
+        $('#cycleStatus').html(status);
+    }
+
+    function setCycleDate(date) {
+        if (date)
+            $('#cycleDate').html(': ' + date);
+        else
+            $('#cycleDate').html('');
+    }
+
+    function setCycleLog(log) {
+        var lines = log.replace(/\r/g, "").split(/\n/g);
+        var cycleCountValue;
+        var snValue;
+        var actualLineCount = 0;
+        //S1480112K000031304230003801T
+        var regexp = /1[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]/;
+        var regexpHydrim = /Hydrim/;
+        var processedPrintout = "";
+
+        for (var i = 0; i < lines.length; i++) {
+            if (lines[i].match(regexpHydrim)) {
+                actualLineCount = 0;
+            }
+
+            if (actualLineCount == 3) {
+                snValue = lines[i].split(/:/g);
+            } else if (actualLineCount == 4) {
+                cycleCountValue = lines[i].split(/:/g);
+            }
+
+            actualLineCount++;
+
+            if (lines[i].match(regexp)) {
+                if (checksum(lines[i].trim().substr(0, 30)) == parseInt(lines[i].trim().substr(30, 2))) {
+                    processedPrintout += '<a #T#X#T#9041# href="https://updates.scican.com/processRecord.php?scicanRecordID=';
+                    processedPrintout += lines[i];
+                    processedPrintout += '">';
+                    processedPrintout += lines[i];
+                    processedPrintout += '</a><br>';
+                } else {
+                    processedPrintout += lines[i];
+                    processedPrintout += '</a><br>';
+                }
+            } else {
+                processedPrintout += lines[i];
+                processedPrintout += '</a><br>';
+            }
+        }
+
+        $('#printout').html(processedPrintout);
+        $('#cycle-load-spinner').addClass("hidden");
+        //$('#printout').html(log.replace(/\n/g, "<BR />").replace(/\r/g, ""));
+    }
+
+    function clear() {
+        if (chartGen) {
+            myChart.clear();
+        }
+        if ($('#logOutput').hasClass("log-border")) {
+            $('#logOutput').removeClass("log-border");
+        }
+        setCycleStatus("");
+        setCycleDate("");
+        setCycleLog("");
+        chartGen = false;
+
+        $("#chartLink").addClass("hidden");
+    }
+
+    function addOption(elSel, text, value) {
+        var elOptNew = document.createElement('option');
+        elOptNew.text = text;
+        elOptNew.value = value;
+        try {
+            elSel.add(elOptNew, null); // standards compliant; doesn't work in IE
+        } catch (ex) {
+            elSel.add(elOptNew); // IE only
+        }
+    }
+
+    function cycleChange() {
+
+        $('#cycle-load-spinner').removeClass("hidden");
+
+        getCycleData(filename);
+        printPreviewSetLink();
+        largeChartViewSetLink();
+    }
+
+    let timestamps = [];
+
+    function populateYears(data) {
+        clearOptions(document.getElementById('monthChooser'));
+        clearOptions(document.getElementById('dayChooser'));
+
+        if (data === "") {
+            return;
+        }
+
+        timestamps = data.split(",");
+
+        let yearArr = [];
+
+        timestamps.forEach(function (ts) {
+            yearArr.push(moment.unix(ts).format("YYYY"))
+        });
+
+        let unique = Array.from(new Set(yearArr));
+
+        for (var i = 0; i < unique.length; i++) {
+            addOption(document.getElementById('yearChooser'), unique[i], unique[i]);
+        }
+    }
+
+    function populateMonths() {
+
+        clearOptions(document.getElementById('monthChooser'));
+        clearOptions(document.getElementById('dayChooser'));
+
+        let ChosenYear = $("select#yearChooser option:checked").val();
+
+        let monthArr = [];
+
+        timestamps.forEach(function (ts) {
+            if (moment.unix(ts).format("YYYY") === ChosenYear)
+                monthArr.push(moment.unix(ts).format("MM"))
+        });
+
+        let unique = Array.from(new Set(monthArr));
+
+        for (var i = 0; i < unique.length; i++) {
+            addOption(document.getElementById('monthChooser'), unique[i], unique[i]);
+        }
+    }
+
+    function populateDays() {
+
+        clearOptions(document.getElementById('dayChooser'));
+
+        let ChosenYear = $("select#yearChooser option:checked").val();
+        let ChosenMonth = $("select#monthChooser option:checked").val();
+
+        let dayArr = [];
+
+        timestamps.forEach(function (ts) {
+            if (moment.unix(ts).format("YYYY") === ChosenYear && moment.unix(ts).format("MM") === ChosenMonth)
+                dayArr.push(moment.unix(ts).format("DD"))
+        });
+
+        let unique = Array.from(new Set(dayArr));
+
+        for (var i = 0; i < unique.length; i++) {
+            addOption(document.getElementById('dayChooser'),
+                unique[i], unique[i]);
+        }
+    }
+
+    function populateCycles() {
+
+        clearOptions(document.getElementById('cycleChooser'));
+
+        let ChosenYear = $("select#yearChooser option:checked").val();
+        let ChosenMonth = $("select#monthChooser option:checked").val();
+        let ChosenDay = $("select#dayChooser option:checked").val();
+
+        let dateString = ChosenYear + " " + ChosenMonth + " " + ChosenDay;
+        for (let i = 0; i < cyclesInfo.length; i++) {
+            if (moment.unix(cyclesInfo[i]["cycle_start_time"]).format("YYYY MM DD") === dateString) {
+                //alert(cyclesInfo[i]['cycle_number']);
+                addOption(document.getElementById('cycleChooser'), cyclesInfo[i]['cycle_number'], i); //cyclesInfo[i]['file_name']);
+            }
+        }
+    }
+
+    var yearStr, monthStr, dayStr, cycleStr, cycleFileName, cycleStatus, cycleRecordId;
+
+    function getCycleData(filename) {
+
+        cycleFileName = filename;
+
+        let split = filename.split("_");
+
+        let date = split[0].substring(1);
+
+        yearStr = date.substring(0, 4);
+
+        monthStr = date.substring(4, 6);
+
+        dayStr = date.substring(6, 8);
+
+        cycleStr = $('#cycleChooser option:selected').text();
+
+        cycleStatus = cyclesInfo[$("select#cycleChooser option:checked").val()]['cycle_id'];
+
+        cycleRecordId = cyclesInfo[$("select#cycleChooser option:checked").val()]['records_id'];
+
+        logDate = yearStr + "-" + monthStr + "-" + dayStr;
+
+        logfilepath = "/opt/data/scilog/" + yearStr + "/" + monthStr + "/" + dayStr + "/" + filename + ".txt";
+        chartfilepath = "/opt/data/scilog/" + yearStr + "/" + monthStr + "/" + dayStr + "/" + filename + ".cpt";
+        //alert(filename + '\n' + chartfilepath);
+
+        $.ajax({
+            url: "../data/file_reader.php?filename=" + logfilepath,
+            method: 'GET',
+            success: onLogSuccess,
+            error: function (xhr, textStatus, errorThrown) {
+                messageBox(trStrings.postErrors.cycleData + xhr.status + ' '
+                    + textStatus);
+            }
+        });
+
+        var cycle = {
+            "year" : yearStr,
+            "month" : monthStr,
+            "day" : dayStr,
+            "cycle" : cycleStr
+        };
+        $.ajax({
+            url : "../data/cycleData.php?filename=" + chartfilepath + "&t=" + (new Date()).getTime(),
+            type : 'GET',
+            dataType : 'json',
+            data : JSON.stringify(cycle),
+            success : onCycleDataSuccess,
+            error : function(xhr, textStatus, errorThrown) {
+                messageBox(trStrings.postErrors.cycleData + xhr.status + ' '
+                    + textStatus);
+            }
+        });
+
+
+        $.ajax({
+            url : "../data/cycleDescription.php?cycle_id=" + cycleStatus + "&t=" + (new Date()).getTime(),
+            type : 'GET',
+            dataType : 'json',
+            success : onCycleDescriptionSuccess,
+            error : function(xhr, textStatus, errorThrown) {
+                messageBox(trStrings.postErrors.cycleData + xhr.status + ' '
+                    + textStatus);
+            }
+        });
+
+        /*
+        //alert(logPrintout + '\n' + chartfilepath);
+        $.ajax({
+            url: "../data/file_reader.php?filename=" + chartfilepath,
+            type: 'GET',
+            success: onChartSuccess,
+            error: function (xhr, textStatus, errorThrown) {
+                messageBox(trStrings.postErrors.cycleData + xhr.status + ' '
+                    + textStatus);
+            }
+        });
+        */
+    }
+
+    // then fetch the data with jQuery
+    function onLogSuccess(logPrintout) {
+        log = logPrintout;
+        setCycleLog(log);
+        setCycleDate(logDate);
+        //setCycleStatus("Status goes here");
+    }
+
+    function onCycleDescriptionSuccess(data) {
+        setCycleStatus(data.name + " / " + data.description);
+    }
+
+    function onCycleDataSuccess(series) {
+        //alert(JSON.stringify(series));
+        //prompt("zzz", JSON.stringify(series));
+
+        if (typeof (series.succeeded) != 'undefined' && series.succeeded == true) {
+            cycleData = series;
+            drawChart(cycleData);
+        } else {
+            messageBox(trStrings.dataErrors.cycleData);
+        }
+    }
+
+    var data = [];
+    var alreadyFetched = {};
+
+    function drawChart(series) {
+        var temperature = jQuery.trim(series.temp);
+        temperature = temperature.split(",");
+        var temp = new Array(temperature.length);
+
+        for ( var i = 0; i < temperature.length; i++) {
+            temp[i] = new Array(i, Number(temperature[i]));
+        }
+        var tempSeries = {
+            label : injectStrings.temperature,
+            data : temp
+        };
+
+        var pressure = jQuery.trim(series.pressure);
+        pressure = pressure.split(",");
+        temp = new Array(pressure.length);
+
+        for ( var i = 0; i < pressure.length; i++) {
+            temp[i] = new Array(i, Number(pressure[i]));
+        }
+        var pressureSeries = {
+            label : injectStrings.pressure,
+            data : temp,
+            yaxis : 2
+        };
+
+        if (alreadyFetched[tempSeries.label]) {
+            data.pop();
+            alreadyFetched[tempSeries.label] = false;
+        }
+
+        if (alreadyFetched[pressureSeries.label]) {
+            data.pop();
+            alreadyFetched[pressureSeries.label] = false;
+        }
+
+        if (!alreadyFetched[tempSeries.label]) {
+            alreadyFetched[tempSeries.label] = true;
+            data.push(tempSeries);
+        }
+        if (!alreadyFetched[pressureSeries.label]) {
+            alreadyFetched[pressureSeries.label] = true;
+            data.push(pressureSeries);
+        }
+
+        var options = {
+            lines : {
+                show : true
+            },
+            points : {
+                show : false
+            },
+            xaxis : {
+                tickDecimals : 0,
+                tickSize : 1,
+                tickFormatter : function(v, axis) {
+                    return "";
+                }
+            },
+            legend : {
+                position : "se"
+            },
+            yaxis : {
+                tickFormatter : function(v, axis) {
+                    return v.toFixed(axis.tickDecimals) + "&deg;C";
+                },
+                min : 0,
+                max : 150
+            },
+            y2axis : {
+                tickFormatter : function(v, axis) {
+                    return v.toFixed(axis.tickDecimals) + "kPa";
+                },
+                min : 0,
+                max : 390
+            }
+        };
+        //alert($("#placeholder").width() + '\n' + data.length + '\n' + options.lines.show.toString());
+        $.plot($("#placeholder"), data, options);
+    }
+
+    let chartfilepath = "";
+    let logfilepath = "";
+    let log = "";
+    var logDate = "";
+
+    function setCycleStatus(status) {
+        $('#cycleStatus').html(status);
+    }
+
+    function setCycleDate(date) {
+        if (date)
+            $('#cycleDate').html(' Date: ' + date);
+        else
+            $('#cycleDate').html('');
+    }
+
+    var printpage = "";
+
+    function printLink() {
+        $.get("print_preview.php?filename=" + filename, function (html) {
+            printpage = html;
+        }, 'html');
+    }
+
+    function largeChartView() {
+
+    }
+
+    function next() {
+        var i = document.getElementById("cycleChooser").selectedIndex;
+        if (i < document.getElementById("cycleChooser").length - 1)
+            document.getElementById("cycleChooser").selectedIndex = document.getElementById("cycleChooser").selectedIndex + 1;
+        else {
+            i = document.getElementById("dayChooser").selectedIndex;
+            if (i < document.getElementById("dayChooser").length - 1) {
+                document.getElementById("dayChooser").selectedIndex = document.getElementById("dayChooser").selectedIndex + 1;
+                dayChoose();
+                document.getElementById("cycleChooser").selectedIndex = 1;
+            }
+            else {
+                i = document.getElementById("monthChooser").selectedIndex;
+                if (i < document.getElementById("monthChooser").length - 1) {
+                    document.getElementById("monthChooser").selectedIndex = document.getElementById("monthChooser").selectedIndex + 1;
+                    monthChoose();
+                    document.getElementById("dayChooser").selectedIndex = 1;
+                    dayChoose();
+                    document.getElementById("cycleChooser").selectedIndex = 1;
+                }
+                else {
+                    i = document.getElementById("yearChooser").selectedIndex;
+                    if (i < document.getElementById("yearChooser").length - 1) {
+                        document.getElementById("yearChooser").selectedIndex = document.getElementById("yearChooser").selectedIndex + 1;
+                        yearChoose();
+                        document.getElementById("monthChooser").selectedIndex = 1;
+                        monthChoose();
+                        document.getElementById("dayChooser").selectedIndex = 1;
+                        dayChoose();
+                        document.getElementById("cycleChooser").selectedIndex = 1;
+                    }
+                }
+            }
+        }
+        cycleChoose();
+    }
+
+    function prev() {
+        var i = document.getElementById("cycleChooser").selectedIndex;
+        if (i > 1)
+            document.getElementById("cycleChooser").selectedIndex = document.getElementById("cycleChooser").selectedIndex - 1;
+        else {
+            i = document.getElementById("dayChooser").selectedIndex;
+            if (i > 1) {
+                document.getElementById("dayChooser").selectedIndex = document.getElementById("dayChooser").selectedIndex - 1;
+                dayChoose();
+                document.getElementById("cycleChooser").selectedIndex = document.getElementById("cycleChooser").length - 1;
+            }
+            else {
+                i = document.getElementById("monthChooser").selectedIndex;
+                if (i > 1) {
+                    document.getElementById("monthChooser").selectedIndex = document.getElementById("monthChooser").selectedIndex - 1;
+                    monthChoose();
+                    document.getElementById("dayChooser").selectedIndex = document.getElementById("dayChooser").length - 1;
+                    dayChoose();
+                    document.getElementById("cycleChooser").selectedIndex = document.getElementById("cycleChooser").length - 1;
+                }
+                else {
+                    i = document.getElementById("yearChooser").selectedIndex;
+                    if (i > 1) {
+                        document.getElementById("yearChooser").selectedIndex = document.getElementById("yearChooser").selectedIndex - 1;
+                        yearChoose();
+                        document.getElementById("monthChooser").selectedIndex = document.getElementById("monthChooser").length - 1;
+                        monthChoose();
+                        document.getElementById("dayChooser").selectedIndex = document.getElementById("dayChooser").length - 1;
+                        dayChoose();
+                        document.getElementById("cycleChooser").selectedIndex = document.getElementById("cycleChooser").length - 1;
+                    }
+                }
+            }
+
+        }
+        cycleChoose();
+    }
+
+    function getArchiveHeader() {
+        $.ajax({
+            url: '../data/contacts.php?' + (new Date()).getTime(),
+            method: 'GET',
+            dataType: 'json',
+            success: getArchiveHeaderSuccess,
+            error: function (xhr, textStatus, errorThrown) {
+                messageBox(trStrings.postErrors.contacts + xhr.status + ' '+textStatus);
+            }
+        });
+    }
+
+    function getArchiveHeaderSuccess(data) {
+        if( typeof(data) != 'undefined' && data != null ) {
+            //prompt('getHeaderDataSuccess', JSON.stringify(data));
+
+            //page header
+            $('#office').html(data.officeName);
+            if( data.officePhone != "" ) $('#officeTel').html(data.officePhone); else $('#officeTel').html("");
+            $('#serialNum').html(data.serialNum);
+            if (data.logoURL){
+                $('#logo').attr('src',data.logoURL);
+            }
+            
+        }
+    }
+
+    let chartUnits = {};
+
+    var myChart, myLargeChart;
+
+    function archiveInit() {
+        getArchiveHeader();
+
+
+        cyclesData = "1755804107,1755866513,1755874964,1755877443,1755879965,1755881972,1755884928,1755887207,1755890117,1756120286,1756125408,1756126545,1756131071,1758815611,1759328347,1759932411,1759938135,1759942925,1759948542,1759952302,1759956443,1759959965,1760023469,1760028352,1760032927,1760040550,1760045594,1760052753,1760112829,1760121992,1760450574,1760456343,1760460792,1760466931,1760471482,1760476945,1760538294,1760542352,1760545202,1760550278,1760556318,1760561479,1760564397,1760567036,1760620492,1760633241,1760970425,1761054053,1761057363,1761060430,1761064323,1761072464,1761076378,1761079260,1761082477,1761145904,1761150654,1761156194,1761164304,1761169514,1761172387,1761578878,1761583181,1761595091,1761599948,1761658810,1761664429,1761669589,1761679503,1761685875,1762445793,1762449624,1762454608,1762462891,1762467282,1762471713,1762527054,1762535031,1762539084,1762545663,1762551267,1762785332,1762794761,1763047669,1763053071,1763060983,1763067076,1763071428,1763076920,1763130557,1763130675,1763136016,1763142935,1763152022,1763156189,1763390128,1763650759,1763655344,1763662057,1763668359,1763673918,1763678323,1763997088,1764004130,1764010069,1764021154,1764027528,1764027624,1764084768,1764088926,1764093269,1764098542,1764339979,1764350692,1764363139,1764366315,1764593639,1764606180,1764615495,1764618622,1765224835,1765229923,1765380409,1765387180,1765391657,1765396748,1765402446,1765465903,1765472001,1765476202,1765488473,1765495110,1765550503,1765556206,1765562815,1765574746,1766419696,1766423971,1766429761,1766436923,1766441559,1766446023,1766500049,1766500102,1766504336,1766510315,1766513649,1766522709,1766525935,1767021858,1767627703,1767633521,1767639806,1767646292,1767655067,1767713687,1767717385,1767723084,1767731636,1767795867,1767809277,1768493348,1768500435,1768508243,1768516306";
+
+        cyclesInfo = [{"records_id":259,"cycle_start_time":1755804107,"file_name":"S20250821_00259_710125H00004","cycle_number":1,"cycle_id":"STATCLAVE_120V_vacuum_test"},{"records_id":260,"cycle_start_time":1755866513,"file_name":"S20250822_00260_710125H00004","cycle_number":2,"cycle_id":"STATCLAVE_120V_vacuum_test"},{"records_id":261,"cycle_start_time":1755874964,"file_name":"S20250822_00261_710125H00004","cycle_number":3,"cycle_id":"STATCLAVE_120V_solid_unwrapped_132_4min"},{"records_id":262,"cycle_start_time":1755877443,"file_name":"S20250822_00262_710125H00004","cycle_number":4,"cycle_id":"STATCLAVE_120V_solid_unwrapped_132_4min"},{"records_id":263,"cycle_start_time":1755879965,"file_name":"S20250822_00263_710125H00004","cycle_number":5,"cycle_id":"STATCLAVE_120V_solid_unwrapped_132_4min"},{"records_id":264,"cycle_start_time":1755881972,"file_name":"S20250822_00264_710125H00004","cycle_number":6,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":265,"cycle_start_time":1755884928,"file_name":"S20250822_00265_710125H00004","cycle_number":7,"cycle_id":"STATCLAVE_120V_hollow_unwrapped_132_4min"},{"records_id":266,"cycle_start_time":1755887207,"file_name":"S20250822_00266_710125H00004","cycle_number":8,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":267,"cycle_start_time":1755890117,"file_name":"S20250822_00267_710125H00004","cycle_number":9,"cycle_id":"STATCLAVE_120V_solid_unwrapped_132_4min"},{"records_id":268,"cycle_start_time":1756120286,"file_name":"S20250825_00268_710125H00004","cycle_number":10,"cycle_id":"STATCLAVE_120V_solid_unwrapped_132_4min"},{"records_id":269,"cycle_start_time":1756125408,"file_name":"S20250825_00269_710125H00004","cycle_number":11,"cycle_id":"STATCLAVE_120V_vacuum_test"},{"records_id":270,"cycle_start_time":1756126545,"file_name":"S20250825_00270_710125H00004","cycle_number":12,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":271,"cycle_start_time":1756131071,"file_name":"S20250825_00271_710125H00004","cycle_number":13,"cycle_id":"STATCLAVE_120V_vacuum_test"},{"records_id":272,"cycle_start_time":1758815611,"file_name":"S20250925_00272_710125H00004","cycle_number":1,"cycle_id":"STATCLAVE_120V_solid_unwrapped_132_4min"},{"records_id":273,"cycle_start_time":1759328347,"file_name":"S20251001_00273_710125H00004","cycle_number":2,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":274,"cycle_start_time":1759932411,"file_name":"S20251008_00274_710125H00004","cycle_number":3,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":275,"cycle_start_time":1759938135,"file_name":"S20251008_00275_710125H00004","cycle_number":4,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":276,"cycle_start_time":1759942925,"file_name":"S20251008_00276_710125H00004","cycle_number":5,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":277,"cycle_start_time":1759948542,"file_name":"S20251008_00277_710125H00004","cycle_number":6,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":278,"cycle_start_time":1759952302,"file_name":"S20251008_00278_710125H00004","cycle_number":7,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":279,"cycle_start_time":1759956443,"file_name":"S20251008_00279_710125H00004","cycle_number":8,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":280,"cycle_start_time":1759959965,"file_name":"S20251008_00280_710125H00004","cycle_number":9,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":281,"cycle_start_time":1760023469,"file_name":"S20251009_00281_710125H00004","cycle_number":10,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":282,"cycle_start_time":1760028352,"file_name":"S20251009_00282_710125H00004","cycle_number":11,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":283,"cycle_start_time":1760032927,"file_name":"S20251009_00283_710125H00004","cycle_number":12,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":284,"cycle_start_time":1760040550,"file_name":"S20251009_00284_710125H00004","cycle_number":13,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":285,"cycle_start_time":1760045594,"file_name":"S20251009_00285_710125H00004","cycle_number":14,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":286,"cycle_start_time":1760052753,"file_name":"S20251009_00286_710125H00004","cycle_number":15,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":287,"cycle_start_time":1760112829,"file_name":"S20251010_00287_710125H00004","cycle_number":16,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":288,"cycle_start_time":1760121992,"file_name":"S20251010_00288_710125H00004","cycle_number":17,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":289,"cycle_start_time":1760450574,"file_name":"S20251014_00289_710125H00004","cycle_number":18,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":290,"cycle_start_time":1760456343,"file_name":"S20251014_00290_710125H00004","cycle_number":19,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":291,"cycle_start_time":1760460792,"file_name":"S20251014_00291_710125H00004","cycle_number":20,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":292,"cycle_start_time":1760466931,"file_name":"S20251014_00292_710125H00004","cycle_number":21,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":293,"cycle_start_time":1760471482,"file_name":"S20251014_00293_710125H00004","cycle_number":22,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":294,"cycle_start_time":1760476945,"file_name":"S20251014_00294_710125H00004","cycle_number":23,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":295,"cycle_start_time":1760538294,"file_name":"S20251015_00295_710125H00004","cycle_number":24,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":296,"cycle_start_time":1760542352,"file_name":"S20251015_00296_710125H00004","cycle_number":25,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":297,"cycle_start_time":1760545202,"file_name":"S20251015_00297_710125H00004","cycle_number":26,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":298,"cycle_start_time":1760550278,"file_name":"S20251015_00298_710125H00004","cycle_number":27,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":299,"cycle_start_time":1760556318,"file_name":"S20251015_00299_710125H00004","cycle_number":28,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":300,"cycle_start_time":1760561479,"file_name":"S20251015_00300_710125H00004","cycle_number":29,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":301,"cycle_start_time":1760564397,"file_name":"S20251015_00301_710125H00004","cycle_number":30,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":302,"cycle_start_time":1760567036,"file_name":"S20251015_00302_710125H00004","cycle_number":31,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":303,"cycle_start_time":1760620492,"file_name":"S20251016_00303_710125H00004","cycle_number":32,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":304,"cycle_start_time":1760633241,"file_name":"S20251016_00304_710125H00004","cycle_number":33,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":305,"cycle_start_time":1760970425,"file_name":"S20251020_00305_710125H00004","cycle_number":34,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":306,"cycle_start_time":1761054053,"file_name":"S20251021_00306_710125H00004","cycle_number":35,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":307,"cycle_start_time":1761057363,"file_name":"S20251021_00307_710125H00004","cycle_number":36,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":308,"cycle_start_time":1761060430,"file_name":"S20251021_00308_710125H00004","cycle_number":37,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":309,"cycle_start_time":1761064323,"file_name":"S20251021_00309_710125H00004","cycle_number":38,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":310,"cycle_start_time":1761072464,"file_name":"S20251021_00310_710125H00004","cycle_number":39,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":311,"cycle_start_time":1761076378,"file_name":"S20251021_00311_710125H00004","cycle_number":40,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":312,"cycle_start_time":1761079260,"file_name":"S20251021_00312_710125H00004","cycle_number":41,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":313,"cycle_start_time":1761082477,"file_name":"S20251021_00313_710125H00004","cycle_number":42,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":314,"cycle_start_time":1761145904,"file_name":"S20251022_00314_710125H00004","cycle_number":43,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":315,"cycle_start_time":1761150654,"file_name":"S20251022_00315_710125H00004","cycle_number":44,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":316,"cycle_start_time":1761156194,"file_name":"S20251022_00316_710125H00004","cycle_number":45,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":317,"cycle_start_time":1761164304,"file_name":"S20251022_00317_710125H00004","cycle_number":46,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":318,"cycle_start_time":1761169514,"file_name":"S20251022_00318_710125H00004","cycle_number":47,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":319,"cycle_start_time":1761172387,"file_name":"S20251022_00319_710125H00004","cycle_number":48,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":320,"cycle_start_time":1761578878,"file_name":"S20251027_00320_710125H00004","cycle_number":49,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":321,"cycle_start_time":1761583181,"file_name":"S20251027_00321_710125H00004","cycle_number":50,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":322,"cycle_start_time":1761595091,"file_name":"S20251027_00322_710125H00004","cycle_number":51,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":323,"cycle_start_time":1761599948,"file_name":"S20251027_00323_710125H00004","cycle_number":52,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":324,"cycle_start_time":1761658810,"file_name":"S20251028_00324_710125H00004","cycle_number":53,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":325,"cycle_start_time":1761664429,"file_name":"S20251028_00325_710125H00004","cycle_number":54,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":326,"cycle_start_time":1761669589,"file_name":"S20251028_00326_710125H00004","cycle_number":55,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":327,"cycle_start_time":1761679503,"file_name":"S20251028_00327_710125H00004","cycle_number":56,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":328,"cycle_start_time":1761685875,"file_name":"S20251028_00328_710125H00004","cycle_number":57,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":329,"cycle_start_time":1762445793,"file_name":"S20251106_00329_710125H00004","cycle_number":58,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":330,"cycle_start_time":1762449624,"file_name":"S20251106_00330_710125H00004","cycle_number":59,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":331,"cycle_start_time":1762454608,"file_name":"S20251106_00331_710125H00004","cycle_number":60,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":332,"cycle_start_time":1762462891,"file_name":"S20251106_00332_710125H00004","cycle_number":61,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":333,"cycle_start_time":1762467282,"file_name":"S20251106_00333_710125H00004","cycle_number":62,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":334,"cycle_start_time":1762471713,"file_name":"S20251106_00334_710125H00004","cycle_number":63,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":335,"cycle_start_time":1762527054,"file_name":"S20251107_00335_710125H00004","cycle_number":64,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":336,"cycle_start_time":1762535031,"file_name":"S20251107_00336_710125H00004","cycle_number":65,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":337,"cycle_start_time":1762539084,"file_name":"S20251107_00337_710125H00004","cycle_number":66,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":338,"cycle_start_time":1762545663,"file_name":"S20251107_00338_710125H00004","cycle_number":67,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":339,"cycle_start_time":1762551267,"file_name":"S20251107_00339_710125H00004","cycle_number":68,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":340,"cycle_start_time":1762785332,"file_name":"S20251110_00340_710125H00004","cycle_number":69,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":341,"cycle_start_time":1762794761,"file_name":"S20251110_00341_710125H00004","cycle_number":70,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":342,"cycle_start_time":1763047669,"file_name":"S20251113_00342_710125H00004","cycle_number":71,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":343,"cycle_start_time":1763053071,"file_name":"S20251113_00343_710125H00004","cycle_number":72,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":344,"cycle_start_time":1763060983,"file_name":"S20251113_00344_710125H00004","cycle_number":73,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":345,"cycle_start_time":1763067076,"file_name":"S20251113_00345_710125H00004","cycle_number":74,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":346,"cycle_start_time":1763071428,"file_name":"S20251113_00346_710125H00004","cycle_number":75,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":347,"cycle_start_time":1763076920,"file_name":"S20251113_00347_710125H00004","cycle_number":76,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":348,"cycle_start_time":1763130557,"file_name":"S20251114_00348_710125H00004","cycle_number":77,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":349,"cycle_start_time":1763130675,"file_name":"S20251114_00349_710125H00004","cycle_number":78,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":350,"cycle_start_time":1763136016,"file_name":"S20251114_00350_710125H00004","cycle_number":79,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":351,"cycle_start_time":1763142935,"file_name":"S20251114_00351_710125H00004","cycle_number":80,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":352,"cycle_start_time":1763152022,"file_name":"S20251114_00352_710125H00004","cycle_number":81,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":353,"cycle_start_time":1763156189,"file_name":"S20251114_00353_710125H00004","cycle_number":82,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":354,"cycle_start_time":1763390128,"file_name":"S20251117_00354_710125H00004","cycle_number":83,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":355,"cycle_start_time":1763650759,"file_name":"S20251120_00355_710125H00004","cycle_number":84,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":356,"cycle_start_time":1763655344,"file_name":"S20251120_00356_710125H00004","cycle_number":85,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":357,"cycle_start_time":1763662057,"file_name":"S20251120_00357_710125H00004","cycle_number":86,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":358,"cycle_start_time":1763668359,"file_name":"S20251120_00358_710125H00004","cycle_number":87,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":359,"cycle_start_time":1763673918,"file_name":"S20251120_00359_710125H00004","cycle_number":88,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":360,"cycle_start_time":1763678323,"file_name":"S20251120_00360_710125H00004","cycle_number":89,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":361,"cycle_start_time":1763997088,"file_name":"S20251124_00361_710125H00004","cycle_number":90,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":362,"cycle_start_time":1764004130,"file_name":"S20251124_00362_710125H00004","cycle_number":91,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":363,"cycle_start_time":1764010069,"file_name":"S20251124_00363_710125H00004","cycle_number":92,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":364,"cycle_start_time":1764021154,"file_name":"S20251124_00364_710125H00004","cycle_number":93,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":365,"cycle_start_time":1764027528,"file_name":"S20251124_00365_710125H00004","cycle_number":94,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":366,"cycle_start_time":1764027624,"file_name":"S20251124_00366_710125H00004","cycle_number":95,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":367,"cycle_start_time":1764084768,"file_name":"S20251125_00367_710125H00004","cycle_number":96,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":368,"cycle_start_time":1764088926,"file_name":"S20251125_00368_710125H00004","cycle_number":97,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":369,"cycle_start_time":1764093269,"file_name":"S20251125_00369_710125H00004","cycle_number":98,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":370,"cycle_start_time":1764098542,"file_name":"S20251125_00370_710125H00004","cycle_number":99,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":371,"cycle_start_time":1764339979,"file_name":"S20251128_00371_710125H00004","cycle_number":100,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":372,"cycle_start_time":1764350692,"file_name":"S20251128_00372_710125H00004","cycle_number":101,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":373,"cycle_start_time":1764363139,"file_name":"S20251128_00373_710125H00004","cycle_number":102,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":374,"cycle_start_time":1764366315,"file_name":"S20251128_00374_710125H00004","cycle_number":103,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":375,"cycle_start_time":1764593639,"file_name":"S20251201_00375_710125H00004","cycle_number":104,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":376,"cycle_start_time":1764606180,"file_name":"S20251201_00376_710125H00004","cycle_number":105,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":377,"cycle_start_time":1764615495,"file_name":"S20251201_00377_710125H00004","cycle_number":106,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":378,"cycle_start_time":1764618622,"file_name":"S20251201_00378_710125H00004","cycle_number":107,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":379,"cycle_start_time":1765224835,"file_name":"S20251208_00379_710125H00004","cycle_number":108,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":380,"cycle_start_time":1765229923,"file_name":"S20251208_00380_710125H00004","cycle_number":109,"cycle_id":"STATCLAVE_120V_hollow_wrapped_132_4min"},{"records_id":381,"cycle_start_time":1765380409,"file_name":"S20251210_00381_710125H00004","cycle_number":110,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":382,"cycle_start_time":1765387180,"file_name":"S20251210_00382_710125H00004","cycle_number":111,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":383,"cycle_start_time":1765391657,"file_name":"S20251210_00383_710125H00004","cycle_number":112,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":384,"cycle_start_time":1765396748,"file_name":"S20251210_00384_710125H00004","cycle_number":113,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":385,"cycle_start_time":1765402446,"file_name":"S20251210_00385_710125H00004","cycle_number":114,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":386,"cycle_start_time":1765465903,"file_name":"S20251211_00386_710125H00004","cycle_number":115,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":387,"cycle_start_time":1765472001,"file_name":"S20251211_00387_710125H00004","cycle_number":116,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":388,"cycle_start_time":1765476202,"file_name":"S20251211_00388_710125H00004","cycle_number":117,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":389,"cycle_start_time":1765488473,"file_name":"S20251211_00389_710125H00004","cycle_number":118,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":390,"cycle_start_time":1765495110,"file_name":"S20251211_00390_710125H00004","cycle_number":119,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":391,"cycle_start_time":1765550503,"file_name":"S20251212_00391_710125H00004","cycle_number":120,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":392,"cycle_start_time":1765556206,"file_name":"S20251212_00392_710125H00004","cycle_number":121,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":393,"cycle_start_time":1765562815,"file_name":"S20251212_00393_710125H00004","cycle_number":122,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":394,"cycle_start_time":1765574746,"file_name":"S20251212_00394_710125H00004","cycle_number":123,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":395,"cycle_start_time":1766419696,"file_name":"S20251222_00395_710125H00004","cycle_number":124,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":396,"cycle_start_time":1766423971,"file_name":"S20251222_00396_710125H00004","cycle_number":125,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":397,"cycle_start_time":1766429761,"file_name":"S20251222_00397_710125H00004","cycle_number":126,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":398,"cycle_start_time":1766436923,"file_name":"S20251222_00398_710125H00004","cycle_number":127,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":399,"cycle_start_time":1766441559,"file_name":"S20251222_00399_710125H00004","cycle_number":128,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":400,"cycle_start_time":1766446023,"file_name":"S20251222_00400_710125H00004","cycle_number":129,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":401,"cycle_start_time":1766500049,"file_name":"S20251223_00401_710125H00004","cycle_number":130,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":402,"cycle_start_time":1766500102,"file_name":"S20251223_00402_710125H00004","cycle_number":131,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":403,"cycle_start_time":1766504336,"file_name":"S20251223_00403_710125H00004","cycle_number":132,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":404,"cycle_start_time":1766510315,"file_name":"S20251223_00404_710125H00004","cycle_number":133,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":405,"cycle_start_time":1766513649,"file_name":"S20251223_00405_710125H00004","cycle_number":134,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":406,"cycle_start_time":1766522709,"file_name":"S20251223_00406_710125H00004","cycle_number":135,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":407,"cycle_start_time":1766525935,"file_name":"S20251223_00407_710125H00004","cycle_number":136,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":408,"cycle_start_time":1767021858,"file_name":"S20251229_00408_710125H00004","cycle_number":137,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":409,"cycle_start_time":1767627703,"file_name":"S20260105_00409_710125H00004","cycle_number":138,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":410,"cycle_start_time":1767633521,"file_name":"S20260105_00410_710125H00004","cycle_number":139,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":411,"cycle_start_time":1767639806,"file_name":"S20260105_00411_710125H00004","cycle_number":140,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":412,"cycle_start_time":1767646292,"file_name":"S20260105_00412_710125H00004","cycle_number":141,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":413,"cycle_start_time":1767655067,"file_name":"S20260105_00413_710125H00004","cycle_number":142,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":414,"cycle_start_time":1767713687,"file_name":"S20260106_00414_710125H00004","cycle_number":143,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":415,"cycle_start_time":1767717385,"file_name":"S20260106_00415_710125H00004","cycle_number":144,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":416,"cycle_start_time":1767723084,"file_name":"S20260106_00416_710125H00004","cycle_number":145,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":417,"cycle_start_time":1767731636,"file_name":"S20260106_00417_710125H00004","cycle_number":146,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":418,"cycle_start_time":1767795867,"file_name":"S20260107_00418_710125H00004","cycle_number":147,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":419,"cycle_start_time":1767809277,"file_name":"S20260107_00419_710125H00004","cycle_number":148,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"},{"records_id":420,"cycle_start_time":1768493348,"file_name":"S20260115_00420_710125H00004","cycle_number":149,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":421,"cycle_start_time":1768500435,"file_name":"S20260115_00421_710125H00004","cycle_number":150,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":422,"cycle_start_time":1768508243,"file_name":"S20260115_00422_710125H00004","cycle_number":151,"cycle_id":"STATCLAVE_120V_solid_wrapped_132_4min"},{"records_id":423,"cycle_start_time":1768516306,"file_name":"S20260115_00423_710125H00004","cycle_number":152,"cycle_id":"STATCLAVE_120V_rubber_plastics_121_20min"}];
+
+        $('body').addClass('loading');
+        $('#csvLink').hide();
+        $("#yearChooser").change(yearChoose);
+        $("#monthChooser").change(monthChoose);
+        $("#dayChooser").change(dayChoose);
+        //$("#timeChooser").change(timeChoose);
+        $("#cycleChooser").change(cycleChoose);
+        $("#prevBtn").click(prev);
+        $("#nextBtn").click(next);
+
+        //zzz $('#print-preview').printPreview();
+
+        $("#chartLink").click( function () {
+            $("#largeChart").removeClass("hidden");
+        });
+
+        $("#largeChart").click( function () {
+            $("#largeChart").addClass("hidden");
+        });
+
+        clear();
+        populateYears(cyclesData);
+
+        //var chartctx = document.getElementById('chart').getContext('2d');
+        //myChart = new Chart(chartctx, chart);
+
+        //var largeChartctx = document.getElementById('largePlaceholder').getContext('2d');
+        //myLargeChart = new Chart(largeChartctx, largeChart);
+
+        $("#chartLink").addClass("hidden");
+    }
+
+</script>
+<script type="text/javascript">
+    function processContacts(data) {
+		setTab('archives');
+
+		//alert(data.language_iso639);
+        if (!"/us/archives.php".includes(data.language_iso3166.toLowerCase())) {
+            window.location.href = "../" + data.language_iso3166.toLowerCase() + "/archives.php";
+            return;
+        }
+	};
+
+	function printPreviewSetLink() {
+		$('#printPreview').text('Print Preview');
+        //alert('printPreview.php?' + yearStr + '&' + monthStr + '&' + dayStr + '&' + cycleStr + '&' + cycleFileName);
+        $('#printPreview').attr(
+				'href',
+				'printPreview.php?' + yearStr + '&' + monthStr + '&' + dayStr + '&' + cycleStr + '&' + cycleFileName + '&' + cycleStatus + '&' + cycleRecordId);
+	};
+	function largeChartViewSetLink() {
+	    //alert('largeChartView.html?' + yearStr + '&' + monthStr + '&' + dayStr + '&' + cycleStr + '&' + cycleFileName);
+		$('#chartLink').attr(
+				'href',
+				'largeChartView.html?' + yearStr + '&' + monthStr + '&' + dayStr + '&' + cycleStr + '&' + cycleFileName + '&' + cycleStatus + '&/opt/data/scilog');
+	};	
+</script>
+
+</head>
+<body>
+	<div id='hdr'>
+<div id='scican-hdr'>
+	<div id="scican-hdr-main">
+		<div id="scican-hdr-wrap">
+			<a href="https://www.scican.com/"> <img id="logoImage" src="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA="
+				alt="" /> </a>
+			<div id="" style="float: right; text-align: right;">
+				<table style="width: 500px;">
+					<tbody>
+						<tr>
+							<td style="vertical-align: middle">
+								<div><b><span id="office"></span></b></div>
+								<div id="officeTel">Phone: </div>
+							</td>
+							<td style="vertical-align: middle">
+								<div class="logo">
+									<img id="logo" class="logoPrintPreview" src="../images/officeLogo.png"
+										alt="Office Logo" />
+								</div></td>
+							<td style="vertical-align: middle"><img id="statimImage"
+								src="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" alt="" /><br />SN: <span
+								id="serialNum"></span></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+<div id="hdr-nav" class="scican-hdr-nav clearfix" style="">
+	<ul id="nav-menu">
+		<li id="nav-home"><a href="index.php">Home</a>
+		</li>
+		<li id="nav-status"><a href="status.php">Status</a>
+		</li>
+		<li id="nav-archives"><a href="archives.php">Archives</a>
+		</li>
+		<li id="nav-setup"><a href="setup.php">Setup</a>
+		</li>
+		<li id="nav-help"><a href="help.php">Help</a>
+		</li>
+	</ul>
+</div>
+	</div>
+	<div id="content-wrap">
+		<div id="content"
+			style="display: block; margin: 0px auto;">
+			<div id="ticker-top-grey-back"></div>
+			<div class="clearfix" id="ticker-middle-grey">
+				<div class="under-nav-gap"></div>
+				<div id="sidebar">
+					<div id="sidebarMenu">
+						<div id="sidebarArchives" style="font-size: smaller; color: #222;">
+							<div>
+								<form name="archive" action="">
+									<table>
+										<tbody>
+											<tr>
+												<td>Year:  </td>
+												<td><select id="yearChooser" name="yearChooser">
+														<option>--</option>
+												</select></td>
+											</tr>
+											<tr>
+												<td>Month: </td>
+												<td><select id="monthChooser" name="monthChooser">
+														<option>--</option>
+												</select></td>
+											</tr>
+											<tr>
+												<td>Day: </td>
+												<td><select id="dayChooser" name="dayChooser">
+														<option>--</option>
+												</select></td>
+											</tr>
+											<tr>
+												<td>Cycle: </td>
+												<td><select id="cycleChooser" name="cycleChooser">
+														<option>--</option>
+												</select></td>
+											</tr>
+											<tr>
+												<td colspan="2" style="text-align: center;"><input
+													type="button" id="prevBtn" value="<" disabled="disabled" />
+													<input type="button" id="nextBtn" value=">"
+													disabled="disabled" /></td>
+											</tr>
+										</tbody>
+									</table>
+								</form>
+							</div>
+						</div>
+						<hr />
+						<div>
+							<ul>
+								<li><a id="printPreview" href="printPreview.php"
+									target="_blank"></a>
+								</li>
+							</ul>
+						</div>
+						<div style="position: absolute; bottom: 0px; left: 0px;">
+							<ul>
+								<li class="sidebarFooterLi"><a href="https://www.scican.com/" target="_blank" id="linkScican">
+									<span class="helperSpan"></span><span class="sidebarFooterSpanPic"><img id="linkScicanImg" class="sidebarFooterPic" src="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" /></span><span class="sidebarFooterSpanText">SciCan Web Site</span>
+								</a></li>
+								<li class="sidebarFooterLi"><a href="https://my.coltene.com/" target="_blank" id="linkWarranty">
+									<span class="helperSpan"></span><span class="sidebarFooterSpanPic"><img id="linkWarrantyImg" class="sidebarFooterPic" src="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" /></span><span class="sidebarFooterSpanText">Warranty Registration</span>
+								</a></li>
+								<li class="sidebarFooterLi"><a href="https://www.youtube.com/SciCanTV" target="_blank" id="linkTV">
+									<span class="helperSpan"></span><span class="sidebarFooterSpanPic"><img id="linkTVImg" class="sidebarFooterPic" src="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" /></span><span class="sidebarFooterSpanText">SciCan TV</span>
+								</a></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				<div id="main">
+					<div id="main-content">
+						<table width="100%">
+							<tr colspan="2">
+								<div>
+									<tt id="cycleStatus"></tt>
+								</div>
+								<div>
+									<tt id="cycleDate"></tt>
+								</div>
+							</tr>
+							<tr>
+								<td>
+									<a id="chartLink" target="_blank" style="text-decoration: none; float: left;">
+										<div id="placeholder" style="height: 300px; width: 400px;"></div>
+								</td>
+								<td style="vertical-align: top">
+									<div id="logOutput" class="logOutput"
+										style="float: right; width: 210px; height: 400px; overflow: auto">
+										<tt id="printout"></tt>
+									</div>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+				<div style="clear: both;"></div>
+			</div>
+			<div>
+				<img id="ticker_btm_grey" src="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+			</div>
+			<div id="footer"></div>
+		</div>
+	</div>
+	<div id="log"></div>
+    <!--<div class="modal"></div>-->
+    <div style="display:none">
+        <img src="../images/ajax-loader-2.gif" />
+    </div>
+
+    <script type="text/javascript">
+        archiveInit();
+    </script>
+
+</body>
+</html>

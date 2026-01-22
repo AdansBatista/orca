@@ -554,6 +554,62 @@ async function fetchMonthCyclesMQX(
   return probeCyclesForMonthMQX(ipAddress, port, year, month);
 }
 
+/**
+ * Fetch cycle data using POST to cycleData.cgi (for older MQX firmware)
+ *
+ * MQX firmware expects POST with specific headers matching browser behavior
+ */
+async function fetchCycleDataMQX(
+  ipAddress: string,
+  port: number,
+  year: string,
+  month: string,
+  day: string,
+  cycleNumber: string
+): Promise<AutoclaveCycleData | null> {
+  const baseUrl = `http://${ipAddress}:${port}`;
+  const timestamp = Date.now();
+  // Pad cycle number to 5 digits as the browser does
+  const paddedCycle = cycleNumber.padStart(5, '0');
+  log('DEBUG', `Fetching cycle data via MQX POST`, { ipAddress, port, year, month, day, cycleNumber, paddedCycle });
+
+  try {
+    const response = await autoclaveRequest(`${baseUrl}/data/cycleData.cgi?${timestamp}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      // Body is JSON string (matching browser behavior)
+      body: JSON.stringify({
+        year,
+        month: month.padStart(2, '0'),
+        day: day.padStart(2, '0'),
+        cycle: paddedCycle,
+      }),
+      timeout: DEFAULT_TIMEOUT * 2,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    log('DEBUG', `MQX cycleData.cgi response`, { succeeded: data?.succeeded, number: data?.number });
+
+    if (data?.succeeded === false) {
+      log('WARN', `Cycle data not found via MQX`, { year, month, day, cycleNumber });
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    log('ERROR', `fetchCycleDataMQX failed`, { error });
+    return null;
+  }
+}
+
 // Cache for last known cycle number per autoclave (to speed up probing)
 const lastKnownCycleNumberCache = new Map<string, number>();
 
@@ -603,6 +659,7 @@ async function probeCyclesForMonthMQX(
 
   // Probe backward and forward from the known cycle
   const maxProbesPerDirection = 500;
+  const batchSize = 10; // Check in batches for efficiency
 
   // Search backward first (older cycles)
   let backwardCursor = lastKnownCycle;
@@ -809,62 +866,6 @@ async function findValidCycleNumberMQX(
 }
 
 /**
- * Fetch cycle data using POST to cycleData.cgi (for older MQX firmware)
- *
- * MQX firmware expects POST with specific headers matching browser behavior
- */
-async function fetchCycleDataMQX(
-  ipAddress: string,
-  port: number,
-  year: string,
-  month: string,
-  day: string,
-  cycleNumber: string
-): Promise<AutoclaveCycleData | null> {
-  const baseUrl = `http://${ipAddress}:${port}`;
-  const timestamp = Date.now();
-  // Pad cycle number to 5 digits as the browser does
-  const paddedCycle = cycleNumber.padStart(5, '0');
-  log('DEBUG', `Fetching cycle data via MQX POST`, { ipAddress, port, year, month, day, cycleNumber, paddedCycle });
-
-  try {
-    const response = await autoclaveRequest(`${baseUrl}/data/cycleData.cgi?${timestamp}`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      // Body is JSON string (matching browser behavior)
-      body: JSON.stringify({
-        year,
-        month: month.padStart(2, '0'),
-        day: day.padStart(2, '0'),
-        cycle: paddedCycle,
-      }),
-      timeout: DEFAULT_TIMEOUT * 2,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    log('DEBUG', `MQX cycleData.cgi response`, { succeeded: data?.succeeded, number: data?.number });
-
-    if (data?.succeeded === false) {
-      log('WARN', `Cycle data not found via MQX`, { year, month, day, cycleNumber });
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    log('ERROR', `fetchCycleDataMQX failed`, { error });
-    return null;
-  }
-}
-
-/**
  * Fetch all cycles directly from archives.php page
  * This parses the embedded cyclesInfo JavaScript variable which contains all cycle metadata
  */
@@ -902,14 +903,6 @@ export async function fetchAllCyclesFromArchives(
     try {
       const cyclesInfo = JSON.parse(match[1]) as AutoclaveCycleInfo[];
       log('INFO', `Found ${cyclesInfo.length} cycles in archives.php`);
-
-      // 🔍 DEBUG: Log first and last 3 cycles from archives
-      console.log('🔍 [fetchAllCyclesFromArchives] First 3 cycles from archives.php:', cyclesInfo.slice(0, 3).map(c =>
-        `File: ${c.file_name} | Cycle#: ${c.cycle_number} | Start: ${new Date(c.cycle_start_time * 1000).toISOString()}`
-      ));
-      console.log('🔍 [fetchAllCyclesFromArchives] Last 3 cycles from archives.php:', cyclesInfo.slice(-3).map(c =>
-        `File: ${c.file_name} | Cycle#: ${c.cycle_number} | Start: ${new Date(c.cycle_start_time * 1000).toISOString()}`
-      ));
 
       return cyclesInfo;
     } catch (parseError) {
@@ -1180,6 +1173,15 @@ export async function fetchAvailableCycles(
   const timestamp = Date.now();
   log('DEBUG', `Fetching available cycles`, { ipAddress, port });
 
+  // Build POST body with current date - MQX firmware returns full day/cycle data
+  // only when year/month/day params are provided
+  const now = new Date();
+  const postBody = JSON.stringify({
+    year: now.getFullYear().toString(),
+    month: (now.getMonth() + 1).toString().padStart(2, '0'),
+    day: now.getDate().toString().padStart(2, '0'),
+  });
+
   const startTime = Date.now();
   // MQX firmware expects POST with specific headers (matching browser behavior)
   const response = await autoclaveRequest(`${baseUrl}/data/cycles.cgi?${timestamp}`, {
@@ -1189,7 +1191,7 @@ export async function fetchAvailableCycles(
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'X-Requested-With': 'XMLHttpRequest',
     },
-    body: '', // Empty body for initial fetch
+    body: postBody,
     timeout: DEFAULT_TIMEOUT,
   });
 
@@ -1199,7 +1201,18 @@ export async function fetchAvailableCycles(
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
-  const data = await response.json();
+  const rawText = await response.text();
+  log('DEBUG', `fetchAvailableCycles raw response (first 500 chars)`, { rawText: rawText.substring(0, 500) });
+
+  // Try to parse as JSON
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch (e) {
+    log('ERROR', `fetchAvailableCycles failed to parse JSON`, { error: e, rawText: rawText.substring(0, 200) });
+    return [];
+  }
+
   log('DEBUG', `fetchAvailableCycles parsed ${data?.length || 0} years`);
 
   // Log the structure of the first year to understand the data format
@@ -1255,12 +1268,10 @@ export async function fetchMonthCycles(
     for (const cycle of monthCycles) {
       const date = new Date(cycle.cycle_start_time * 1000);
       const dayStr = date.getDate().toString().padStart(2, '0');
-      // Extract cycle number from filename: S20251212_00391_710125H00004 -> 00391
-      const cycleNumMatch = cycle.file_name.match(/_(\d+)_/);
-      const cycleNum = cycleNumMatch ? cycleNumMatch[1] : cycle.cycle_number.toString();
 
-      // 🔍 DEBUG: Log each cycle's filename and extracted number
-      console.log(`🔍 [fetchMonthCycles] File: ${cycle.file_name} → Cycle#: ${cycleNum} | Date: ${date.toISOString()} | Day: ${dayStr}`);
+      // Use the actual cycle_number field from the autoclave (matches the screen display)
+      // Pad with leading zeros to 5 digits to match the autoclave's display format
+      const cycleNum = cycle.cycle_number.toString().padStart(5, '0');
 
       if (!dayMap.has(dayStr)) {
         dayMap.set(dayStr, []);
@@ -1828,16 +1839,13 @@ export async function flattenAllCycles(
             ),
           };
 
-          // 🔍 DEBUG: Log each flattened cycle being added
-          console.log(`🔍 [flattenAllCycles] Adding cycle: ${yearData.year}-${monthData.month}-${dayData.day} #${cycleNum}`);
-
           cycles.push(flattenedCycle);
         }
       }
     }
   }
 
-  console.log(`🔍 [flattenAllCycles] Returning ${cycles.length} total cycles`);
+  log('INFO', `flattenAllCycles returning ${cycles.length} total cycles`);
   return cycles;
 }
 
@@ -1861,13 +1869,12 @@ async function flattenAllCyclesByProbing(
   log('INFO', `MQX probing: Starting cycle discovery for ${ipAddress}`);
 
   // First, find the highest valid cycle number
-  let highestKnown: number | undefined = lastKnownCycleNumberCache.get(cacheKey);
+  let highestKnown = lastKnownCycleNumberCache.get(cacheKey);
 
   if (!highestKnown) {
     // Binary search to find a valid cycle
-    const foundCycle = await findValidCycleNumberMQX(ipAddress, port);
-    if (foundCycle) {
-      highestKnown = foundCycle;
+    highestKnown = await findValidCycleNumberMQX(ipAddress, port) ?? undefined;
+    if (highestKnown) {
       lastKnownCycleNumberCache.set(cacheKey, highestKnown);
       log('INFO', `MQX probing: Found valid cycle number ${highestKnown}`);
     } else {
@@ -2027,4 +2034,220 @@ export function calculateCycleDuration(cycleData: AutoclaveCycleData): number {
 
   // Default duration if no data available
   return 30;
+}
+
+/**
+ * Fetch cycles for a specific date range.
+ *
+ * This is the simplest entry point - it detects firmware and fetches cycles
+ * for the requested dates directly without complex probing.
+ *
+ * @param range - 'today' | 'yesterday' | 'week' | 'month'
+ *   - today: Only today's cycles
+ *   - yesterday: Only yesterday's cycles (NOT including today)
+ *   - week: Last 7 days (NOT including today)
+ *   - month: Last 30 days (NOT including today)
+ */
+export async function fetchCyclesForRange(
+  ipAddress: string,
+  port: number = 80,
+  range: 'today' | 'yesterday' | 'week' | 'month'
+): Promise<FlattenedCycle[]> {
+  log('INFO', `fetchCyclesForRange`, { ipAddress, port, range });
+
+  const firmwareType = await detectFirmwareType(ipAddress, port);
+  log('INFO', `Detected firmware: ${firmwareType}`);
+
+  // Calculate date range
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let startDate: Date;
+  let endDate: Date;
+
+  switch (range) {
+    case 'today':
+      startDate = new Date(today);
+      endDate = new Date(today);
+      break;
+    case 'yesterday':
+      startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 1);
+      endDate = new Date(startDate);
+      break;
+    case 'week':
+      endDate = new Date(today);
+      endDate.setDate(endDate.getDate() - 1); // Yesterday
+      startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 7);
+      break;
+    case 'month':
+      endDate = new Date(today);
+      endDate.setDate(endDate.getDate() - 1); // Yesterday
+      startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 30);
+      break;
+  }
+
+  log('INFO', `Date range: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
+
+  if (firmwareType === 'nginx') {
+    return fetchCyclesForRangeNginx(ipAddress, port, startDate, endDate);
+  } else {
+    return fetchCyclesForRangeMQX(ipAddress, port, startDate, endDate);
+  }
+}
+
+/**
+ * Fetch cycles for a date range from nginx firmware (archives.php)
+ */
+async function fetchCyclesForRangeNginx(
+  ipAddress: string,
+  port: number,
+  startDate: Date,
+  endDate: Date
+): Promise<FlattenedCycle[]> {
+  // Nginx firmware has all cycles in archives.php - fetch once and filter
+  const allCycles = await fetchAllCyclesFromArchives(ipAddress, port);
+
+  if (!allCycles.length) {
+    log('WARN', 'No cycles found in archives.php');
+    return [];
+  }
+
+  const cycles: FlattenedCycle[] = [];
+
+  for (const cycle of allCycles) {
+    const cycleDate = new Date(cycle.cycle_start_time * 1000);
+    cycleDate.setHours(0, 0, 0, 0);
+
+    if (cycleDate >= startDate && cycleDate <= endDate) {
+      const year = cycleDate.getFullYear().toString();
+      const month = (cycleDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = cycleDate.getDate().toString().padStart(2, '0');
+      const cycleNum = cycle.cycle_number.toString().padStart(5, '0');
+
+      cycles.push({
+        year,
+        month,
+        day,
+        cycleNumber: cycleNum,
+        date: cycleDate,
+      });
+    }
+  }
+
+  log('INFO', `nginx: Found ${cycles.length} cycles in date range`);
+  return cycles.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+/**
+ * Fetch cycles for a date range from MQX firmware (cycles.cgi POST)
+ */
+async function fetchCyclesForRangeMQX(
+  ipAddress: string,
+  port: number,
+  startDate: Date,
+  endDate: Date
+): Promise<FlattenedCycle[]> {
+  const baseUrl = `http://${ipAddress}:${port}`;
+  const cycles: FlattenedCycle[] = [];
+
+  // Collect unique year/month pairs in the range
+  const monthsToFetch = new Set<string>();
+  const cursor = new Date(startDate);
+  while (cursor <= endDate) {
+    const year = cursor.getFullYear().toString();
+    const month = (cursor.getMonth() + 1).toString().padStart(2, '0');
+    monthsToFetch.add(`${year}-${month}`);
+    cursor.setMonth(cursor.getMonth() + 1);
+    cursor.setDate(1); // Move to first of next month
+  }
+  // Also add the endDate's month in case the loop missed it
+  monthsToFetch.add(`${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}`);
+
+  log('INFO', `MQX: Fetching months: ${[...monthsToFetch].join(', ')}`);
+
+  for (const yearMonth of monthsToFetch) {
+    const [year, month] = yearMonth.split('-');
+    // For each day in this month within our range, send POST to get cycle data
+    const day = startDate > new Date(parseInt(year), parseInt(month) - 1, 1)
+      ? startDate.getDate().toString().padStart(2, '0')
+      : '01';
+
+    try {
+      const timestamp = Date.now();
+      const postBody = JSON.stringify({ year, month, day });
+
+      const response = await autoclaveRequest(`${baseUrl}/data/cycles.cgi?${timestamp}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json, text/javascript, */*; q=0.01',
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: postBody,
+        timeout: DEFAULT_TIMEOUT,
+      });
+
+      if (!response.ok) {
+        log('WARN', `MQX cycles.cgi returned ${response.status} for ${year}/${month}`);
+        continue;
+      }
+
+      const rawText = await response.text();
+      log('DEBUG', `MQX cycles.cgi raw response length: ${rawText.length}`, { first200: rawText.substring(0, 200) });
+
+      if (!rawText || rawText.trim().length === 0) {
+        log('WARN', `MQX cycles.cgi returned empty response for ${year}/${month}`);
+        continue;
+      }
+
+      let data: AutoclaveCycleIndex[];
+      try {
+        data = JSON.parse(rawText) as AutoclaveCycleIndex[];
+      } catch (parseErr) {
+        log('ERROR', `MQX cycles.cgi JSON parse failed for ${year}/${month}`, { parseErr, first200: rawText.substring(0, 200) });
+        continue;
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        log('WARN', `MQX cycles.cgi returned empty array for ${year}/${month}`);
+        continue;
+      }
+
+      // Extract cycles from the response
+      for (const yearData of data) {
+        for (const monthData of yearData.months) {
+          if (!monthData.days) continue;
+          for (const dayData of monthData.days) {
+            const cycleDate = new Date(
+              parseInt(yearData.year),
+              parseInt(monthData.month) - 1,
+              parseInt(dayData.day)
+            );
+            cycleDate.setHours(0, 0, 0, 0);
+
+            // Only include if within our date range
+            if (cycleDate >= startDate && cycleDate <= endDate) {
+              for (const cycleNum of dayData.cycles) {
+                cycles.push({
+                  year: yearData.year,
+                  month: monthData.month,
+                  day: dayData.day,
+                  cycleNumber: cycleNum,
+                  date: cycleDate,
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      log('ERROR', `MQX: Failed to fetch cycles for ${year}/${month}`, { error });
+    }
+  }
+
+  log('INFO', `MQX: Found ${cycles.length} cycles in date range`);
+  return cycles.sort((a, b) => a.date.getTime() - b.date.getTime());
 }

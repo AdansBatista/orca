@@ -10,6 +10,13 @@
 !.yarn/releases
 !.yarn/versions
 
+packages/tablet-app/node_modules
+packages/tablet-app/.next
+packages/tablet-app/out
+packages/tablet-app/dist
+packages/tablet-app/.env
+packages/tablet-app/.env.local
+
 # testing
 /coverage
 

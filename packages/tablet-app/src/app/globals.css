@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Background - Subtle silk gradient */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    /* Card - Glass-like with subtle transparency */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary - Cyan/Teal (#06b6d4) */
+    --primary: 189 94% 43%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Violet (#9333ea) */
+    --secondary: 271 81% 56%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted - Silk tones */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent - Emerald (#10b981) */
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive - Modern Red */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border & Input - Soft silk */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+
+    /* Ring - Primary cyan */
+    --ring: 189 94% 43%;
+
+    /* Radius - Larger for modern pill shapes */
+    --radius: 0.75rem;
+
+    /* Chart Colors - Modern palette */
+    --chart-1: 189 94% 43%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 271 81% 56%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
+  }
+
+  .dark {
+    /* Background - Dark silk */
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
+
+    /* Card - Dark glass */
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    /* Popover */
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary - Brighter cyan for dark mode */
+    --primary: 189 94% 51%;
+    --primary-foreground: 222 47% 5%;
+
+    /* Secondary - Lighter violet */
+    --secondary: 271 81% 66%;
+    --secondary-foreground: 222 47% 5%;
+
+    /* Muted */
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Accent */
+    --accent: 160 84% 45%;
+    --accent-foreground: 222 47% 5%;
+
+    /* Destructive */
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border & Input */
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+
+    /* Ring */
+    --ring: 189 94% 51%;
+
+    /* Chart Colors - Dark mode variants */
+    --chart-1: 189 80% 55%;
+    --chart-2: 160 70% 50%;
+    --chart-3: 271 70% 65%;
+    --chart-4: 38 80% 55%;
+    --chart-5: 0 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Touch target minimum size (44x44 per guidelines) */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent text selection on interactive elements */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Active state for touch feedback */
+  .active-scale:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Print Styles for Labels */
+@media print {
+  @page {
+    margin: 0;
+    size: 2in 1in; /* Default thermal label size */
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  nav,
+  aside,
+  header:not(.print-header),
+  footer:not(.print-footer),
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+}

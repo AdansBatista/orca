@@ -2,6 +2,9 @@
   "name": "orca",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -89,6 +92,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.182.0",
+    "undici": "^7.18.2",
     "zod": "^4.1.13"
   },
   "devDependencies": {
