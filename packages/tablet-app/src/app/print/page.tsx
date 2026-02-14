@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Printer, Plus, Minus } from 'lucide-react';
-import { generateQRCodeDataURL, type SterilizationQRData } from '@/lib/sterilization/qr-code';
+import { generateQRCodeDataURL, generateQRCodeSVG, type SterilizationQRData } from '@/lib/sterilization/qr-code';
 
 export default function PrintPage() {
   return (
@@ -24,6 +24,7 @@ function PrintPageContent() {
   const [quantity, setQuantity] = useState(1);
   const [printing, setPrinting] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [qrCodeSvg, setQrCodeSvg] = useState<string>('');
 
   // Generate QR code for the first cycle on mount
   useEffect(() => {
@@ -45,12 +46,22 @@ function PrintPageContent() {
       };
 
       try {
+        // PNG for screen preview
         const dataUrl = await generateQRCodeDataURL(qrData, {
-          width: 400, // Much higher resolution for crisp thermal printing
-          margin: 1, // Minimal margin to maximize QR size
-          errorCorrectionLevel: 'M', // Medium error correction (15% recovery) - better for dense codes
+          width: 400,
+          margin: 1,
+          errorCorrectionLevel: 'M',
         });
         setQrCodeUrl(dataUrl);
+
+        // SVG for print - vector renders pixel-perfect at any DPI
+        const svg = await generateQRCodeSVG(qrData, {
+          width: 200,
+          margin: 0,
+          errorCorrectionLevel: 'M',
+        });
+        setQrCodeSvg(svg);
+
         console.log('✅ QR code generated successfully');
       } catch (error) {
         console.error('❌ Failed to generate QR code:', error);
@@ -269,19 +280,183 @@ function PrintPageContent() {
         </Card>
       </div>
 
-      {/* Print-only Styles */}
+      {/* Hidden Print Area - Only visible when printing */}
+      <div className="print-area">
+        {Array.from({ length: quantity }).map((_, i) => (
+          <div key={i} className="print-label">
+            <div className="label-inner">
+              {/* Left Side: Logo + Text */}
+              <div className="label-left">
+                <img
+                  src="/WillowPrimaryTransparent trimmed.png"
+                  alt="Clinic Logo"
+                  className="label-logo"
+                />
+                <div className="label-text">
+                  <div className="label-equipment">STATCLAVE G4</div>
+                  <div className="label-cycle">
+                    Cycle #{cycleIds.length > 0 ? cycleIds[0].split('-')[3] : '00000'}
+                  </div>
+                  <div className="label-date">
+                    {cycleIds.length > 0 ? (() => {
+                      const [year, month, day] = cycleIds[0].split('-');
+                      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                      return date.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      });
+                    })() : '01-Jan-2026'} at 14:31
+                  </div>
+                  <div className="label-params">Solid/Wrapped 132°C/4min</div>
+                </div>
+              </div>
+              {/* QR Code - Right Side (SVG for pixel-perfect thermal printing) */}
+              <div className="label-qr">
+                {qrCodeSvg ? (
+                  <div dangerouslySetInnerHTML={{ __html: qrCodeSvg }} />
+                ) : qrCodeUrl ? (
+                  <img src={qrCodeUrl} alt="QR Code" />
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Print Styles */}
       <style jsx global>{`
+        /* Hide print area on screen */
+        .print-area {
+          display: none;
+        }
+
         @media print {
-          body * {
-            visibility: hidden;
+          /* Set page size to 2x1 inch label */
+          @page {
+            size: 2in 1in;
+            margin: 0;
           }
-          .print-area, .print-area * {
-            visibility: visible;
+
+          /* Reset body/html for label printing */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 2in !important;
+            height: auto !important;
+            background: white !important;
           }
+
+          /* Hide all screen UI */
+          main > *:not(.print-area) {
+            display: none !important;
+          }
+
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            min-height: auto !important;
+            background: white !important;
+          }
+
+          /* Show print area */
           .print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
+            display: block !important;
+            width: 2in;
+            margin: 0;
+            padding: 0;
+          }
+
+          /* Each label fills one page */
+          .print-label {
+            width: 2in;
+            height: 1in;
+            page-break-after: always;
+            overflow: hidden;
+            padding: 0.04in;
+            box-sizing: border-box;
+          }
+
+          .print-label:last-child {
+            page-break-after: avoid;
+          }
+
+          .label-inner {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            gap: 0.05in;
+            align-items: center;
+          }
+
+          .label-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+            margin-left: 3mm;
+          }
+
+          .label-logo {
+            height: 0.24in;
+            width: auto;
+            object-fit: contain;
+            object-position: left;
+            margin-bottom: 0.03in;
+            margin-left: -3mm;
+          }
+
+          .label-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.01in;
+            margin-top: 3mm;
+          }
+
+          .label-equipment {
+            font-size: 5.5pt;
+            font-weight: bold;
+            line-height: 1.1;
+          }
+
+          .label-cycle {
+            font-size: 8pt;
+            font-weight: bold;
+            line-height: 1.1;
+          }
+
+          .label-date {
+            font-size: 5pt;
+            line-height: 1.2;
+          }
+
+          .label-params {
+            font-size: 5pt;
+            line-height: 1.2;
+          }
+
+          .label-qr {
+            width: 0.86in;
+            height: 0.86in;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
+
+          .label-qr svg {
+            width: 0.86in !important;
+            height: 0.86in !important;
+            shape-rendering: crispEdges;
+          }
+
+          .label-qr img {
+            width: 0.86in;
+            height: 0.86in;
+            object-fit: contain;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
           }
         }
       `}</style>
