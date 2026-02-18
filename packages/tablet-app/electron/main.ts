@@ -1,4 +1,4 @@
-import { app, BrowserWindow, utilityProcess } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { spawn, fork, ChildProcess } from 'child_process';
 import path from 'path';
 
@@ -108,6 +108,40 @@ async function createWindow() {
     mainWindow = null;
   });
 }
+
+// IPC: Print labels using Electron's native print API
+// This sets page size programmatically, fixing the CSS @page issue in Electron
+ipcMain.handle('print-labels', async (_event: any, options?: { silent?: boolean }) => {
+  if (!mainWindow) return { success: false, error: 'No window available' };
+
+  // 1 inch = 25400 microns
+  const pageWidth = 2 * 25400;  // 2 inches
+  const pageHeight = 1 * 25400; // 1 inch
+
+  return new Promise((resolve) => {
+    mainWindow!.webContents.print(
+      {
+        silent: options?.silent ?? false,
+        printBackground: true,
+        pageSize: {
+          width: pageWidth,
+          height: pageHeight,
+        },
+        margins: {
+          marginType: 'none',
+        },
+      },
+      (success: boolean, failureReason: string) => {
+        if (success) {
+          resolve({ success: true });
+        } else {
+          console.error('Print failed:', failureReason);
+          resolve({ success: false, error: failureReason });
+        }
+      }
+    );
+  });
+});
 
 // App lifecycle
 app.on('ready', createWindow);

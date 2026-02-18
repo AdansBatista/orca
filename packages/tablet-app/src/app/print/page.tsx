@@ -85,16 +85,20 @@ function PrintPageContent() {
     setPrinting(true);
 
     try {
-      // For now, trigger browser print dialog
-      window.print();
-
-      // TODO: In the future, send ZPL directly to Zebra printer
-      // const response = await fetch('/api/print-labels', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ cycleIds, quantity }),
-      // });
-
-      console.log('✅ Print dialog opened');
+      if (window.electron?.printLabels) {
+        // Electron: use native print API with proper page size (2" × 1")
+        const result = await window.electron.printLabels();
+        if (result.success) {
+          console.log('✅ Electron print completed');
+        } else {
+          console.error('❌ Electron print failed:', result.error);
+          alert('Print failed: ' + (result.error || 'Unknown error'));
+        }
+      } else {
+        // Browser: use standard print dialog (Chrome/Edge handle @page correctly)
+        window.print();
+        console.log('✅ Print dialog opened');
+      }
     } catch (error) {
       console.error('❌ Print failed:', error);
       alert('Print failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
